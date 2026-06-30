@@ -710,7 +710,7 @@ function openPatientForm(patientId = null) {
   document.getElementById("patientName").value = patient?.name || "";
   document.getElementById("patientPhone").value = patient?.phone || "";
   document.getElementById("patientEmail").value = patient?.email || "";
-  document.getElementById("patientDocumentType").value = patient?.documentType || "Cédula";
+  document.getElementById("patientDocumentType").value = normalizeDocumentType(patient?.documentType);
   document.getElementById("patientNationality").value = patient?.nationality || "Dominicano";
   document.getElementById("patientDocument").value = patient?.document || "";
   document.getElementById("patientBirthdate").value = patient?.birthdate || "";
@@ -721,7 +721,7 @@ function openPatientForm(patientId = null) {
   document.getElementById("patientEmergencyPhone").value = emergency.phone;
   document.getElementById("patientEmergencyRelation").value = emergency.relation;
   document.getElementById("patientBloodType").value = patient?.bloodType || "";
-  document.getElementById("patientInsurance").value = patient?.insurance || "";
+  document.getElementById("patientInsurance").value = patient?.insurance || "Sin seguro";
   document.getElementById("patientAllergies").value = patient?.allergies || "";
   document.getElementById("patientConditions").value = patient?.conditions || "";
   document.getElementById("patientMedications").value = patient?.medications || "";
@@ -852,6 +852,11 @@ function syncPatientDocumentRequirement() {
 function isMinor(birthdate) {
   const age = patientAgeNumber(birthdate);
   return age !== null && age < 18;
+}
+
+function normalizeDocumentType(documentType) {
+  if (documentType === "Licencia médica") return "Licencia de conducir";
+  return documentType || "Cédula";
 }
 
 function splitEmergencyContact(patient) {
@@ -2037,6 +2042,9 @@ function ensurePatientCodes() {
     }
     if (!patient.documentType) {
       patient.documentType = "Cédula";
+      changed = true;
+    } else if (patient.documentType === "Licencia médica") {
+      patient.documentType = "Licencia de conducir";
       changed = true;
     }
     if (!patient.nationality) {

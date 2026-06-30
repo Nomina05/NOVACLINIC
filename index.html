@@ -825,7 +825,7 @@
             <select id="patientDocumentType">
               <option>Cédula</option>
               <option>Pasaporte</option>
-              <option>Licencia médica</option>
+              <option>Licencia de conducir</option>
             </select>
           </label>
           <label>Nacionalidad
@@ -847,8 +847,38 @@
           <label>Emergencia: nombre<input id="patientEmergencyName" placeholder="Nombre completo"></label>
           <label>Emergencia: teléfono<input id="patientEmergencyPhone" placeholder="Teléfono"></label>
           <label>Emergencia: parentesco<input id="patientEmergencyRelation" placeholder="Madre, padre, tutor..."></label>
-          <label>Tipo de sangre<input id="patientBloodType" placeholder="O+, A-, etc."></label>
-          <label>Seguro<input id="patientInsurance" placeholder="Privado, Senasa, ARS..."></label>
+          <label>Tipo de sangre
+            <select id="patientBloodType">
+              <option value="">No registrado</option>
+              <option>O+</option>
+              <option>O-</option>
+              <option>A+</option>
+              <option>A-</option>
+              <option>B+</option>
+              <option>B-</option>
+              <option>AB+</option>
+              <option>AB-</option>
+            </select>
+          </label>
+          <label>Seguro
+            <select id="patientInsurance">
+              <option>Sin seguro</option>
+              <option value="Senasa">SeNaSa</option>
+              <option>ARS Universal</option>
+              <option>ARS Humano</option>
+              <option>Mapfre Salud ARS</option>
+              <option>ARS Palic</option>
+              <option>ARS Yunen</option>
+              <option>ARS Monumental</option>
+              <option>ARS Reservas</option>
+              <option>ARS Meta Salud</option>
+              <option>ARS Simag</option>
+              <option>ARS Futuro</option>
+              <option>ARS Renacer</option>
+              <option>ARS CMD</option>
+              <option>Privado</option>
+            </select>
+          </label>
           <label>Alergias<input id="patientAllergies" placeholder="Medicamentos, alimentos, látex..."></label>
           <label class="full">Condiciones médicas<textarea id="patientConditions" rows="2" placeholder="Hipertensión, diabetes, embarazo, cardiopatías..."></textarea></label>
           <label class="full">Medicamentos actuales<textarea id="patientMedications" rows="2" placeholder="Medicamentos y dosis relevantes"></textarea></label>
