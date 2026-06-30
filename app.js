@@ -909,6 +909,10 @@ function bindForms() {
     persistAndRender();
   });
 
+  document.getElementById("closePatientRecord").addEventListener("click", closePatientRecord);
+  document.getElementById("donePatientRecord").addEventListener("click", closePatientRecord);
+  document.getElementById("printPatientRecord").addEventListener("click", () => window.print());
+
   document.getElementById("appointmentForm").addEventListener("submit", (event) => {
     event.preventDefault();
     if (!can("appointments:create")) return;
@@ -1945,7 +1949,12 @@ function renderPatients() {
         </td>
         <td>${currency.format(patient.balance)}</td>
         <td><span class="status-pill ${patient.balance > 0 ? "pendiente" : "confirmada"}">${escapeHtml(patient.status)}</span></td>
-        <td><button class="ghost-button" data-edit-patient="${patient.id}" type="button">Editar</button></td>
+        <td>
+          <div class="table-actions">
+            <button class="ghost-button" data-record-patient="${patient.id}" type="button">Ficha</button>
+            <button class="ghost-button" data-edit-patient="${patient.id}" type="button">Editar</button>
+          </div>
+        </td>
       </tr>
     `)
     .join("");
@@ -1955,6 +1964,10 @@ function renderPatients() {
       if (!can("patients:create")) return;
       openPatientForm(button.dataset.editPatient);
     });
+  });
+
+  document.querySelectorAll("[data-record-patient]").forEach((button) => {
+    button.addEventListener("click", () => openPatientRecord(button.dataset.recordPatient));
   });
 }
 
@@ -1967,6 +1980,141 @@ function ensurePatientCodes() {
     }
   });
   if (changed) saveState();
+}
+
+function openPatientRecord(patientId) {
+  const patient = patientById(patientId);
+  const patientAppointments = state.appointments
+    .filter((appointment) => appointment.patientId === patientId)
+    .sort(sortByDateTime);
+  const patientTreatments = state.treatments
+    .filter((treatment) => treatment.patientId === patientId);
+  const patientPayments = state.payments
+    .filter((payment) => payment.patientId === patientId);
+  const patientDocuments = (state.clinicalDocuments || [])
+    .filter((documentItem) => documentItem.patientId === patientId);
+  const patientDentalHistory = (state.odontogramHistory || [])
+    .filter((item) => item.patientId === patientId)
+    .slice(0, 8);
+  const paidTotal = patientPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  const treatmentTotal = patientTreatments.reduce((sum, treatment) => sum + treatment.cost, 0);
+
+  document.getElementById("patientRecordTitle").textContent = `${patient.name} · ${patient.code || ""}`;
+  document.getElementById("patientRecordMeta").textContent = `${patient.document} · ${patientAge(patient.birthdate)} · ${patient.phone}`;
+  document.getElementById("patientRecordContent").innerHTML = `
+    <div class="patient-record-grid">
+      <section class="record-block">
+        <h3>Datos personales</h3>
+        <div class="record-patient-card">
+          ${patientPhotoTemplate(patient)}
+          <div>
+            <strong>${escapeHtml(patient.name)}</strong>
+            <span>${escapeHtml(patient.email || "Sin correo")}</span>
+            <span>${escapeHtml(patient.address || "Sin dirección")}</span>
+            <span>Emergencia: ${escapeHtml(patient.emergency || "No registrada")}</span>
+          </div>
+        </div>
+      </section>
+      <section class="record-block">
+        <h3>Alertas clínicas</h3>
+        <p>Alergias: <strong>${escapeHtml(patient.allergies || "Ninguna")}</strong></p>
+        <p>Condiciones: ${escapeHtml(patient.conditions || "Sin registro")}</p>
+        <p>Medicamentos: ${escapeHtml(patient.medications || "Sin registro")}</p>
+      </section>
+      <section class="record-block">
+        <h3>Historial clínico</h3>
+        <p>${escapeHtml(patient.clinicalHistory || patient.notes || "Sin historial registrado")}</p>
+        <p>Última visita: ${formatDate(patient.lastVisit)}</p>
+      </section>
+      <section class="record-block">
+        <h3>Resumen financiero</h3>
+        <p>Tratamientos: <strong>${currency.format(treatmentTotal)}</strong></p>
+        <p>Pagado: <strong>${currency.format(paidTotal)}</strong></p>
+        <p>Balance: <strong>${currency.format(patient.balance)}</strong></p>
+      </section>
+    </div>
+    ${patientRecordSection("Citas", patientAppointments, appointmentRecordTemplate)}
+    ${patientRecordSection("Tratamientos", patientTreatments, treatmentRecordTemplate)}
+    ${patientRecordSection("Pagos y facturas", patientPayments, paymentRecordTemplate)}
+    ${patientRecordSection("Documentos clínicos", patientDocuments, documentRecordTemplate)}
+    ${patientRecordSection("Historial odontograma", patientDentalHistory, dentalHistoryRecordTemplate)}
+  `;
+  document.getElementById("patientRecordDialog").showModal();
+}
+
+function closePatientRecord() {
+  document.getElementById("patientRecordDialog").close();
+}
+
+function patientRecordSection(title, items, template) {
+  return `
+    <section class="record-block full">
+      <h3>${title}</h3>
+      <div class="clinical-list">
+        ${items.length ? items.map(template).join("") : emptyState("Sin registros.")}
+      </div>
+    </section>
+  `;
+}
+
+function appointmentRecordTemplate(appointment) {
+  return `
+    <article class="clinical-item">
+      <span class="time-chip">${formatDate(appointment.date)}</span>
+      <div>
+        <strong>${escapeHtml(appointment.time)} · ${escapeHtml(appointment.type)}</strong>
+        <p>${escapeHtml(doctorById(appointment.doctorId).name)} · ${escapeHtml(appointment.status)}</p>
+      </div>
+    </article>
+  `;
+}
+
+function treatmentRecordTemplate(treatment) {
+  return `
+    <article class="clinical-item">
+      <span class="status-pill ${treatment.progress >= 100 ? "confirmada" : "pendiente"}">${treatment.progress}%</span>
+      <div>
+        <strong>${escapeHtml(treatment.name)}</strong>
+        <p>${escapeHtml(doctorById(treatment.doctorId).name)} · ${currency.format(treatment.cost)} · ${escapeHtml(treatment.status)}</p>
+      </div>
+    </article>
+  `;
+}
+
+function paymentRecordTemplate(payment) {
+  return `
+    <article class="clinical-item">
+      <span class="amount-pill">${currency.format(payment.amount)}</span>
+      <div>
+        <strong>${escapeHtml(payment.invoiceNumber || payment.receiptNumber || "Sin número")}</strong>
+        <p>${escapeHtml(payment.concept)} · ${escapeHtml(payment.method)} · ${formatDate(payment.date)}</p>
+      </div>
+    </article>
+  `;
+}
+
+function documentRecordTemplate(documentItem) {
+  return `
+    <article class="clinical-item">
+      <span class="status-pill confirmada">${escapeHtml(documentItem.type)}</span>
+      <div>
+        <strong>${escapeHtml(documentItem.title)}</strong>
+        <p>${escapeHtml(documentItem.note)} · ${formatDate(documentItem.date)}</p>
+      </div>
+    </article>
+  `;
+}
+
+function dentalHistoryRecordTemplate(item) {
+  return `
+    <article class="clinical-item">
+      <span class="time-chip">${escapeHtml(item.tooth)}</span>
+      <div>
+        <strong>${escapeHtml(item.surface)} · ${labelStatus(item.status)}</strong>
+        <p>${formatDate(item.date)} · ${escapeHtml(userById(item.userId).name)}</p>
+      </div>
+    </article>
+  `;
 }
 
 function renderAgenda() {

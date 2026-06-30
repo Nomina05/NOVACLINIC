@@ -848,6 +848,23 @@
       </form>
     </dialog>
 
+    <dialog id="patientRecordDialog">
+      <div class="modal-card patient-record-modal">
+        <div class="modal-header">
+          <div>
+            <h2 id="patientRecordTitle">Ficha del paciente</h2>
+            <p id="patientRecordMeta">Histórico clínico, citas, tratamientos y facturación.</p>
+          </div>
+          <button class="icon-button" id="closePatientRecord" type="button" aria-label="Cerrar">Ã—</button>
+        </div>
+        <div id="patientRecordContent"></div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="printPatientRecord" type="button">Imprimir ficha</button>
+          <button class="primary-button" id="donePatientRecord" type="button">Listo</button>
+        </div>
+      </div>
+    </dialog>
+
     <dialog id="receiptDialog">
       <div class="modal-card receipt-modal">
         <div class="modal-header">
