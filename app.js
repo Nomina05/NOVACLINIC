@@ -714,6 +714,7 @@ function openPatientForm(patientId = null) {
   document.getElementById("patientNationality").value = patient?.nationality || "Dominicano";
   document.getElementById("patientDocument").value = patient?.document || "";
   document.getElementById("patientBirthdate").value = patient?.birthdate || "";
+  document.getElementById("patientIsMinor").checked = Boolean(patient?.isMinor) || isMinor(patient?.birthdate);
   document.getElementById("patientGender").value = patient?.gender || "Femenino";
   document.getElementById("patientAddress").value = patient?.address || "";
   const emergency = splitEmergencyContact(patient);
@@ -811,8 +812,9 @@ async function savePatientFromForm() {
   patient.email = value("patientEmail");
   patient.documentType = value("patientDocumentType");
   patient.nationality = value("patientNationality");
-  patient.document = value("patientDocument");
   patient.birthdate = value("patientBirthdate");
+  patient.isMinor = document.getElementById("patientIsMinor").checked;
+  patient.document = patient.isMinor ? "" : value("patientDocument");
   patient.gender = value("patientGender");
   patient.address = value("patientAddress");
   patient.emergencyName = value("patientEmergencyName");
@@ -843,15 +845,30 @@ function nextPatientCode() {
 
 function syncPatientDocumentRequirement() {
   const documentInput = document.getElementById("patientDocument");
+  const documentType = document.getElementById("patientDocumentType");
+  const minorInput = document.getElementById("patientIsMinor");
   const birthdate = value("patientBirthdate");
-  const minor = isMinor(birthdate);
+  const minor = minorInput.checked || isMinor(birthdate);
+  minorInput.checked = minor;
   documentInput.required = !minor;
+  documentInput.disabled = minor;
+  documentType.disabled = minor;
+  if (minor) documentInput.value = "";
   documentInput.placeholder = minor ? "Opcional si es menor de edad" : "Requerido para mayor de edad";
 }
 
 function isMinor(birthdate) {
   const age = patientAgeNumber(birthdate);
   return age !== null && age < 18;
+}
+
+function patientIsMinor(patient) {
+  return Boolean(patient?.isMinor) || isMinor(patient?.birthdate);
+}
+
+function patientDocumentLabel(patient) {
+  if (patientIsMinor(patient)) return "Menor de edad";
+  return patient?.document || "No registrado";
 }
 
 function normalizeDocumentType(documentType) {
@@ -933,6 +950,7 @@ function bindForms() {
     updatePatientPhotoPreview(capturedPatientPhoto);
   });
   document.getElementById("patientBirthdate").addEventListener("change", syncPatientDocumentRequirement);
+  document.getElementById("patientIsMinor").addEventListener("change", syncPatientDocumentRequirement);
   dialog.addEventListener("close", () => {
     editingPatientId = null;
     stopPatientCamera();
@@ -1987,7 +2005,7 @@ function renderPatients() {
             ${patientPhotoTemplate(patient)}
             <div class="patient-name">
               <strong>${escapeHtml(patient.name)}</strong>
-              <small>${escapeHtml(patient.code || "")} · ${escapeHtml(patient.documentType || "Documento")}: ${escapeHtml(patient.document || (isMinor(patient.birthdate) ? "Menor de edad" : "No registrado"))}</small>
+              <small>${escapeHtml(patient.code || "")} · ${escapeHtml(patient.documentType || "Documento")}: ${escapeHtml(patientDocumentLabel(patient))}</small>
             </div>
           </div>
         </td>
@@ -2051,6 +2069,15 @@ function ensurePatientCodes() {
       patient.nationality = "Dominicano";
       changed = true;
     }
+    const minor = patientIsMinor(patient);
+    if (minor !== Boolean(patient.isMinor)) {
+      patient.isMinor = minor;
+      changed = true;
+    }
+    if (patient.isMinor && patient.document) {
+      patient.document = "";
+      changed = true;
+    }
     if (patient.emergency && !patient.emergencyName && !patient.emergencyPhone) {
       const emergency = splitEmergencyContact(patient);
       patient.emergencyName = emergency.name;
@@ -2081,7 +2108,7 @@ function openPatientRecord(patientId) {
   const emergency = splitEmergencyContact(patient);
 
   document.getElementById("patientRecordTitle").textContent = `${patient.name} · ${patient.code || ""}`;
-  document.getElementById("patientRecordMeta").textContent = `${patient.documentType || "Documento"}: ${patient.document || (isMinor(patient.birthdate) ? "Menor de edad" : "No registrado")} · ${patientAge(patient.birthdate)} · ${patient.phone}`;
+  document.getElementById("patientRecordMeta").textContent = `${patient.documentType || "Documento"}: ${patientDocumentLabel(patient)} · ${patientAge(patient.birthdate)} · ${patient.phone}`;
   document.getElementById("patientRecordContent").innerHTML = `
     <div class="patient-record-grid">
       <section class="record-block">
@@ -2329,7 +2356,7 @@ function renderOdontogram() {
       ${patientPhotoTemplate(patient)}
       <div>
         <strong>${escapeHtml(patient.name)}</strong>
-        <span>${escapeHtml(patient.document)} · ${patientAge(patient.birthdate)}</span>
+        <span>${escapeHtml(patientDocumentLabel(patient))} · ${patientAge(patient.birthdate)}</span>
         <span>Alergias: ${escapeHtml(patient.allergies || "Ninguna")}</span>
         <span>Condiciones: ${escapeHtml(patient.conditions || "Sin registro")}</span>
       </div>

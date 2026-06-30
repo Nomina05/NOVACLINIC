@@ -648,6 +648,19 @@ p {
   height: 18px;
 }
 
+.checkbox-field {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--ink) !important;
+}
+
+.checkbox-field input {
+  width: 18px !important;
+  height: 18px !important;
+}
+
 .payroll-panel {
   margin-top: 18px;
 }
