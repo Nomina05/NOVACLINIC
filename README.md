@@ -30,7 +30,9 @@ Abre `index.html` en el navegador. Los datos se guardan localmente en el navegad
 - Menu principal solo con paneles; los modulos se muestran agrupados dentro de cada panel.
 - Matriz de permisos administrada por el usuario Administrador desde el panel de Usuarios.
 - Panel de Usuarios simplificado con busqueda, lista compacta, editor de permisos y boton Nuevo usuario.
-- Registro de pacientes con datos personales, alergias, historial clinico, fotografia por camara y balance.
+- Registro de pacientes con datos personales, tipo de documento, nacionalidad, alergias, historial clinico, fotografia por camara y balance.
+- Contacto de emergencia separado por nombre, telefono y parentesco.
+- Documento del paciente configurable como cedula, pasaporte o licencia medica; en menores de edad el documento no es obligatorio.
 - Edicion de pacientes con codigo visible separado del UUID interno.
 - Ficha historica del paciente con datos, alertas, citas, tratamientos, pagos, documentos y odontograma.
 - Agenda odontologica con calendario mensual, recordatorios, duracion y estado de citas.

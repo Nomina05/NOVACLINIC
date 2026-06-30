@@ -710,11 +710,16 @@ function openPatientForm(patientId = null) {
   document.getElementById("patientName").value = patient?.name || "";
   document.getElementById("patientPhone").value = patient?.phone || "";
   document.getElementById("patientEmail").value = patient?.email || "";
+  document.getElementById("patientDocumentType").value = patient?.documentType || "Cédula";
+  document.getElementById("patientNationality").value = patient?.nationality || "Dominicano";
   document.getElementById("patientDocument").value = patient?.document || "";
   document.getElementById("patientBirthdate").value = patient?.birthdate || "";
   document.getElementById("patientGender").value = patient?.gender || "Femenino";
   document.getElementById("patientAddress").value = patient?.address || "";
-  document.getElementById("patientEmergency").value = patient?.emergency || "";
+  const emergency = splitEmergencyContact(patient);
+  document.getElementById("patientEmergencyName").value = emergency.name;
+  document.getElementById("patientEmergencyPhone").value = emergency.phone;
+  document.getElementById("patientEmergencyRelation").value = emergency.relation;
   document.getElementById("patientBloodType").value = patient?.bloodType || "";
   document.getElementById("patientInsurance").value = patient?.insurance || "";
   document.getElementById("patientAllergies").value = patient?.allergies || "";
@@ -723,6 +728,7 @@ function openPatientForm(patientId = null) {
   document.getElementById("patientClinicalHistory").value = patient?.clinicalHistory || "";
   document.getElementById("patientLastVisit").value = patient?.lastVisit || todayIso;
   document.getElementById("patientNotes").value = patient?.notes || "";
+  syncPatientDocumentRequirement();
   updatePatientPhotoPreview(capturedPatientPhoto);
   document.getElementById("patientDialog").showModal();
   startPatientCamera();
@@ -803,11 +809,16 @@ async function savePatientFromForm() {
   patient.name = value("patientName");
   patient.phone = value("patientPhone");
   patient.email = value("patientEmail");
+  patient.documentType = value("patientDocumentType");
+  patient.nationality = value("patientNationality");
   patient.document = value("patientDocument");
   patient.birthdate = value("patientBirthdate");
   patient.gender = value("patientGender");
   patient.address = value("patientAddress");
-  patient.emergency = value("patientEmergency");
+  patient.emergencyName = value("patientEmergencyName");
+  patient.emergencyPhone = value("patientEmergencyPhone");
+  patient.emergencyRelation = value("patientEmergencyRelation");
+  patient.emergency = emergencyContactText(patient);
   patient.bloodType = value("patientBloodType");
   patient.insurance = value("patientInsurance") || "Sin seguro";
   patient.allergies = value("patientAllergies") || "Ninguna";
@@ -828,6 +839,46 @@ function nextPatientCode() {
     return match ? Math.max(highest, Number(match[1])) : highest;
   }, 0);
   return `P${String(max + 1).padStart(3, "0")}`;
+}
+
+function syncPatientDocumentRequirement() {
+  const documentInput = document.getElementById("patientDocument");
+  const birthdate = value("patientBirthdate");
+  const minor = isMinor(birthdate);
+  documentInput.required = !minor;
+  documentInput.placeholder = minor ? "Opcional si es menor de edad" : "Requerido para mayor de edad";
+}
+
+function isMinor(birthdate) {
+  const age = patientAgeNumber(birthdate);
+  return age !== null && age < 18;
+}
+
+function splitEmergencyContact(patient) {
+  if (patient?.emergencyName || patient?.emergencyPhone || patient?.emergencyRelation) {
+    return {
+      name: patient.emergencyName || "",
+      phone: patient.emergencyPhone || "",
+      relation: patient.emergencyRelation || ""
+    };
+  }
+
+  const parts = String(patient?.emergency || "").split("·").map((part) => part.trim());
+  return {
+    name: parts[0] || "",
+    phone: parts[1] || "",
+    relation: parts[2] || ""
+  };
+}
+
+function emergencyContactText(patient) {
+  return [
+    patient.emergencyName || patient.name,
+    patient.emergencyPhone || patient.phone,
+    patient.emergencyRelation || patient.relation
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function openAppointmentForm(appointmentId) {
@@ -876,6 +927,7 @@ function bindForms() {
     capturedPatientPhoto = await readPatientPhoto();
     updatePatientPhotoPreview(capturedPatientPhoto);
   });
+  document.getElementById("patientBirthdate").addEventListener("change", syncPatientDocumentRequirement);
   dialog.addEventListener("close", () => {
     editingPatientId = null;
     stopPatientCamera();
@@ -1906,7 +1958,12 @@ function renderPatients() {
       patient.code,
       patient.phone,
       patient.email,
+      patient.documentType,
+      patient.nationality,
       patient.document,
+      patient.emergencyName,
+      patient.emergencyPhone,
+      patient.emergencyRelation,
       patient.insurance,
       patient.allergies,
       patient.conditions,
@@ -1925,16 +1982,16 @@ function renderPatients() {
             ${patientPhotoTemplate(patient)}
             <div class="patient-name">
               <strong>${escapeHtml(patient.name)}</strong>
-              <small>${escapeHtml(patient.code || "")} · ${escapeHtml(patient.document)}</small>
+              <small>${escapeHtml(patient.code || "")} · ${escapeHtml(patient.documentType || "Documento")}: ${escapeHtml(patient.document || (isMinor(patient.birthdate) ? "Menor de edad" : "No registrado"))}</small>
             </div>
           </div>
         </td>
         <td>
           <div class="patient-detail">
             <span>${escapeHtml(patient.phone)}</span>
-            <small>${escapeHtml(patient.email || "Sin correo")} · ${patientAge(patient.birthdate)} · ${escapeHtml(patient.gender || "No especificado")}</small>
+            <small>${escapeHtml(patient.email || "Sin correo")} · ${patientAge(patient.birthdate)} · ${escapeHtml(patient.gender || "No especificado")} · ${escapeHtml(patient.nationality || "Dominicano")}</small>
             <small>${escapeHtml(patient.address || "Sin dirección")}</small>
-            <small>Emergencia: ${escapeHtml(patient.emergency || "No registrada")}</small>
+            <small>Emergencia: ${escapeHtml(emergencyContactText(splitEmergencyContact(patient)) || "No registrada")}</small>
           </div>
         </td>
         <td>${escapeHtml(patient.insurance)}</td>
@@ -1978,6 +2035,21 @@ function ensurePatientCodes() {
       patient.code = nextPatientCode();
       changed = true;
     }
+    if (!patient.documentType) {
+      patient.documentType = "Cédula";
+      changed = true;
+    }
+    if (!patient.nationality) {
+      patient.nationality = "Dominicano";
+      changed = true;
+    }
+    if (patient.emergency && !patient.emergencyName && !patient.emergencyPhone) {
+      const emergency = splitEmergencyContact(patient);
+      patient.emergencyName = emergency.name;
+      patient.emergencyPhone = emergency.phone;
+      patient.emergencyRelation = emergency.relation;
+      changed = true;
+    }
   });
   if (changed) saveState();
 }
@@ -1998,9 +2070,10 @@ function openPatientRecord(patientId) {
     .slice(0, 8);
   const paidTotal = patientPayments.reduce((sum, payment) => sum + payment.amount, 0);
   const treatmentTotal = patientTreatments.reduce((sum, treatment) => sum + treatment.cost, 0);
+  const emergency = splitEmergencyContact(patient);
 
   document.getElementById("patientRecordTitle").textContent = `${patient.name} · ${patient.code || ""}`;
-  document.getElementById("patientRecordMeta").textContent = `${patient.document} · ${patientAge(patient.birthdate)} · ${patient.phone}`;
+  document.getElementById("patientRecordMeta").textContent = `${patient.documentType || "Documento"}: ${patient.document || (isMinor(patient.birthdate) ? "Menor de edad" : "No registrado")} · ${patientAge(patient.birthdate)} · ${patient.phone}`;
   document.getElementById("patientRecordContent").innerHTML = `
     <div class="patient-record-grid">
       <section class="record-block">
@@ -2010,8 +2083,9 @@ function openPatientRecord(patientId) {
           <div>
             <strong>${escapeHtml(patient.name)}</strong>
             <span>${escapeHtml(patient.email || "Sin correo")}</span>
+            <span>${escapeHtml(patient.nationality || "Dominicano")} · ${escapeHtml(patient.gender || "No especificado")}</span>
             <span>${escapeHtml(patient.address || "Sin dirección")}</span>
-            <span>Emergencia: ${escapeHtml(patient.emergency || "No registrada")}</span>
+            <span>Emergencia: ${escapeHtml(emergency.name || "No registrada")} · ${escapeHtml(emergency.phone || "Sin teléfono")} · ${escapeHtml(emergency.relation || "Sin parentesco")}</span>
           </div>
         </div>
       </section>
@@ -2796,6 +2870,18 @@ function patientAge(birthdate) {
     age -= 1;
   }
   return `${age} años`;
+}
+
+function patientAgeNumber(birthdate) {
+  if (!birthdate) return null;
+  const birth = new Date(`${birthdate}T12:00:00`);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDelta = now.getMonth() - birth.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
 }
 
 function doctorById(id) {

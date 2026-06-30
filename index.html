@@ -821,7 +821,20 @@
           <label>Nombre completo<input id="patientName" required></label>
           <label>Teléfono<input id="patientPhone" required></label>
           <label>Correo electrónico<input id="patientEmail" type="email" placeholder="paciente@correo.com"></label>
-          <label>Documento<input id="patientDocument" required></label>
+          <label>Tipo de documento
+            <select id="patientDocumentType">
+              <option>Cédula</option>
+              <option>Pasaporte</option>
+              <option>Licencia médica</option>
+            </select>
+          </label>
+          <label>Nacionalidad
+            <select id="patientNationality">
+              <option>Dominicano</option>
+              <option>Extranjero</option>
+            </select>
+          </label>
+          <label>Documento<input id="patientDocument" placeholder="Opcional si es menor de edad"></label>
           <label>Fecha de nacimiento<input id="patientBirthdate" type="date"></label>
           <label>Sexo
             <select id="patientGender">
@@ -831,7 +844,9 @@
             </select>
           </label>
           <label class="full">Dirección<input id="patientAddress" placeholder="Calle, sector, ciudad"></label>
-          <label>Contacto de emergencia<input id="patientEmergency" placeholder="Nombre y teléfono"></label>
+          <label>Emergencia: nombre<input id="patientEmergencyName" placeholder="Nombre completo"></label>
+          <label>Emergencia: teléfono<input id="patientEmergencyPhone" placeholder="Teléfono"></label>
+          <label>Emergencia: parentesco<input id="patientEmergencyRelation" placeholder="Madre, padre, tutor..."></label>
           <label>Tipo de sangre<input id="patientBloodType" placeholder="O+, A-, etc."></label>
           <label>Seguro<input id="patientInsurance" placeholder="Privado, Senasa, ARS..."></label>
           <label>Alergias<input id="patientAllergies" placeholder="Medicamentos, alimentos, látex..."></label>
