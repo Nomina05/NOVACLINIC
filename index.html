@@ -600,6 +600,7 @@
               <input id="inventoryName" placeholder="Material" required>
               <input id="inventoryStock" type="number" min="0" placeholder="Stock" required>
               <input id="inventoryMin" type="number" min="0" placeholder="Mínimo" required>
+              <input id="inventoryPrice" type="number" min="0" step="100" placeholder="Precio venta">
               <input id="inventoryExpiry" type="date">
               <input id="inventoryProvider" placeholder="Proveedor">
               <button class="primary-button" type="submit">Agregar</button>
@@ -613,6 +614,7 @@
                   <th>Material</th>
                   <th>Stock</th>
                   <th>Mínimo</th>
+                  <th>Precio</th>
                   <th>Vencimiento</th>
                   <th>Proveedor</th>
                   <th>Estado</th>
@@ -730,6 +732,12 @@
             </div>
             <form class="inline-form" id="paymentForm">
               <select id="paymentPatient" required></select>
+              <select id="paymentType">
+                <option>Servicio</option>
+                <option>Producto</option>
+              </select>
+              <select id="paymentProduct" disabled></select>
+              <input id="paymentQuantity" type="number" min="1" step="1" value="1" placeholder="Cantidad" disabled>
               <input id="paymentConcept" placeholder="Concepto del cobro" required>
               <input id="paymentAmount" type="number" min="0" step="100" placeholder="Monto" required>
               <input id="paymentDiscount" type="number" min="0" step="100" placeholder="Descuento">
@@ -774,9 +782,14 @@
           <section class="panel payroll-section">
             <div class="panel-header">
               <div>
-                <h2>Cierre de caja diario</h2>
+                <h2>Apertura y cierre de caja</h2>
                 <p>Totales por mÃ©todo de pago y cuadre del dÃ­a.</p>
               </div>
+              <form class="inline-form" id="cashOpeningForm">
+                <input id="cashOpeningAmount" type="number" min="0" step="100" placeholder="Monto inicial" required>
+                <input id="cashOpeningNote" placeholder="Observación">
+                <button class="primary-button" type="submit">Abrir caja</button>
+              </form>
               <button class="primary-button" id="closeCashRegister" type="button">Cerrar caja de hoy</button>
             </div>
             <div class="panel-card-grid" id="cashCloseSummary"></div>

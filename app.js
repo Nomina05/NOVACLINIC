@@ -214,6 +214,7 @@ const seedState = {
   settings: {},
   payroll: [],
   payrollNovelties: [],
+  cashOpenings: [],
   cashClosings: [],
   odontogramHistory: [],
   odontograms: {}
@@ -342,9 +343,9 @@ seedState.clinicalDocuments = [
 ];
 
 seedState.inventory = [
-  { id: makeId(), name: "Resina compuesta A2", stock: 8, min: 5, expiry: "2026-12-30", provider: "Dental Supply RD" },
-  { id: makeId(), name: "Anestesia lidocaína", stock: 3, min: 6, expiry: "2026-08-15", provider: "Medident" },
-  { id: makeId(), name: "Guantes nitrilo", stock: 24, min: 10, expiry: "2027-01-01", provider: "Nova Insumos" }
+  { id: makeId(), name: "Resina compuesta A2", stock: 8, min: 5, price: 950, expiry: "2026-12-30", provider: "Dental Supply RD" },
+  { id: makeId(), name: "Anestesia lidocaína", stock: 3, min: 6, price: 450, expiry: "2026-08-15", provider: "Medident" },
+  { id: makeId(), name: "Guantes nitrilo", stock: 24, min: 10, price: 350, expiry: "2027-01-01", provider: "Nova Insumos" }
 ];
 
 seedState.settings = {
@@ -450,10 +451,19 @@ function loadState() {
   if (!saved) return cloneSeed();
 
   try {
-    return JSON.parse(saved);
+    return normalizeState(JSON.parse(saved));
   } catch {
     return cloneSeed();
   }
+}
+
+function normalizeState(loadedState) {
+  const next = { ...cloneSeed(), ...loadedState };
+  next.inventory = (next.inventory || []).map((item) => ({ price: 0, ...item }));
+  next.cashOpenings ||= [];
+  next.cashClosings ||= [];
+  next.payments ||= [];
+  return next;
 }
 
 function saveState() {
@@ -949,6 +959,9 @@ function bindForms() {
     capturedPatientPhoto = await readPatientPhoto();
     updatePatientPhotoPreview(capturedPatientPhoto);
   });
+  document.getElementById("paymentType").addEventListener("change", syncPaymentProductFields);
+  document.getElementById("paymentProduct").addEventListener("change", syncSelectedProductSale);
+  document.getElementById("paymentQuantity").addEventListener("input", syncSelectedProductSale);
   document.getElementById("patientBirthdate").addEventListener("change", syncPatientDocumentRequirement);
   document.getElementById("patientIsMinor").addEventListener("change", syncPatientDocumentRequirement);
   dialog.addEventListener("close", () => {
@@ -1025,6 +1038,18 @@ function bindForms() {
     event.preventDefault();
     if (!can("payments:create")) return;
     const patient = patientById(value("paymentPatient"));
+    const paymentType = value("paymentType");
+    const productId = value("paymentProduct");
+    const quantity = Math.max(1, Number(value("paymentQuantity")) || 1);
+    const product = paymentType === "Producto" ? state.inventory.find((item) => item.id === productId) : null;
+    if (paymentType === "Producto" && !product) {
+      alert("Seleccione un producto para facturar.");
+      return;
+    }
+    if (product && product.stock < quantity) {
+      alert(`Stock insuficiente. Disponible: ${product.stock}.`);
+      return;
+    }
     const amount = Number(value("paymentAmount"));
     const discount = Number(value("paymentDiscount")) || 0;
     const receiptNumber = nextReceiptNumber();
@@ -1043,9 +1068,38 @@ function bindForms() {
       invoiceNumber,
       invoiceStatus: value("paymentInvoiceStatus"),
       date: todayIso,
-      concept: value("paymentConcept")
+      concept: value("paymentConcept"),
+      type: paymentType,
+      productId: product?.id || "",
+      productName: product?.name || "",
+      quantity: product ? quantity : 0
     });
+    if (product) {
+      product.stock = Math.max(0, product.stock - quantity);
+    }
     patient.balance = Math.max(0, patient.balance - amount - discount);
+    event.target.reset();
+    syncPaymentProductFields();
+    persistAndRender();
+  });
+
+  document.getElementById("cashOpeningForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!can("payments:create")) return;
+    state.cashOpenings ||= [];
+    if (currentCashOpening()) {
+      alert("Ya existe una caja abierta para hoy.");
+      return;
+    }
+    state.cashOpenings.unshift({
+      id: makeId(),
+      date: todayIso,
+      openingAmount: Number(value("cashOpeningAmount")) || 0,
+      note: value("cashOpeningNote"),
+      openedBy: currentUser?.id || "sin-usuario",
+      openedAt: new Date().toISOString(),
+      status: "Abierta"
+    });
     event.target.reset();
     persistAndRender();
   });
@@ -1053,16 +1107,28 @@ function bindForms() {
   document.getElementById("closeCashRegister").addEventListener("click", () => {
     if (!can("payments:create")) return;
     state.cashClosings ||= [];
+    const opening = currentCashOpening();
+    if (!opening) {
+      alert("Debe abrir la caja antes de cerrarla.");
+      return;
+    }
     const totals = paymentMethodTotals(todayIso);
     const total = Object.values(totals).reduce((sum, amountValue) => sum + amountValue, 0);
     state.cashClosings.unshift({
       id: makeId(),
       date: todayIso,
+      openingId: opening?.id || "",
+      openingAmount: opening?.openingAmount || 0,
       totals,
       total,
+      expectedTotal: total + (opening?.openingAmount || 0),
       closedBy: currentUser?.id || "sin-usuario",
       closedAt: new Date().toISOString()
     });
+    if (opening) {
+      opening.status = "Cerrada";
+      opening.closedAt = new Date().toISOString();
+    }
     persistAndRender();
   });
 
@@ -1174,6 +1240,7 @@ function bindForms() {
       name: value("inventoryName"),
       stock: Number(value("inventoryStock")) || 0,
       min: Number(value("inventoryMin")) || 0,
+      price: Number(value("inventoryPrice")) || 0,
       expiry: value("inventoryExpiry"),
       provider: value("inventoryProvider") || "Sin proveedor"
     });
@@ -1256,6 +1323,7 @@ function applyPermissions() {
   toggleAction("appointmentForm", "appointments:create");
   toggleAction("treatmentForm", "treatments:create");
   toggleAction("paymentForm", "payments:create");
+  toggleAction("cashOpeningForm", "payments:create");
   toggleAction("closeCashRegister", "payments:create");
   toggleAction("toothStatus", "odontogram:edit");
   toggleAction("toothSurface", "odontogram:edit");
@@ -1376,6 +1444,21 @@ function populateSelects() {
     }
     select.disabled = currentUser?.role === "Doctor";
   });
+
+  const paymentProduct = document.getElementById("paymentProduct");
+  if (paymentProduct) {
+    const current = paymentProduct.value;
+    state.inventory ||= [];
+    paymentProduct.innerHTML = state.inventory.length
+      ? state.inventory
+          .map((item) => `<option value="${item.id}">${escapeHtml(item.name)} · ${currency.format(item.price || 0)} · Stock ${item.stock}</option>`)
+          .join("")
+      : `<option value="">Sin productos disponibles</option>`;
+    if (current && state.inventory.some((item) => item.id === current)) {
+      paymentProduct.value = current;
+    }
+    syncPaymentProductFields();
+  }
 
   const payrollNoveltyUser = document.getElementById("payrollNoveltyUser");
   if (payrollNoveltyUser) {
@@ -2613,6 +2696,9 @@ function renderBilling() {
   const discountsToday = state.payments
     .filter((payment) => payment.date === todayIso)
     .reduce((sum, payment) => sum + (Number(payment.discount) || 0), 0);
+  const productsToday = state.payments
+    .filter((payment) => payment.date === todayIso && payment.type === "Producto")
+    .reduce((sum, payment) => sum + (Number(payment.quantity) || 1), 0);
   const pendingTotal = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
   const methodTotals = state.payments.reduce((summary, payment) => {
     summary[payment.method] = (summary[payment.method] || 0) + payment.amount;
@@ -2622,6 +2708,7 @@ function renderBilling() {
   document.getElementById("billingSummary").innerHTML = [
     ["Cobrado hoy", currency.format(collectedToday)],
     ["Descuentos hoy", currency.format(discountsToday)],
+    ["Productos facturados", productsToday],
     ["Balance pendiente", currency.format(pendingTotal)],
     ["Facturas/recibos", state.payments.length],
     ["Método principal", topPaymentMethod(methodTotals)]
@@ -2639,7 +2726,7 @@ function renderBilling() {
             <span class="amount-pill">${currency.format(payment.amount)}</span>
             <div>
               <strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} · ${escapeHtml(payment.receiptNumber || "REC-S/N")} · ${escapeHtml(patientById(payment.patientId).name)}</strong>
-              <p>${escapeHtml(payment.concept)} · ${escapeHtml(payment.method)} · ${escapeHtml(payment.invoiceStatus || "Pagada")}${payment.reference ? ` · Ref. ${escapeHtml(payment.reference)}` : ""} · Registrado por ${escapeHtml(userById(payment.createdBy || payment.doctorId).name)} · ${formatDate(payment.date)}</p>
+              <p>${escapeHtml(payment.concept)}${payment.type === "Producto" ? ` · Cant. ${payment.quantity || 1}` : ""} · ${escapeHtml(payment.method)} · ${escapeHtml(payment.invoiceStatus || "Pagada")}${payment.reference ? ` · Ref. ${escapeHtml(payment.reference)}` : ""} · Registrado por ${escapeHtml(userById(payment.createdBy || payment.doctorId).name)} · ${formatDate(payment.date)}</p>
               ${(payment.discount || 0) > 0 ? `<p>Descuento: ${currency.format(payment.discount)} · ${escapeHtml(payment.discountReason || "Sin motivo")}</p>` : ""}
             </div>
             <button class="ghost-button" data-receipt="${payment.id}">Recibo</button>
@@ -2673,8 +2760,14 @@ function renderBilling() {
 function renderCashClose() {
   const totals = paymentMethodTotals(todayIso);
   const total = Object.values(totals).reduce((sum, amountValue) => sum + amountValue, 0);
+  const opening = currentCashOpening();
+  const lastClosing = (state.cashClosings || []).find((closing) => closing.date === todayIso);
+  const openingAmount = opening?.openingAmount || lastClosing?.openingAmount || 0;
   document.getElementById("cashCloseSummary").innerHTML = [
-    ["Caja de hoy", currency.format(total)],
+    ["Estado", opening ? "Caja abierta" : lastClosing ? "Caja cerrada" : "Sin apertura"],
+    ["Monto inicial", currency.format(openingAmount)],
+    ["Ventas de hoy", currency.format(total)],
+    ["Total esperado", currency.format(openingAmount + total)],
     ["Efectivo", currency.format(totals.Efectivo || 0)],
     ["Tarjeta", currency.format(totals.Tarjeta || 0)],
     ["Transferencia", currency.format(totals.Transferencia || 0)],
@@ -2684,10 +2777,10 @@ function renderCashClose() {
   document.getElementById("cashCloseHistory").innerHTML = (state.cashClosings || []).length
     ? state.cashClosings.slice(0, 5).map((closing) => `
       <article class="ledger-item">
-        <span class="amount-pill">${currency.format(closing.total)}</span>
+        <span class="amount-pill">${currency.format(closing.expectedTotal || closing.total)}</span>
         <div>
           <strong>Cierre ${formatDate(closing.date)}</strong>
-          <p>Usuario: ${escapeHtml(userById(closing.closedBy).name)} · Efectivo ${currency.format(closing.totals.Efectivo || 0)} · Tarjeta ${currency.format(closing.totals.Tarjeta || 0)} · Transferencia ${currency.format(closing.totals.Transferencia || 0)}</p>
+          <p>Apertura ${currency.format(closing.openingAmount || 0)} · Ventas ${currency.format(closing.total)} · Usuario: ${escapeHtml(userById(closing.closedBy).name)} · Efectivo ${currency.format(closing.totals.Efectivo || 0)} · Tarjeta ${currency.format(closing.totals.Tarjeta || 0)} · Transferencia ${currency.format(closing.totals.Transferencia || 0)}</p>
         </div>
       </article>
     `).join("")
@@ -2715,6 +2808,7 @@ function renderInventory() {
         <td><strong>${escapeHtml(item.name)}</strong></td>
         <td>${item.stock}</td>
         <td>${item.min}</td>
+        <td>${currency.format(item.price || 0)}</td>
         <td>${item.expiry ? formatDate(item.expiry) : "Sin fecha"}</td>
         <td>${escapeHtml(item.provider || "Sin proveedor")}</td>
         <td><span class="status-pill ${isLow ? "cancelada" : "confirmada"}">${status}</span></td>
@@ -2781,6 +2875,31 @@ function nextInvoiceNumber() {
   return `FAC-${todayIso.replaceAll("-", "")}-${next}`;
 }
 
+function syncPaymentProductFields() {
+  const isProduct = value("paymentType") === "Producto";
+  const productSelect = document.getElementById("paymentProduct");
+  const quantityInput = document.getElementById("paymentQuantity");
+  productSelect.disabled = !isProduct;
+  quantityInput.disabled = !isProduct;
+  if (isProduct) {
+    syncSelectedProductSale();
+  }
+}
+
+function syncSelectedProductSale() {
+  if (value("paymentType") !== "Producto") return;
+  const product = state.inventory.find((item) => item.id === value("paymentProduct"));
+  const quantity = Math.max(1, Number(value("paymentQuantity")) || 1);
+  if (!product) return;
+  document.getElementById("paymentConcept").value = `Producto: ${product.name}`;
+  document.getElementById("paymentAmount").value = (Number(product.price) || 0) * quantity;
+}
+
+function currentCashOpening() {
+  state.cashOpenings ||= [];
+  return state.cashOpenings.find((opening) => opening.date === todayIso && opening.status === "Abierta");
+}
+
 function paymentMethodTotals(date = null) {
   return state.payments
     .filter((payment) => !date || payment.date === date)
@@ -2814,7 +2933,9 @@ function openReceipt(paymentId) {
       <div class="receipt-row"><span>Recibo</span><strong>${escapeHtml(payment.receiptNumber || "REC-S/N")}</strong></div>
       <div class="receipt-row"><span>Fecha</span><strong>${formatDate(payment.date)}</strong></div>
       <div class="receipt-row"><span>Paciente</span><strong>${escapeHtml(patient.name)}</strong></div>
+      <div class="receipt-row"><span>Tipo</span><strong>${escapeHtml(payment.type || "Servicio")}</strong></div>
       <div class="receipt-row"><span>Concepto</span><strong>${escapeHtml(payment.concept)}</strong></div>
+      ${payment.type === "Producto" ? `<div class="receipt-row"><span>Producto</span><strong>${escapeHtml(payment.productName || payment.concept)} · Cant. ${payment.quantity || 1}</strong></div>` : ""}
       <div class="receipt-row"><span>Estado factura</span><strong>${escapeHtml(payment.invoiceStatus || "Pagada")}</strong></div>
       <div class="receipt-row"><span>Método</span><strong>${escapeHtml(payment.method)}</strong></div>
       <div class="receipt-row"><span>Referencia</span><strong>${escapeHtml(payment.reference || "No aplica")}</strong></div>
