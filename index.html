@@ -177,9 +177,53 @@
                 <p>Personal administrativo por salario fijo y doctores por comisión de puntos.</p>
               </div>
               <button class="ghost-button" id="markPayrollPaid" type="button">Marcar nómina pagada</button>
+              <button class="primary-button" id="processPayrollMonth" type="button">Procesar nómina del mes</button>
             </div>
             <div class="panel-card-grid" id="payrollSummary"></div>
-            <div class="table-panel commission-table">
+            <section class="payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>Novedades de nómina</h3>
+                  <p>Registra ingresos, descuentos, ausencias, avances y ajustes antes de procesar.</p>
+                </div>
+              </div>
+              <form class="inline-form" id="payrollNoveltyForm">
+                <select id="payrollNoveltyUser" required></select>
+                <select id="payrollNoveltyType" required>
+                  <option value="Ingreso">Ingreso adicional</option>
+                  <option value="Descuento">Descuento</option>
+                  <option value="Ausencia">Ausencia</option>
+                  <option value="Avance">Avance</option>
+                  <option value="Ajuste">Ajuste</option>
+                </select>
+                <input id="payrollNoveltyAmount" type="number" min="0" step="100" placeholder="Monto" required>
+                <input id="payrollNoveltyNote" placeholder="Detalle de la novedad" required>
+                <button class="primary-button" type="submit">Aplicar novedad</button>
+              </form>
+              <div class="table-panel">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Empleado</th>
+                      <th>Tipo</th>
+                      <th>Monto</th>
+                      <th>Detalle</th>
+                      <th>Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody id="payrollNoveltyTable"></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="payroll-section doctor-payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>Nómina doctores</h3>
+                  <p>Comisiones por puntos de seguros y procedimientos completados.</p>
+                </div>
+              </div>
+              <div class="panel-card-grid compact-payroll-summary" id="doctorPayrollSummary"></div>
+              <div class="table-panel commission-table">
               <table>
                 <thead>
                   <tr>
@@ -190,23 +234,48 @@
                 </thead>
                 <tbody id="procedurePointTable"></tbody>
               </table>
-            </div>
-            <div class="table-panel">
+              </div>
+              <div class="table-panel">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Doctor</th>
+                      <th>Especialidad</th>
+                      <th>Puntos</th>
+                      <th>Procedimientos</th>
+                      <th>Comisión</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="doctorPayrollTable"></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="payroll-section admin-payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>Nómina administrativa</h3>
+                  <p>Personal con salario fijo, bonos y deducciones.</p>
+                </div>
+              </div>
+              <div class="panel-card-grid compact-payroll-summary" id="adminPayrollSummary"></div>
+              <div class="table-panel">
               <table>
                 <thead>
                   <tr>
                     <th>Empleado</th>
                     <th>Rol</th>
-                    <th>Base / Puntos</th>
-                    <th>Bono / Comisión</th>
+                    <th>Salario base</th>
+                    <th>Bonos</th>
                     <th>Deducciones</th>
                     <th>Neto</th>
                     <th>Estado</th>
                   </tr>
                 </thead>
-                <tbody id="payrollTable"></tbody>
+                <tbody id="adminPayrollTable"></tbody>
               </table>
-            </div>
+              </div>
+            </section>
           </section>
         </section>
 
@@ -310,6 +379,7 @@
                   <th>Historial clínico</th>
                   <th>Balance</th>
                   <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="patientTable"></tbody>
@@ -342,7 +412,7 @@
                 <option value="24 horas antes">24 horas antes</option>
                 <option value="48 horas antes">48 horas antes</option>
               </select>
-              <button class="primary-button" type="submit">Agendar</button>
+              <button class="primary-button" id="saveAppointmentButton" type="submit">Agendar</button>
             </form>
           </div>
           <div class="agenda-tools">
@@ -515,6 +585,7 @@
                 </div>
               </div>
               <div class="status-summary" id="toothSummary"></div>
+              <div class="clinical-list odontogram-history" id="odontogramHistory"></div>
             </section>
           </div>
         </section>
@@ -701,8 +772,8 @@
       <form method="dialog" class="modal-card" id="patientForm">
         <div class="modal-header">
           <div>
-            <h2>Nuevo paciente</h2>
-            <p>Completa el expediente inicial.</p>
+            <h2 id="patientDialogTitle">Nuevo paciente</h2>
+            <p id="patientDialogDescription">Completa el expediente inicial.</p>
           </div>
           <button class="icon-button" value="cancel" aria-label="Cerrar">×</button>
         </div>
@@ -737,7 +808,7 @@
         </div>
         <div class="modal-actions">
           <button class="ghost-button" value="cancel" type="button" id="cancelPatient">Cancelar</button>
-          <button class="primary-button" value="default" type="submit">Guardar paciente</button>
+          <button class="primary-button" value="default" type="submit" id="savePatientButton">Guardar paciente</button>
         </div>
       </form>
     </dialog>

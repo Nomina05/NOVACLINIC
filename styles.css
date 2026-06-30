@@ -656,6 +656,23 @@ p {
   box-shadow: none;
 }
 
+.payroll-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.payroll-section h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.compact-payroll-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .commission-table {
   margin: 14px 0;
 }

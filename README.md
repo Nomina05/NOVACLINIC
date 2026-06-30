@@ -31,9 +31,12 @@ Abre `index.html` en el navegador. Los datos se guardan localmente en el navegad
 - Matriz de permisos administrada por el usuario Administrador desde el panel de Usuarios.
 - Panel de Usuarios simplificado con busqueda, lista compacta, editor de permisos y boton Nuevo usuario.
 - Registro de pacientes con datos personales, alergias, historial clinico, fotografia y balance.
+- Edicion de pacientes con codigo visible separado del UUID interno.
 - Agenda odontologica con calendario mensual, recordatorios, duracion y estado de citas.
+- Edicion rapida de citas desde la agenda.
 - Expediente odontologico con diagnosticos, evolucion, tratamientos, documentos clinicos e impresion.
 - Odontograma visual por arcada superior e inferior, con marcado persistente por pieza o superficie.
+- Historial de cambios del odontograma por paciente, pieza, superficie, fecha y usuario.
 - Planes de tratamiento con presupuesto, responsable y progreso.
 - Facturacion con cobros, recibos, metodos de pago y balance pendiente.
 - Nomina dentro del panel de Recursos Humanos, con personal administrativo por salario fijo y doctores por comision de puntos.

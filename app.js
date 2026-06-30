@@ -1,7 +1,14 @@
 const todayIso = new Date().toISOString().slice(0, 10);
 
 function makeId() {
-  return `nc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi?.randomUUID) return cryptoApi.randomUUID();
+  if (!cryptoApi?.getRandomValues) {
+    return `00000000-0000-4000-8000-${Date.now().toString(16).padStart(12, "0").slice(-12)}`;
+  }
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (char) =>
+    (Number(char) ^ cryptoApi.getRandomValues(new Uint8Array(1))[0] & 15 >> Number(char) / 4).toString(16)
+  );
 }
 
 function cloneSeed() {
@@ -206,6 +213,8 @@ const seedState = {
   inventory: [],
   settings: {},
   payroll: [],
+  payrollNovelties: [],
+  odontogramHistory: [],
   odontograms: {}
 };
 
@@ -374,6 +383,8 @@ let selectedTooth = null;
 let currentUser = null;
 let selectedUserId = "admin";
 let editingUserId = null;
+let editingPatientId = null;
+let editingAppointmentId = null;
 
 const currency = new Intl.NumberFormat("es-DO", {
   style: "currency",
@@ -685,11 +696,122 @@ function upsertPayrollForUser(user) {
   payroll.deductions = user.role === "Doctor" ? 0 : Number(value("newUserDeductions")) || 0;
 }
 
+function openPatientForm(patientId = null) {
+  editingPatientId = patientId;
+  const patient = state.patients.find((item) => item.id === patientId);
+  document.getElementById("patientDialogTitle").textContent = patient ? "Editar paciente" : "Nuevo paciente";
+  document.getElementById("patientDialogDescription").textContent = patient ? "Actualiza los datos del expediente." : "Completa el expediente inicial.";
+  document.getElementById("savePatientButton").textContent = patient ? "Guardar cambios" : "Guardar paciente";
+
+  document.getElementById("patientName").value = patient?.name || "";
+  document.getElementById("patientPhone").value = patient?.phone || "";
+  document.getElementById("patientEmail").value = patient?.email || "";
+  document.getElementById("patientDocument").value = patient?.document || "";
+  document.getElementById("patientBirthdate").value = patient?.birthdate || "";
+  document.getElementById("patientGender").value = patient?.gender || "Femenino";
+  document.getElementById("patientAddress").value = patient?.address || "";
+  document.getElementById("patientEmergency").value = patient?.emergency || "";
+  document.getElementById("patientBloodType").value = patient?.bloodType || "";
+  document.getElementById("patientInsurance").value = patient?.insurance || "";
+  document.getElementById("patientAllergies").value = patient?.allergies || "";
+  document.getElementById("patientConditions").value = patient?.conditions || "";
+  document.getElementById("patientMedications").value = patient?.medications || "";
+  document.getElementById("patientClinicalHistory").value = patient?.clinicalHistory || "";
+  document.getElementById("patientLastVisit").value = patient?.lastVisit || todayIso;
+  document.getElementById("patientNotes").value = patient?.notes || "";
+  document.getElementById("patientDialog").showModal();
+}
+
+function closePatientForm() {
+  editingPatientId = null;
+  document.getElementById("patientForm").reset();
+  document.getElementById("patientDialog").close();
+}
+
+async function savePatientFromForm() {
+  const existing = state.patients.find((item) => item.id === editingPatientId);
+  const photo = await readPatientPhoto();
+  const patient = existing || {
+    id: makeId(),
+    code: nextPatientCode(),
+    balance: 0,
+    status: "Activo"
+  };
+
+  patient.code ||= nextPatientCode();
+  patient.name = value("patientName");
+  patient.phone = value("patientPhone");
+  patient.email = value("patientEmail");
+  patient.document = value("patientDocument");
+  patient.birthdate = value("patientBirthdate");
+  patient.gender = value("patientGender");
+  patient.address = value("patientAddress");
+  patient.emergency = value("patientEmergency");
+  patient.bloodType = value("patientBloodType");
+  patient.insurance = value("patientInsurance") || "Sin seguro";
+  patient.allergies = value("patientAllergies") || "Ninguna";
+  patient.conditions = value("patientConditions") || "Sin condiciones registradas";
+  patient.medications = value("patientMedications") || "Sin medicamentos registrados";
+  patient.clinicalHistory = value("patientClinicalHistory") || "Sin historial registrado";
+  patient.photo = photo || patient.photo || "";
+  patient.lastVisit = value("patientLastVisit") || todayIso;
+  patient.notes = value("patientNotes");
+
+  if (!existing) state.patients.push(patient);
+  return patient;
+}
+
+function nextPatientCode() {
+  const max = state.patients.reduce((highest, patient) => {
+    const match = String(patient.code || "").match(/^P(\d+)$/i);
+    return match ? Math.max(highest, Number(match[1])) : highest;
+  }, 0);
+  return `P${String(max + 1).padStart(3, "0")}`;
+}
+
+function openAppointmentForm(appointmentId) {
+  const appointment = state.appointments.find((item) => item.id === appointmentId);
+  if (!appointment) return;
+  editingAppointmentId = appointment.id;
+  document.getElementById("appointmentPatient").value = appointment.patientId;
+  document.getElementById("appointmentDoctor").value = appointment.doctorId;
+  document.getElementById("appointmentDate").value = appointment.date;
+  document.getElementById("appointmentTime").value = appointment.time;
+  document.getElementById("appointmentDuration").value = appointment.duration || 30;
+  document.getElementById("appointmentType").value = appointment.type;
+  document.getElementById("appointmentReminder").value = appointment.reminder || "Sin recordatorio";
+  document.getElementById("saveAppointmentButton").textContent = "Guardar cita";
+}
+
+function saveAppointmentFromForm() {
+  const appointment = state.appointments.find((item) => item.id === editingAppointmentId) || {
+    id: makeId(),
+    createdBy: currentUser?.id || "sin-usuario",
+    status: "Pendiente"
+  };
+  appointment.patientId = value("appointmentPatient");
+  appointment.doctorId = value("appointmentDoctor");
+  appointment.date = value("appointmentDate");
+  appointment.time = value("appointmentTime");
+  appointment.duration = Number(value("appointmentDuration")) || 30;
+  appointment.type = value("appointmentType");
+  appointment.reminder = value("appointmentReminder");
+  if (!state.appointments.some((item) => item.id === appointment.id)) {
+    state.appointments.push(appointment);
+  }
+  editingAppointmentId = null;
+  document.getElementById("saveAppointmentButton").textContent = "Agendar";
+  return appointment;
+}
+
 function bindForms() {
   const dialog = document.getElementById("patientDialog");
   const userDialog = document.getElementById("userDialog");
-  document.getElementById("addPatientToolbar").addEventListener("click", () => dialog.showModal());
-  document.getElementById("cancelPatient").addEventListener("click", () => dialog.close());
+  document.getElementById("addPatientToolbar").addEventListener("click", () => openPatientForm());
+  document.getElementById("cancelPatient").addEventListener("click", () => closePatientForm());
+  dialog.addEventListener("close", () => {
+    editingPatientId = null;
+  });
   document.getElementById("openUserModal").addEventListener("click", () => {
     if (currentUser?.role === "Administrador") openUserForm();
   });
@@ -714,52 +836,18 @@ function bindForms() {
   document.getElementById("patientForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!can("patients:create")) return;
-    const photo = await readPatientPhoto();
-    state.patients.push({
-      id: makeId(),
-      name: value("patientName"),
-      phone: value("patientPhone"),
-      email: value("patientEmail"),
-      document: value("patientDocument"),
-      birthdate: value("patientBirthdate"),
-      gender: value("patientGender"),
-      address: value("patientAddress"),
-      emergency: value("patientEmergency"),
-      bloodType: value("patientBloodType"),
-      insurance: value("patientInsurance") || "Sin seguro",
-      allergies: value("patientAllergies") || "Ninguna",
-      conditions: value("patientConditions") || "Sin condiciones registradas",
-      medications: value("patientMedications") || "Sin medicamentos registrados",
-      clinicalHistory: value("patientClinicalHistory") || "Sin historial registrado",
-      photo,
-      lastVisit: value("patientLastVisit") || todayIso,
-      notes: value("patientNotes"),
-      balance: 0,
-      status: "Activo"
-    });
-    event.target.reset();
-    dialog.close();
+    await savePatientFromForm();
+    closePatientForm();
     persistAndRender();
   });
 
   document.getElementById("appointmentForm").addEventListener("submit", (event) => {
     event.preventDefault();
     if (!can("appointments:create")) return;
-    state.appointments.push({
-      id: makeId(),
-      patientId: value("appointmentPatient"),
-      doctorId: value("appointmentDoctor"),
-      createdBy: currentUser?.id || "sin-usuario",
-      date: value("appointmentDate"),
-      time: value("appointmentTime"),
-      duration: Number(value("appointmentDuration")) || 30,
-      type: value("appointmentType"),
-      reminder: value("appointmentReminder"),
-      status: "Pendiente"
-    });
+    const savedAppointment = saveAppointmentFromForm();
     event.target.reset();
     document.getElementById("appointmentDate").value = todayIso;
-    document.getElementById("agendaDateFilter").value = todayIso;
+    document.getElementById("agendaDateFilter").value = savedAppointment.date || todayIso;
     persistAndRender();
   });
 
@@ -815,6 +903,28 @@ function bindForms() {
   document.getElementById("markPayrollPaid").addEventListener("click", () => {
     if (!can("payroll:manage")) return;
     state.payroll = normalizedPayroll().map((item) => ({ ...item, status: "Pagado" }));
+    persistAndRender();
+  });
+  document.getElementById("processPayrollMonth").addEventListener("click", () => {
+    if (!can("payroll:manage")) return;
+    state.payroll = normalizedPayroll().map((item) => ({ ...item, status: "Procesada" }));
+    persistAndRender();
+  });
+  document.getElementById("payrollNoveltyForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!can("payroll:manage")) return;
+    state.payrollNovelties ||= [];
+    state.payrollNovelties.unshift({
+      id: makeId(),
+      userId: value("payrollNoveltyUser"),
+      type: value("payrollNoveltyType"),
+      amount: Number(value("payrollNoveltyAmount")) || 0,
+      note: value("payrollNoveltyNote"),
+      date: todayIso,
+      period: "Mayo 2026",
+      createdBy: currentUser?.id || "sin-usuario"
+    });
+    event.target.reset();
     persistAndRender();
   });
 
@@ -986,6 +1096,8 @@ function applyPermissions() {
   toggleAction("inventoryForm", "inventory:manage");
   toggleAction("clinicSettingsForm", "settings:manage");
   toggleAction("markPayrollPaid", "payroll:manage");
+  toggleAction("processPayrollMonth", "payroll:manage");
+  toggleAction("payrollNoveltyForm", "payroll:manage");
   toggleAction("openUserModal", "users:create");
   toggleAction("editSelectedUser", "users:create");
 
@@ -1070,6 +1182,10 @@ function populateSelects() {
     .map((doctor) => `<option value="${doctor.id}">${escapeHtml(doctor.name)} · ${escapeHtml(doctor.specialty)}</option>`)
     .join("");
 
+  const userOptions = users
+    .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} · ${escapeHtml(user.role)}</option>`)
+    .join("");
+
   ["appointmentPatient", "odontogramPatient", "treatmentPatient", "paymentPatient"].forEach((id) => {
     const select = document.getElementById(id);
     const current = select.value;
@@ -1090,6 +1206,15 @@ function populateSelects() {
     }
     select.disabled = currentUser?.role === "Doctor";
   });
+
+  const payrollNoveltyUser = document.getElementById("payrollNoveltyUser");
+  if (payrollNoveltyUser) {
+    const current = payrollNoveltyUser.value;
+    payrollNoveltyUser.innerHTML = userOptions;
+    if (current && users.some((user) => user.id === current)) {
+      payrollNoveltyUser.value = current;
+    }
+  }
 
   document.getElementById("appointmentDate").value ||= todayIso;
   document.getElementById("agendaDateFilter").value ||= todayIso;
@@ -1213,7 +1338,7 @@ function renderHrPanel() {
   renderPayroll(payrollItems);
 }
 
-function renderPayroll(payrollItems) {
+function renderPayrollLegacy(payrollItems) {
   const grossTotal = payrollItems.reduce((sum, item) => sum + payrollGross(item), 0);
   const deductionsTotal = payrollItems.reduce((sum, item) => sum + item.deductions, 0);
   const netTotal = payrollItems.reduce((sum, item) => sum + payrollNet(item), 0);
@@ -1225,8 +1350,21 @@ function renderPayroll(payrollItems) {
     ["Deducciones", currency.format(deductionsTotal)],
     ["Total neto", currency.format(netTotal)],
     ["Puntos doctores", doctorPoints],
+    ["Novedades", (state.payrollNovelties || []).length],
     ["Pagados", `${paidCount}/${payrollItems.length}`]
   ].map(panelCardTemplate).join("");
+
+  document.getElementById("payrollNoveltyTable").innerHTML = (state.payrollNovelties || []).length
+    ? state.payrollNovelties.map((novelty) => `
+      <tr>
+        <td>${escapeHtml(userById(novelty.userId).name)}</td>
+        <td><span class="status-pill ${["Ingreso", "Ajuste"].includes(novelty.type) ? "confirmada" : "pendiente"}">${escapeHtml(novelty.type)}</span></td>
+        <td>${currency.format(Number(novelty.amount) || 0)}</td>
+        <td>${escapeHtml(novelty.note)}</td>
+        <td>${formatDate(novelty.date)}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="5">${emptyState("No hay novedades aplicadas para este período.")}</td></tr>`;
 
   document.getElementById("procedurePointTable").innerHTML = procedurePointCatalog.map((procedure) => `
     <tr>
@@ -1258,17 +1396,108 @@ function renderPayroll(payrollItems) {
   }).join("");
 }
 
+function renderPayroll(payrollItems) {
+  const adminPayrollItems = payrollItems.filter((item) => userById(item.userId).role !== "Doctor");
+  const doctorPayrollItems = payrollItems.filter((item) => userById(item.userId).role === "Doctor");
+  const grossTotal = payrollItems.reduce((sum, item) => sum + payrollGross(item), 0);
+  const deductionsTotal = payrollItems.reduce((sum, item) => sum + item.deductions, 0);
+  const netTotal = payrollItems.reduce((sum, item) => sum + payrollNet(item), 0);
+  const paidCount = payrollItems.filter((item) => item.status === "Pagado").length;
+  const adminNetTotal = adminPayrollItems.reduce((sum, item) => sum + payrollNet(item), 0);
+  const adminDeductions = adminPayrollItems.reduce((sum, item) => sum + item.deductions, 0);
+  const doctorCommissionTotal = doctorPayrollItems.reduce((sum, item) => sum + item.bonus, 0);
+  const doctorPoints = doctorPayrollItems.reduce((sum, item) => sum + (item.commission?.points || 0), 0);
+  const doctorProcedures = doctorPayrollItems.reduce((sum, item) => sum + (item.commission?.procedures || 0), 0);
+
+  document.getElementById("payrollSummary").innerHTML = [
+    ["Total bruto", currency.format(grossTotal)],
+    ["Deducciones", currency.format(deductionsTotal)],
+    ["Total neto", currency.format(netTotal)],
+    ["Puntos doctores", doctorPoints],
+    ["Pagados", `${paidCount}/${payrollItems.length}`]
+  ].map(panelCardTemplate).join("");
+
+  document.getElementById("procedurePointTable").innerHTML = procedurePointCatalog.map((procedure) => `
+    <tr>
+      <td><strong>${escapeHtml(procedure.name)}</strong></td>
+      <td>${procedure.points}</td>
+      <td>${currency.format(procedure.value)}</td>
+    </tr>
+  `).join("");
+
+  document.getElementById("adminPayrollSummary").innerHTML = [
+    ["Empleados", adminPayrollItems.length],
+    ["Deducciones", currency.format(adminDeductions)],
+    ["Neto administrativo", currency.format(adminNetTotal)]
+  ].map(panelCardTemplate).join("");
+
+  document.getElementById("doctorPayrollSummary").innerHTML = [
+    ["Doctores", doctorPayrollItems.length],
+    ["Puntos", doctorPoints],
+    ["Procedimientos", doctorProcedures],
+    ["Comisión total", currency.format(doctorCommissionTotal)]
+  ].map(panelCardTemplate).join("");
+
+  document.getElementById("adminPayrollTable").innerHTML = adminPayrollItems.map((item) => {
+    const user = userById(item.userId);
+    return `
+      <tr>
+        <td>
+          <div class="patient-name">
+            <strong>${escapeHtml(user.name)}</strong>
+            <small>${escapeHtml(item.period)} · Salario fijo · ${item.novelty?.count || 0} novedades</small>
+          </div>
+        </td>
+        <td>${escapeHtml(user.role || "Sin rol")}</td>
+        <td>${currency.format(item.base)}</td>
+        <td>${currency.format(item.bonus)}</td>
+        <td>${currency.format(item.deductions)}</td>
+        <td><strong>${currency.format(payrollNet(item))}</strong></td>
+        <td><span class="status-pill ${item.status === "Pagado" ? "pagado" : "pendiente"}">${escapeHtml(item.status)}</span></td>
+      </tr>
+    `;
+  }).join("");
+
+  document.getElementById("doctorPayrollTable").innerHTML = doctorPayrollItems.map((item) => {
+    const user = userById(item.userId);
+    return `
+      <tr>
+        <td>
+          <div class="patient-name">
+            <strong>${escapeHtml(user.name)}</strong>
+            <small>${escapeHtml(item.period)} · Comisión por procedimientos completados · ${item.novelty?.count || 0} novedades</small>
+          </div>
+        </td>
+        <td>${escapeHtml(user.specialty || "Sin especialidad")}</td>
+        <td>${item.commission?.points || 0} pts</td>
+        <td>${item.commission?.procedures || 0}</td>
+        <td><strong>${currency.format(item.bonus)}</strong></td>
+        <td><span class="status-pill ${item.status === "Pagado" ? "pagado" : "pendiente"}">${escapeHtml(item.status)}</span></td>
+      </tr>
+    `;
+  }).join("");
+}
+
 function payrollDisplayItem(item) {
   const user = userById(item.userId);
-  if (user.role !== "Doctor") return item;
+  const novelty = payrollNoveltyImpact(item.userId);
+  if (user.role !== "Doctor") {
+    return {
+      ...item,
+      bonus: item.bonus + novelty.income,
+      deductions: item.deductions + novelty.deduction,
+      novelty
+    };
+  }
 
   const commission = doctorCommission(item.userId);
   return {
     ...item,
     base: 0,
-    bonus: commission.amount,
-    deductions: 0,
-    commission
+    bonus: commission.amount + novelty.income,
+    deductions: novelty.deduction,
+    commission,
+    novelty
   };
 }
 
@@ -1280,9 +1509,9 @@ function normalizedPayroll() {
         id: makeId(),
         userId: user.id,
         period: "Mayo 2026",
-        base: payrollSeed[user.id]?.base || 45000,
-        bonus: payrollSeed[user.id]?.bonus || 0,
-        deductions: payrollSeed[user.id]?.deductions || 0,
+        base: user.role === "Doctor" ? 0 : payrollSeed[user.id]?.base || 45000,
+        bonus: user.role === "Doctor" ? 0 : payrollSeed[user.id]?.bonus || 0,
+        deductions: user.role === "Doctor" ? 0 : payrollSeed[user.id]?.deductions || 0,
         status: "Pendiente"
       });
     }
@@ -1296,6 +1525,21 @@ function payrollNet(item) {
 
 function payrollGross(item) {
   return userById(item.userId).role === "Doctor" ? item.bonus : item.base + item.bonus;
+}
+
+function payrollNoveltyImpact(userId) {
+  return (state.payrollNovelties || [])
+    .filter((novelty) => novelty.userId === userId)
+    .reduce((summary, novelty) => {
+      const amount = Number(novelty.amount) || 0;
+      if (["Ingreso", "Ajuste"].includes(novelty.type)) {
+        summary.income += amount;
+      } else {
+        summary.deduction += amount;
+      }
+      summary.count += 1;
+      return summary;
+    }, { income: 0, deduction: 0, count: 0 });
 }
 
 function doctorCommission(doctorId) {
@@ -1559,10 +1803,12 @@ function moduleButtonTemplate(viewName) {
 }
 
 function renderPatients() {
+  ensurePatientCodes();
   const term = document.getElementById("globalSearch").value.trim().toLowerCase();
   const patients = state.patients.filter((patient) => {
     const haystack = [
       patient.name,
+      patient.code,
       patient.phone,
       patient.email,
       patient.document,
@@ -1584,7 +1830,7 @@ function renderPatients() {
             ${patientPhotoTemplate(patient)}
             <div class="patient-name">
               <strong>${escapeHtml(patient.name)}</strong>
-              <small>${escapeHtml(patient.document)}</small>
+              <small>${escapeHtml(patient.code || "")} · ${escapeHtml(patient.document)}</small>
             </div>
           </div>
         </td>
@@ -1608,9 +1854,28 @@ function renderPatients() {
         </td>
         <td>${currency.format(patient.balance)}</td>
         <td><span class="status-pill ${patient.balance > 0 ? "pendiente" : "confirmada"}">${escapeHtml(patient.status)}</span></td>
+        <td><button class="ghost-button" data-edit-patient="${patient.id}" type="button">Editar</button></td>
       </tr>
     `)
     .join("");
+
+  document.querySelectorAll("[data-edit-patient]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!can("patients:create")) return;
+      openPatientForm(button.dataset.editPatient);
+    });
+  });
+}
+
+function ensurePatientCodes() {
+  let changed = false;
+  state.patients.forEach((patient) => {
+    if (!patient.code) {
+      patient.code = nextPatientCode();
+      changed = true;
+    }
+  });
+  if (changed) saveState();
 }
 
 function renderAgenda() {
@@ -1640,6 +1905,7 @@ function renderAgenda() {
           <select data-status-appointment="${appointment.id}" aria-label="Estado de cita">
             ${appointmentStatusOptions(appointment.status)}
           </select>
+          <button class="ghost-button" data-edit-appointment="${appointment.id}" type="button">Editar</button>
         </div>
       </article>
     `)
@@ -1652,6 +1918,13 @@ function renderAgenda() {
       const appointment = state.appointments.find((item) => item.id === select.dataset.statusAppointment);
       appointment.status = select.value;
       persistAndRender();
+    });
+  });
+
+  document.querySelectorAll("[data-edit-appointment]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!can("appointments:create")) return;
+      openAppointmentForm(button.dataset.editAppointment);
     });
   });
 }
@@ -1778,8 +2051,27 @@ function renderOdontogram() {
     `)
     .join("");
 
+  renderOdontogramHistory(patientId);
   renderClinicalRecord(patientId);
   refreshSelectedToothHint();
+}
+
+function renderOdontogramHistory(patientId) {
+  const history = (state.odontogramHistory || [])
+    .filter((item) => item.patientId === patientId)
+    .slice(0, 6);
+  document.getElementById("odontogramHistory").innerHTML = `
+    <h3>Historial odontograma</h3>
+    ${history.length ? history.map((item) => `
+      <article class="clinical-item">
+        <span class="time-chip">${escapeHtml(item.tooth)}</span>
+        <div>
+          <strong>${escapeHtml(item.surface)} · ${labelStatus(item.status)}</strong>
+          <p>${formatDate(item.date)} · ${escapeHtml(userById(item.userId).name)}</p>
+        </div>
+      </article>
+    `).join("") : emptyState("Sin cambios registrados.")}
+  `;
 }
 
 function selectTooth(tooth) {
@@ -1840,17 +2132,28 @@ function refreshSelectedToothHint() {
 function updateTooth(tooth) {
   const patientId = value("odontogramPatient");
   state.odontograms[patientId] ||= {};
+  state.odontogramHistory ||= [];
   const surface = value("toothSurface");
+  const status = value("toothStatus");
   if (surface === "pieza") {
-    state.odontograms[patientId][tooth] = value("toothStatus");
+    state.odontograms[patientId][tooth] = status;
   } else {
     const current = state.odontograms[patientId][tooth];
     const next = typeof current === "object" ? current : { status: current || "sano", surfaces: {} };
     next.surfaces ||= {};
-    next.surfaces[surface] = value("toothStatus");
+    next.surfaces[surface] = status;
     next.status = Object.values(next.surfaces).find((status) => status !== "sano") || next.status || "sano";
     state.odontograms[patientId][tooth] = next;
   }
+  state.odontogramHistory.unshift({
+    id: makeId(),
+    patientId,
+    tooth: String(tooth),
+    surface: surface === "pieza" ? "Pieza completa" : surface,
+    status,
+    date: todayIso,
+    userId: currentUser?.id || "sin-usuario"
+  });
   selectedTooth = String(tooth);
   persistAndRender();
 }
