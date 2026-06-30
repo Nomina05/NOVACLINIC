@@ -796,9 +796,26 @@
           <button class="icon-button" value="cancel" aria-label="Cerrar">×</button>
         </div>
         <div class="form-grid">
-          <label class="photo-field full">
+          <div class="photo-field camera-field full">
+            <span>Fotografía</span>
+            <div class="camera-preview">
+              <video id="patientCamera" autoplay playsinline muted></video>
+              <img id="patientPhotoPreview" alt="Foto del paciente">
+            </div>
+            <div class="camera-actions">
+              <button class="ghost-button" id="startPatientCamera" type="button">Abrir cámara</button>
+              <button class="primary-button" id="capturePatientPhoto" type="button">Tomar foto</button>
+              <label class="ghost-button file-fallback">
+                Subir archivo
+                <input id="patientPhoto" type="file" accept="image/*" capture="user">
+              </label>
+            </div>
+            <canvas id="patientPhotoCanvas" hidden></canvas>
+            <small id="patientCameraStatus">La cámara se abrirá al crear o editar paciente.</small>
+          </div>
+          <label class="photo-field full legacy-photo-field">
             Fotografía
-            <input id="patientPhoto" type="file" accept="image/*">
+            <input id="legacyPatientPhoto" type="file" accept="image/*">
             <span>JPG, PNG o imagen tomada desde cámara.</span>
           </label>
           <label>Nombre completo<input id="patientName" required></label>

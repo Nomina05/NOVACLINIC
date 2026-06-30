@@ -386,6 +386,8 @@ let selectedUserId = "admin";
 let editingUserId = null;
 let editingPatientId = null;
 let editingAppointmentId = null;
+let patientCameraStream = null;
+let capturedPatientPhoto = "";
 
 const currency = new Intl.NumberFormat("es-DO", {
   style: "currency",
@@ -700,6 +702,7 @@ function upsertPayrollForUser(user) {
 function openPatientForm(patientId = null) {
   editingPatientId = patientId;
   const patient = state.patients.find((item) => item.id === patientId);
+  capturedPatientPhoto = patient?.photo || "";
   document.getElementById("patientDialogTitle").textContent = patient ? "Editar paciente" : "Nuevo paciente";
   document.getElementById("patientDialogDescription").textContent = patient ? "Actualiza los datos del expediente." : "Completa el expediente inicial.";
   document.getElementById("savePatientButton").textContent = patient ? "Guardar cambios" : "Guardar paciente";
@@ -720,18 +723,75 @@ function openPatientForm(patientId = null) {
   document.getElementById("patientClinicalHistory").value = patient?.clinicalHistory || "";
   document.getElementById("patientLastVisit").value = patient?.lastVisit || todayIso;
   document.getElementById("patientNotes").value = patient?.notes || "";
+  updatePatientPhotoPreview(capturedPatientPhoto);
   document.getElementById("patientDialog").showModal();
+  startPatientCamera();
 }
 
 function closePatientForm() {
   editingPatientId = null;
+  stopPatientCamera();
+  capturedPatientPhoto = "";
   document.getElementById("patientForm").reset();
   document.getElementById("patientDialog").close();
 }
 
+async function startPatientCamera() {
+  const video = document.getElementById("patientCamera");
+  const status = document.getElementById("patientCameraStatus");
+  if (!video || !navigator.mediaDevices?.getUserMedia) {
+    if (status) status.textContent = "Cámara no disponible. Use Subir archivo.";
+    return;
+  }
+
+  stopPatientCamera();
+  try {
+    patientCameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+    video.srcObject = patientCameraStream;
+    video.classList.remove("is-hidden");
+    document.getElementById("patientPhotoPreview")?.classList.remove("is-visible");
+    if (status) status.textContent = "Cámara activa. Presione Tomar foto.";
+  } catch {
+    if (status) status.textContent = "No se pudo abrir la cámara. Use Subir archivo.";
+  }
+}
+
+function stopPatientCamera() {
+  patientCameraStream?.getTracks().forEach((track) => track.stop());
+  patientCameraStream = null;
+  const video = document.getElementById("patientCamera");
+  if (video) video.srcObject = null;
+}
+
+function capturePatientPhoto() {
+  const video = document.getElementById("patientCamera");
+  const canvas = document.getElementById("patientPhotoCanvas");
+  const status = document.getElementById("patientCameraStatus");
+  if (!video?.videoWidth || !canvas) {
+    if (status) status.textContent = "La cámara aún no está lista.";
+    return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+  capturedPatientPhoto = canvas.toDataURL("image/jpeg", 0.9);
+  updatePatientPhotoPreview(capturedPatientPhoto);
+  if (status) status.textContent = "Foto capturada.";
+}
+
+function updatePatientPhotoPreview(photo) {
+  const preview = document.getElementById("patientPhotoPreview");
+  const video = document.getElementById("patientCamera");
+  if (!preview) return;
+  preview.src = photo || "";
+  preview.classList.toggle("is-visible", Boolean(photo));
+  video?.classList.toggle("is-hidden", Boolean(photo));
+}
+
 async function savePatientFromForm() {
   const existing = state.patients.find((item) => item.id === editingPatientId);
-  const photo = await readPatientPhoto();
+  const photo = capturedPatientPhoto || await readPatientPhoto();
   const patient = existing || {
     id: makeId(),
     code: nextPatientCode(),
@@ -810,8 +870,15 @@ function bindForms() {
   const userDialog = document.getElementById("userDialog");
   document.getElementById("addPatientToolbar").addEventListener("click", () => openPatientForm());
   document.getElementById("cancelPatient").addEventListener("click", () => closePatientForm());
+  document.getElementById("startPatientCamera").addEventListener("click", startPatientCamera);
+  document.getElementById("capturePatientPhoto").addEventListener("click", capturePatientPhoto);
+  document.getElementById("patientPhoto").addEventListener("change", async () => {
+    capturedPatientPhoto = await readPatientPhoto();
+    updatePatientPhotoPreview(capturedPatientPhoto);
+  });
   dialog.addEventListener("close", () => {
     editingPatientId = null;
+    stopPatientCamera();
   });
   document.getElementById("openUserModal").addEventListener("click", () => {
     if (currentUser?.role === "Administrador") openUserForm();

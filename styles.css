@@ -1390,6 +1390,62 @@ dialog::backdrop {
   background: #f7fbf9;
 }
 
+.legacy-photo-field {
+  display: none;
+}
+
+.camera-field {
+  display: grid;
+  gap: 12px;
+}
+
+.camera-preview {
+  width: 100%;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #eef5f1;
+}
+
+.camera-preview video,
+.camera-preview img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+}
+
+.camera-preview img {
+  display: none;
+}
+
+.camera-preview img.is-visible {
+  display: block;
+}
+
+.camera-preview video.is-hidden {
+  display: none;
+}
+
+.camera-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.file-fallback {
+  position: relative;
+  overflow: hidden;
+}
+
+.file-fallback input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
 .photo-field input {
   padding: 9px;
   background: #fff;
