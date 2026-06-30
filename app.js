@@ -214,6 +214,7 @@ const seedState = {
   settings: {},
   payroll: [],
   payrollNovelties: [],
+  cashClosings: [],
   odontogramHistory: [],
   odontograms: {}
 };
@@ -879,21 +880,43 @@ function bindForms() {
     if (!can("payments:create")) return;
     const patient = patientById(value("paymentPatient"));
     const amount = Number(value("paymentAmount"));
+    const discount = Number(value("paymentDiscount")) || 0;
     const receiptNumber = nextReceiptNumber();
+    const invoiceNumber = nextInvoiceNumber();
     state.payments.unshift({
       id: makeId(),
       patientId: patient.id,
       doctorId: currentUser?.role === "Doctor" ? currentUser.id : "sin-doctor",
       createdBy: currentUser?.id || "sin-usuario",
       amount,
+      discount,
+      discountReason: value("paymentDiscountReason"),
       method: value("paymentMethod"),
       reference: value("paymentReference"),
       receiptNumber,
+      invoiceNumber,
+      invoiceStatus: value("paymentInvoiceStatus"),
       date: todayIso,
       concept: value("paymentConcept")
     });
-    patient.balance = Math.max(0, patient.balance - amount);
+    patient.balance = Math.max(0, patient.balance - amount - discount);
     event.target.reset();
+    persistAndRender();
+  });
+
+  document.getElementById("closeCashRegister").addEventListener("click", () => {
+    if (!can("payments:create")) return;
+    state.cashClosings ||= [];
+    const totals = paymentMethodTotals(todayIso);
+    const total = Object.values(totals).reduce((sum, amountValue) => sum + amountValue, 0);
+    state.cashClosings.unshift({
+      id: makeId(),
+      date: todayIso,
+      totals,
+      total,
+      closedBy: currentUser?.id || "sin-usuario",
+      closedAt: new Date().toISOString()
+    });
     persistAndRender();
   });
 
@@ -1087,6 +1110,7 @@ function applyPermissions() {
   toggleAction("appointmentForm", "appointments:create");
   toggleAction("treatmentForm", "treatments:create");
   toggleAction("paymentForm", "payments:create");
+  toggleAction("closeCashRegister", "payments:create");
   toggleAction("toothStatus", "odontogram:edit");
   toggleAction("toothSurface", "odontogram:edit");
   toggleAction("updateToothButton", "odontogram:edit");
@@ -2262,6 +2286,9 @@ function renderBilling() {
   const collectedToday = state.payments
     .filter((payment) => payment.date === todayIso)
     .reduce((sum, payment) => sum + payment.amount, 0);
+  const discountsToday = state.payments
+    .filter((payment) => payment.date === todayIso)
+    .reduce((sum, payment) => sum + (Number(payment.discount) || 0), 0);
   const pendingTotal = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
   const methodTotals = state.payments.reduce((summary, payment) => {
     summary[payment.method] = (summary[payment.method] || 0) + payment.amount;
@@ -2270,8 +2297,9 @@ function renderBilling() {
 
   document.getElementById("billingSummary").innerHTML = [
     ["Cobrado hoy", currency.format(collectedToday)],
+    ["Descuentos hoy", currency.format(discountsToday)],
     ["Balance pendiente", currency.format(pendingTotal)],
-    ["Recibos emitidos", state.payments.length],
+    ["Facturas/recibos", state.payments.length],
     ["Método principal", topPaymentMethod(methodTotals)]
   ].map(([label, valueText]) => `
     <article class="billing-card">
@@ -2286,8 +2314,9 @@ function renderBilling() {
           <article class="ledger-item">
             <span class="amount-pill">${currency.format(payment.amount)}</span>
             <div>
-              <strong>${escapeHtml(payment.receiptNumber || "REC-S/N")} · ${escapeHtml(patientById(payment.patientId).name)}</strong>
-              <p>${escapeHtml(payment.concept)} · ${escapeHtml(payment.method)}${payment.reference ? ` · Ref. ${escapeHtml(payment.reference)}` : ""} · Registrado por ${escapeHtml(userById(payment.createdBy || payment.doctorId).name)} · ${formatDate(payment.date)}</p>
+              <strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} · ${escapeHtml(payment.receiptNumber || "REC-S/N")} · ${escapeHtml(patientById(payment.patientId).name)}</strong>
+              <p>${escapeHtml(payment.concept)} · ${escapeHtml(payment.method)} · ${escapeHtml(payment.invoiceStatus || "Pagada")}${payment.reference ? ` · Ref. ${escapeHtml(payment.reference)}` : ""} · Registrado por ${escapeHtml(userById(payment.createdBy || payment.doctorId).name)} · ${formatDate(payment.date)}</p>
+              ${(payment.discount || 0) > 0 ? `<p>Descuento: ${currency.format(payment.discount)} · ${escapeHtml(payment.discountReason || "Sin motivo")}</p>` : ""}
             </div>
             <button class="ghost-button" data-receipt="${payment.id}">Recibo</button>
           </article>
@@ -2307,12 +2336,38 @@ function renderBilling() {
             <span class="amount-pill">${currency.format(patient.balance)}</span>
             <div>
               <strong>${escapeHtml(patient.name)}</strong>
-              <p>${escapeHtml(patient.phone)} · Última visita: ${formatDate(patient.lastVisit)}</p>
+              <p>${escapeHtml(patient.phone)} · ${receivableAgeBucket(patient.lastVisit)} · Última visita: ${formatDate(patient.lastVisit)}</p>
             </div>
           </article>
         `)
         .join("")
     : emptyState("No hay balances pendientes.");
+
+  renderCashClose();
+}
+
+function renderCashClose() {
+  const totals = paymentMethodTotals(todayIso);
+  const total = Object.values(totals).reduce((sum, amountValue) => sum + amountValue, 0);
+  document.getElementById("cashCloseSummary").innerHTML = [
+    ["Caja de hoy", currency.format(total)],
+    ["Efectivo", currency.format(totals.Efectivo || 0)],
+    ["Tarjeta", currency.format(totals.Tarjeta || 0)],
+    ["Transferencia", currency.format(totals.Transferencia || 0)],
+    ["Seguro", currency.format(totals.Seguro || 0)]
+  ].map(panelCardTemplate).join("");
+
+  document.getElementById("cashCloseHistory").innerHTML = (state.cashClosings || []).length
+    ? state.cashClosings.slice(0, 5).map((closing) => `
+      <article class="ledger-item">
+        <span class="amount-pill">${currency.format(closing.total)}</span>
+        <div>
+          <strong>Cierre ${formatDate(closing.date)}</strong>
+          <p>Usuario: ${escapeHtml(userById(closing.closedBy).name)} · Efectivo ${currency.format(closing.totals.Efectivo || 0)} · Tarjeta ${currency.format(closing.totals.Tarjeta || 0)} · Transferencia ${currency.format(closing.totals.Transferencia || 0)}</p>
+        </div>
+      </article>
+    `).join("")
+    : emptyState("No hay cierres de caja registrados.");
 }
 
 function renderInventory() {
@@ -2397,6 +2452,29 @@ function nextReceiptNumber() {
   return `REC-${todayIso.replaceAll("-", "")}-${next}`;
 }
 
+function nextInvoiceNumber() {
+  const next = String(state.payments.length + 1).padStart(4, "0");
+  return `FAC-${todayIso.replaceAll("-", "")}-${next}`;
+}
+
+function paymentMethodTotals(date = null) {
+  return state.payments
+    .filter((payment) => !date || payment.date === date)
+    .reduce((summary, payment) => {
+      summary[payment.method] = (summary[payment.method] || 0) + Number(payment.amount || 0);
+      return summary;
+    }, {});
+}
+
+function receivableAgeBucket(dateValue) {
+  if (!dateValue) return "Sin fecha";
+  const days = Math.max(0, Math.floor((new Date(`${todayIso}T12:00:00`) - new Date(`${dateValue}T12:00:00`)) / 86400000));
+  if (days <= 30) return "0-30 días";
+  if (days <= 60) return "31-60 días";
+  if (days <= 90) return "61-90 días";
+  return "Más de 90 días";
+}
+
 function topPaymentMethod(methodTotals) {
   const entries = Object.entries(methodTotals).sort((a, b) => b[1] - a[1]);
   return entries[0] ? `${entries[0][0]} · ${currency.format(entries[0][1])}` : "Sin cobros";
@@ -2408,12 +2486,16 @@ function openReceipt(paymentId) {
   const patient = patientById(payment.patientId);
   document.getElementById("receiptContent").innerHTML = `
     <div class="receipt-box">
+      <div class="receipt-row"><span>Factura</span><strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")}</strong></div>
       <div class="receipt-row"><span>Recibo</span><strong>${escapeHtml(payment.receiptNumber || "REC-S/N")}</strong></div>
       <div class="receipt-row"><span>Fecha</span><strong>${formatDate(payment.date)}</strong></div>
       <div class="receipt-row"><span>Paciente</span><strong>${escapeHtml(patient.name)}</strong></div>
       <div class="receipt-row"><span>Concepto</span><strong>${escapeHtml(payment.concept)}</strong></div>
+      <div class="receipt-row"><span>Estado factura</span><strong>${escapeHtml(payment.invoiceStatus || "Pagada")}</strong></div>
       <div class="receipt-row"><span>Método</span><strong>${escapeHtml(payment.method)}</strong></div>
       <div class="receipt-row"><span>Referencia</span><strong>${escapeHtml(payment.reference || "No aplica")}</strong></div>
+      <div class="receipt-row"><span>Descuento</span><strong>${currency.format(payment.discount || 0)}</strong></div>
+      <div class="receipt-row"><span>Motivo descuento</span><strong>${escapeHtml(payment.discountReason || "No aplica")}</strong></div>
       <div class="receipt-total"><span>Total pagado</span><strong>${currency.format(payment.amount)}</strong></div>
       <div class="receipt-row"><span>Balance pendiente</span><strong>${currency.format(patient.balance)}</strong></div>
       <div class="receipt-row"><span>Registrado por</span><strong>${escapeHtml(userById(payment.createdBy || payment.doctorId).name)}</strong></div>

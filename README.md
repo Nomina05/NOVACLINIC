@@ -39,6 +39,7 @@ Abre `index.html` en el navegador. Los datos se guardan localmente en el navegad
 - Historial de cambios del odontograma por paciente, pieza, superficie, fecha y usuario.
 - Planes de tratamiento con presupuesto, responsable y progreso.
 - Facturacion con cobros, recibos, metodos de pago y balance pendiente.
+- Facturacion con numero de factura, abonos, descuentos autorizados, cuentas por cobrar por antiguedad y cierre de caja diario.
 - Nomina dentro del panel de Recursos Humanos, con personal administrativo por salario fijo y doctores por comision de puntos.
 - Inventario de materiales odontologicos con stock minimo, vencimiento y proveedor.
 - Reportes de ingresos, cuentas por cobrar, citas, tratamientos y productividad por doctor.

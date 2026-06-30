@@ -732,12 +732,19 @@
               <select id="paymentPatient" required></select>
               <input id="paymentConcept" placeholder="Concepto del cobro" required>
               <input id="paymentAmount" type="number" min="0" step="100" placeholder="Monto" required>
+              <input id="paymentDiscount" type="number" min="0" step="100" placeholder="Descuento">
+              <input id="paymentDiscountReason" placeholder="Motivo descuento">
               <select id="paymentMethod">
                 <option>Efectivo</option>
                 <option>Tarjeta</option>
                 <option>Transferencia</option>
                 <option>Seguro</option>
                 <option>Cheque</option>
+              </select>
+              <select id="paymentInvoiceStatus">
+                <option>Pagada</option>
+                <option>Abono</option>
+                <option>Emitida</option>
               </select>
               <input id="paymentReference" placeholder="Referencia opcional">
               <button class="primary-button" type="submit">Registrar pago</button>
@@ -764,6 +771,17 @@
               <div class="alert-list" id="balanceList"></div>
             </section>
           </div>
+          <section class="panel payroll-section">
+            <div class="panel-header">
+              <div>
+                <h2>Cierre de caja diario</h2>
+                <p>Totales por mÃ©todo de pago y cuadre del dÃ­a.</p>
+              </div>
+              <button class="primary-button" id="closeCashRegister" type="button">Cerrar caja de hoy</button>
+            </div>
+            <div class="panel-card-grid" id="cashCloseSummary"></div>
+            <div class="ledger" id="cashCloseHistory"></div>
+          </section>
         </section>
       </main>
     </div>
