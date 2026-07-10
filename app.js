@@ -210,6 +210,7 @@ const seedState = {
   diagnoses: [],
   evolutions: [],
   clinicalDocuments: [],
+  patientPlates: [],
   inventory: [],
   settings: {},
   payroll: [],
@@ -485,6 +486,7 @@ function normalizeState(loadedState) {
   next.hrVacations ||= [];
   next.hrShifts = Array.isArray(next.hrShifts) && next.hrShifts.length ? next.hrShifts : cloneSeed().hrShifts;
   next.hrEvaluations ||= [];
+  next.patientPlates ||= [];
   return next;
 }
 
@@ -2400,6 +2402,9 @@ function openPatientRecord(patientId) {
     .filter((payment) => payment.patientId === patientId);
   const patientDocuments = (state.clinicalDocuments || [])
     .filter((documentItem) => documentItem.patientId === patientId);
+  const patientPlates = (state.patientPlates || [])
+    .filter((plate) => plate.patientId === patientId)
+    .sort((a, b) => String(b.takenAt).localeCompare(String(a.takenAt)));
   const patientDentalHistory = (state.odontogramHistory || [])
     .filter((item) => item.patientId === patientId)
     .slice(0, 8);
@@ -2445,9 +2450,11 @@ function openPatientRecord(patientId) {
     ${patientRecordSection("Citas", patientAppointments, appointmentRecordTemplate)}
     ${patientRecordSection("Tratamientos", patientTreatments, treatmentRecordTemplate)}
     ${patientRecordSection("Pagos y facturas", patientPayments, paymentRecordTemplate)}
+    ${patientPlatesSection(patient.id, patientPlates)}
     ${patientRecordSection("Documentos clínicos", patientDocuments, documentRecordTemplate)}
     ${patientRecordSection("Historial odontograma", patientDentalHistory, dentalHistoryRecordTemplate)}
   `;
+  bindPatientPlateForm(patient.id);
   document.getElementById("patientRecordDialog").showModal();
 }
 
@@ -2464,6 +2471,73 @@ function patientRecordSection(title, items, template) {
       </div>
     </section>
   `;
+}
+
+function patientPlatesSection(patientId, plates) {
+  return `
+    <section class="record-block full">
+      <h3>Histórico de placas</h3>
+      <form class="inline-form plate-form" id="patientPlateForm" data-patient-id="${patientId}">
+        <input id="patientPlateTakenAt" type="datetime-local" required>
+        <select id="patientPlateType">
+          <option>Panorámica</option>
+          <option>Periapical</option>
+          <option>Bitewing</option>
+          <option>Oclusal</option>
+          <option>Cefalométrica</option>
+          <option>Tomografía</option>
+          <option>Otra</option>
+        </select>
+        <input id="patientPlateNote" placeholder="Nota o zona evaluada">
+        <input id="patientPlateFile" type="file" accept="image/*,.pdf" required>
+        <button class="primary-button" type="submit">Cargar placa</button>
+      </form>
+      <div class="plate-history">
+        ${plates.length ? plates.map(plateRecordTemplate).join("") : emptyState("Sin placas registradas.")}
+      </div>
+    </section>
+  `;
+}
+
+function plateRecordTemplate(plate) {
+  const isImage = String(plate.file || "").startsWith("data:image/");
+  return `
+    <article class="plate-item">
+      ${isImage ? `<img src="${plate.file}" alt="Placa ${escapeHtml(plate.type)}">` : `<div class="plate-file">PDF</div>`}
+      <div>
+        <strong>${escapeHtml(plate.type)}</strong>
+        <p>${formatDateTime(plate.takenAt)} · ${escapeHtml(plate.note || "Sin nota")}</p>
+        <small>Cargada por ${escapeHtml(userById(plate.createdBy).name)} · ${formatDateTime(plate.createdAt)}</small>
+        <a class="ghost-link" href="${plate.file}" target="_blank" rel="noopener">Ver archivo</a>
+      </div>
+    </article>
+  `;
+}
+
+function bindPatientPlateForm(patientId) {
+  const form = document.getElementById("patientPlateForm");
+  if (!form) return;
+  document.getElementById("patientPlateTakenAt").value = localDateTimeValue();
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const fileInput = document.getElementById("patientPlateFile");
+    const file = fileInput.files[0];
+    if (!file) return;
+    state.patientPlates ||= [];
+    state.patientPlates.unshift({
+      id: makeId(),
+      patientId,
+      type: value("patientPlateType"),
+      note: value("patientPlateNote"),
+      takenAt: value("patientPlateTakenAt") || localDateTimeValue(),
+      fileName: file.name,
+      file: await readFileAsDataUrl(file),
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser?.id || "sin-usuario"
+    });
+    saveState();
+    openPatientRecord(patientId);
+  });
 }
 
 function appointmentRecordTemplate(appointment) {
@@ -3213,6 +3287,10 @@ function readPatientPhoto() {
   const file = document.getElementById("patientPhoto").files[0];
   if (!file) return Promise.resolve("");
 
+  return readFileAsDataUrl(file);
+}
+
+function readFileAsDataUrl(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.addEventListener("load", () => resolve(reader.result));
@@ -3308,11 +3386,29 @@ function value(id) {
 }
 
 function formatDate(dateText) {
+  if (!dateText) return "Sin fecha";
   return new Intl.DateTimeFormat("es-DO", {
     day: "2-digit",
     month: "short",
     year: "numeric"
   }).format(new Date(`${dateText}T12:00:00`));
+}
+
+function formatDateTime(dateTimeText) {
+  if (!dateTimeText) return "Sin fecha y hora";
+  return new Intl.DateTimeFormat("es-DO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(dateTimeText));
+}
+
+function localDateTimeValue() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16);
 }
 
 function sortByDateTime(a, b) {

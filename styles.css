@@ -1379,6 +1379,48 @@ tbody tr:hover {
   font-size: 16px;
 }
 
+.plate-form {
+  margin: 4px 0 8px;
+}
+
+.plate-history {
+  display: grid;
+  gap: 10px;
+}
+
+.plate-item {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.plate-item img,
+.plate-file {
+  width: 92px;
+  height: 72px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  object-fit: cover;
+  background: #eef5f1;
+}
+
+.plate-file {
+  display: grid;
+  place-items: center;
+  color: var(--green-dark);
+  font-weight: 850;
+}
+
+.ghost-link {
+  color: var(--green-dark);
+  font-weight: 800;
+}
+
 dialog {
   width: min(760px, calc(100vw - 30px));
   border: 0;
