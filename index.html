@@ -150,6 +150,7 @@
             </div>
           </div>
           <div class="panel-card-grid" id="hrPanelCards"></div>
+          <div class="module-grid compact" id="hrPanelModules"></div>
           <div class="content-grid">
             <section class="panel wide">
               <div class="panel-header">
@@ -540,7 +541,7 @@
           <div class="section-toolbar">
             <div>
               <h2>Autoservicio</h2>
-              <p>Consulta rápida para llegada, citas, balance y solicitudes del paciente.</p>
+              <p>Solicitudes internas, llegada de pacientes, citas, balance y soporte operativo.</p>
             </div>
           </div>
           <div class="content-grid">
@@ -567,6 +568,32 @@
               <div id="selfServiceDetail"></div>
             </section>
           </div>
+          <section class="panel payroll-section">
+            <div class="panel-header">
+              <div>
+                <h2>Solicitudes de autoservicio</h2>
+                <p>Placas, laboratorio, insumos, ausencias, vacaciones, equipos y TI.</p>
+              </div>
+            </div>
+            <form class="inline-form" id="selfServiceRequestForm">
+              <select id="selfRequestType" required>
+                <option>Placa adicional</option>
+                <option>Laboratorio - pieza dental</option>
+                <option>Insumos de trabajo</option>
+                <option>Ausencia doctor</option>
+                <option>Reparación de equipo</option>
+                <option>Vacaciones empleado</option>
+                <option>Ticket de TI</option>
+              </select>
+              <select id="selfRequestPatient"></select>
+              <input id="selfRequestPiece" placeholder="Pieza, equipo o insumo">
+              <input id="selfRequestStart" type="date">
+              <input id="selfRequestEnd" type="date">
+              <input id="selfRequestDetail" placeholder="Detalles de la solicitud" required>
+              <button class="primary-button" type="submit">Crear solicitud</button>
+            </form>
+            <div class="ledger" id="selfServiceRequestList"></div>
+          </section>
         </section>
 
         <section class="view" id="agenda">

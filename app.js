@@ -89,7 +89,7 @@ const rolePermissions = {
     scope: "all"
   },
   Doctor: {
-    views: ["dashboard", "patients", "agenda", "odontogram", "treatments", "inventory"],
+    views: ["dashboard", "selfService", "patients", "agenda", "odontogram", "treatments", "inventory"],
     actions: ["patients:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress"],
     scope: "own"
   },
@@ -99,12 +99,12 @@ const rolePermissions = {
     scope: "all"
   },
   "Recursos Humanos": {
-    views: ["hrPanel"],
+    views: ["hrPanel", "selfService"],
     actions: ["payroll:manage"],
     scope: "all"
   },
   Contabilidad: {
-    views: ["accountingPanel", "billing", "inventory", "reports"],
+    views: ["accountingPanel", "selfService", "billing", "inventory", "reports"],
     actions: ["payments:create", "inventory:manage"],
     scope: "all"
   }
@@ -211,6 +211,7 @@ const seedState = {
   evolutions: [],
   clinicalDocuments: [],
   patientPlates: [],
+  selfServiceRequests: [],
   inventory: [],
   settings: {},
   payroll: [],
@@ -447,9 +448,10 @@ const permissionCatalog = [
 ];
 
 const panelModules = {
-  dashboard: ["patients", "agenda", "odontogram", "treatments", "inventory"],
+  dashboard: ["selfService", "patients", "agenda", "odontogram", "treatments", "inventory"],
   receptionPanel: ["patients", "selfService", "agenda", "billing", "inventory", "reports"],
-  accountingPanel: ["billing", "inventory", "reports", "adminPanel"]
+  hrPanel: ["selfService"],
+  accountingPanel: ["selfService", "billing", "inventory", "reports", "adminPanel"]
 };
 
 userPermissionOverrides = normalizeUserPermissionOverrides(userPermissionOverrides);
@@ -490,6 +492,7 @@ function normalizeState(loadedState) {
   next.hrShifts = Array.isArray(next.hrShifts) && next.hrShifts.length ? next.hrShifts : cloneSeed().hrShifts;
   next.hrEvaluations ||= [];
   next.patientPlates ||= [];
+  next.selfServiceRequests ||= [];
   return next;
 }
 
@@ -1004,6 +1007,17 @@ function appointmentConflictsFromForm() {
   return conflicts;
 }
 
+function doctorAbsenceForDate(doctorId, date) {
+  return (state.selfServiceRequests || []).find((request) =>
+    request.type === "Ausencia doctor" &&
+    request.createdBy === doctorId &&
+    request.status !== "Cancelada" &&
+    request.start &&
+    date >= request.start &&
+    date <= (request.end || request.start)
+  );
+}
+
 function bindForms() {
   const dialog = document.getElementById("patientDialog");
   const userDialog = document.getElementById("userDialog");
@@ -1062,10 +1076,34 @@ function bindForms() {
     selectedSelfServicePatientId = null;
     renderSelfService();
   });
+  document.getElementById("selfServiceRequestForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    state.selfServiceRequests ||= [];
+    const type = value("selfRequestType");
+    state.selfServiceRequests.unshift({
+      id: makeId(),
+      type,
+      patientId: value("selfRequestPatient"),
+      piece: value("selfRequestPiece"),
+      start: value("selfRequestStart"),
+      end: value("selfRequestEnd") || value("selfRequestStart"),
+      detail: value("selfRequestDetail"),
+      status: type === "Ausencia doctor" ? "Activa" : "Pendiente",
+      createdBy: currentUser?.id || "sin-usuario",
+      createdAt: new Date().toISOString()
+    });
+    event.target.reset();
+    persistAndRender();
+  });
 
   document.getElementById("appointmentForm").addEventListener("submit", (event) => {
     event.preventDefault();
     if (!can("appointments:create")) return;
+    const absence = doctorAbsenceForDate(value("appointmentDoctor"), value("appointmentDate"));
+    if (absence) {
+      alert(`No se puede agendar. ${doctorById(value("appointmentDoctor")).name} tiene ausencia marcada para ese día: ${absence.detail}`);
+      return;
+    }
     const conflicts = appointmentConflictsFromForm();
     if (conflicts.length && !confirm(`Aviso de agenda:\n\n${conflicts.join("\n")}\n\n¿Desea guardar la cita de todos modos?`)) {
       return;
@@ -1577,10 +1615,10 @@ function populateSelects() {
     .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} · ${escapeHtml(user.role)}</option>`)
     .join("");
 
-  ["appointmentPatient", "odontogramPatient", "treatmentPatient", "paymentPatient"].forEach((id) => {
+  ["appointmentPatient", "odontogramPatient", "treatmentPatient", "paymentPatient", "selfRequestPatient"].forEach((id) => {
     const select = document.getElementById(id);
     const current = select.value;
-    select.innerHTML = options;
+    select.innerHTML = id === "selfRequestPatient" ? `<option value="">Sin paciente asociado</option>${options}` : options;
     if (current && state.patients.some((patient) => patient.id === current)) {
       select.value = current;
     }
@@ -1755,6 +1793,8 @@ function renderHrPanel() {
     ["Nómina neta", currency.format(payrollTotal)],
     ["Pagos pendientes", pendingPayroll]
   ].map(panelCardTemplate).join("");
+
+  renderPanelModules("hrPanelModules", "hrPanel");
 
   document.getElementById("hrStaffCards").innerHTML = users.map((user) => `
     <article class="staff-card">
@@ -2399,7 +2439,8 @@ function renderPatients() {
 function renderSelfService() {
   const resultsContainer = document.getElementById("selfServiceResults");
   const detailContainer = document.getElementById("selfServiceDetail");
-  if (!resultsContainer || !detailContainer) return;
+  const requestContainer = document.getElementById("selfServiceRequestList");
+  if (!resultsContainer || !detailContainer || !requestContainer) return;
   const term = normalizeText(value("selfServiceSearch"));
   const matches = term
     ? state.patients.filter((patient) => normalizeText([
@@ -2453,6 +2494,10 @@ function renderSelfService() {
   document.querySelectorAll("[data-self-record]").forEach((button) => {
     button.addEventListener("click", () => openPatientRecord(button.dataset.selfRecord));
   });
+  requestContainer.innerHTML = selfServiceVisibleRequests().length
+    ? selfServiceVisibleRequests().map(selfServiceRequestTemplate).join("")
+    : emptyState("No hay solicitudes de autoservicio registradas.");
+  syncSelfServiceRequestOptions();
 }
 
 function selfServiceDetailTemplate(patient) {
@@ -2493,6 +2538,41 @@ function selfServiceDetailTemplate(patient) {
         <p>Para actualizar datos, solicitar cita o consultar balance, el personal puede abrir la ficha, agenda o facturación desde este autoservicio.</p>
       </section>
     </div>
+  `;
+}
+
+function selfServiceVisibleRequests() {
+  state.selfServiceRequests ||= [];
+  if (["Administrador", "Recepción", "Recursos Humanos", "Contabilidad"].includes(currentUser?.role)) {
+    return state.selfServiceRequests.slice(0, 12);
+  }
+  return state.selfServiceRequests
+    .filter((request) => request.createdBy === currentUser?.id)
+    .slice(0, 12);
+}
+
+function syncSelfServiceRequestOptions() {
+  const typeSelect = document.getElementById("selfRequestType");
+  if (!typeSelect) return;
+  const doctorOptions = ["Placa adicional", "Laboratorio - pieza dental", "Insumos de trabajo", "Ausencia doctor", "Reparación de equipo", "Ticket de TI"];
+  const employeeOptions = ["Vacaciones empleado", "Insumos de trabajo", "Ticket de TI", "Reparación de equipo"];
+  const options = currentUser?.role === "Doctor" ? doctorOptions : employeeOptions;
+  const current = typeSelect.value;
+  typeSelect.innerHTML = options.map((option) => `<option>${option}</option>`).join("");
+  if (options.includes(current)) typeSelect.value = current;
+}
+
+function selfServiceRequestTemplate(request) {
+  const patient = request.patientId ? patientById(request.patientId) : null;
+  return `
+    <article class="ledger-item">
+      <span class="status-pill ${request.status === "Activa" ? "confirmada" : "pendiente"}">${escapeHtml(request.status)}</span>
+      <div>
+        <strong>${escapeHtml(request.type)}${request.piece ? ` · ${escapeHtml(request.piece)}` : ""}</strong>
+        <p>${patient ? `Paciente: ${escapeHtml(patient.name)} · ` : ""}${escapeHtml(request.detail)}${request.start ? ` · ${formatDate(request.start)}${request.end && request.end !== request.start ? ` a ${formatDate(request.end)}` : ""}` : ""}</p>
+        <small>Solicitado por ${escapeHtml(userById(request.createdBy).name)} · ${formatDateTime(request.createdAt)}</small>
+      </div>
+    </article>
   `;
 }
 
