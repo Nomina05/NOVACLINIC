@@ -29,6 +29,7 @@ Abre `index.html` en el navegador. Los datos se guardan localmente en el navegad
 - Inicio de sesion por usuario y rol.
 - Paneles por area: Doctores, Recepcion, Usuarios, Recursos Humanos y Contabilidad.
 - Panel de Laboratorio para recibir, procesar y completar trabajos de piezas dentales.
+- Los trabajos de laboratorio completados pueden facturarse al doctor conservando el paciente asociado.
 - Menu principal solo con paneles; los modulos se muestran agrupados dentro de cada panel.
 - Modulo de autoservicio para consulta rapida del paciente, confirmacion de llegada, citas, balance y solicitudes internas por rol.
 - Autoservicio permite solicitar placas, laboratorio dental por pieza, insumos, ausencias de doctores, reparacion de equipos, vacaciones y tickets de TI.

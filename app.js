@@ -1117,6 +1117,7 @@ function bindForms() {
       type,
       patientId: value("selfRequestPatient"),
       piece: value("selfRequestPiece"),
+      amount: Number(value("selfRequestAmount")) || 0,
       start: value("selfRequestStart"),
       end: value("selfRequestEnd") || value("selfRequestStart"),
       detail: value("selfRequestDetail"),
@@ -1874,12 +1875,14 @@ function renderLaboratoryPanel() {
   const pending = labRequests.filter((request) => request.status === "Pendiente").length;
   const active = labRequests.filter((request) => ["Recibida", "En proceso"].includes(request.status)).length;
   const completed = labRequests.filter((request) => request.status === "Completada").length;
+  const invoiced = labRequests.filter((request) => request.status === "Facturada").length;
 
   document.getElementById("laboratoryPanelCards").innerHTML = [
     ["Solicitudes", labRequests.length],
     ["Pendientes", pending],
     ["En proceso", active],
-    ["Completadas", completed]
+    ["Completadas", completed],
+    ["Facturadas", invoiced]
   ].map(panelCardTemplate).join("");
 
   renderPanelModules("laboratoryPanelModules", "laboratoryPanel");
@@ -1887,7 +1890,8 @@ function renderLaboratoryPanel() {
   document.getElementById("laboratoryStatusList").innerHTML = [
     ["Pendiente", `${pending} trabajos por recibir.`],
     ["En proceso", `${active} trabajos activos.`],
-    ["Completada", `${completed} trabajos entregados.`]
+    ["Completada", `${completed} trabajos entregados.`],
+    ["Facturada", `${invoiced} trabajos facturados al doctor.`]
   ].map(([label, detail]) => `
     <article class="alert-item">
       <span class="status-pill ${label === "Completada" ? "confirmada" : "pendiente"}">${label}</span>
@@ -1910,6 +1914,12 @@ function renderLaboratoryPanel() {
       persistAndRender();
     });
   });
+  document.querySelectorAll("[data-lab-invoice]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!can("laboratory:manage")) return;
+      createLaboratoryInvoice(button.dataset.labInvoice);
+    });
+  });
 }
 
 function laboratoryRequestTemplate(request) {
@@ -1919,14 +1929,64 @@ function laboratoryRequestTemplate(request) {
       <span class="status-pill ${request.status === "Completada" ? "confirmada" : "pendiente"}">${escapeHtml(request.status)}</span>
       <div>
         <strong>${escapeHtml(request.piece || "Pieza sin especificar")}</strong>
-        <p>${patient ? `Paciente: ${escapeHtml(patient.name)} · ` : ""}${escapeHtml(request.detail || "Sin detalles")}</p>
+        <p>${patient ? `Paciente: ${escapeHtml(patient.name)} · ` : ""}${escapeHtml(request.detail || "Sin detalles")}${request.amount ? ` · ${currency.format(request.amount)}` : ""}</p>
         <small>Solicitado por ${escapeHtml(userById(request.createdBy).name)} · ${formatDateTime(request.createdAt)}</small>
       </div>
       <select data-lab-status="${request.id}" ${can("laboratory:manage") ? "" : "disabled"}>
-        ${["Pendiente", "Recibida", "En proceso", "Completada", "Cancelada"].map((status) => `<option ${status === request.status ? "selected" : ""}>${status}</option>`).join("")}
+        ${["Pendiente", "Recibida", "En proceso", "Completada", "Facturada", "Cancelada"].map((status) => `<option ${status === request.status ? "selected" : ""}>${status}</option>`).join("")}
       </select>
+      <button class="ghost-button ${request.status === "Completada" && request.patientId && !request.invoiceId ? "" : "permission-hidden"}" data-lab-invoice="${request.id}" type="button">Facturar al doctor</button>
     </article>
   `;
+}
+
+function createLaboratoryInvoice(requestId) {
+  const request = state.selfServiceRequests.find((item) => item.id === requestId);
+  if (!request || request.status !== "Completada" || request.invoiceId) return;
+  if (!request.patientId) {
+    alert("Debe existir un paciente asociado para facturar el trabajo.");
+    return;
+  }
+  const patient = patientById(request.patientId);
+  const amount = Number(request.amount) || Number(prompt("Monto a facturar al doctor", "0")) || 0;
+  if (amount <= 0) {
+    alert("Indique un monto válido para facturar.");
+    return;
+  }
+  const doctorId = request.createdBy;
+  const invoiceNumber = nextInvoiceNumber();
+  const receiptNumber = nextReceiptNumber();
+  const payment = {
+    id: makeId(),
+    patientId: patient?.id || "",
+    doctorId,
+    attendedDoctorId: doctorId,
+    cashierId: currentUser?.id || "laboratorio",
+    billTo: "doctor",
+    billedToDoctorId: doctorId,
+    billedToPatientId: patient?.id || "",
+    createdBy: currentUser?.id || "laboratorio",
+    amount,
+    discount: 0,
+    discountReason: "",
+    method: "Laboratorio",
+    reference: request.id,
+    receiptNumber,
+    invoiceNumber,
+    invoiceStatus: "Emitida",
+    date: todayIso,
+    concept: `Laboratorio: ${request.piece || "pieza dental"}`,
+    type: "Laboratorio",
+    laboratoryRequestId: request.id
+  };
+  state.payments.unshift(payment);
+  request.invoiceId = payment.id;
+  request.invoiceNumber = invoiceNumber;
+  request.amount = amount;
+  request.status = "Facturada";
+  request.updatedAt = new Date().toISOString();
+  request.updatedBy = currentUser?.id || "laboratorio";
+  persistAndRender();
 }
 
 function renderHrControls() {
