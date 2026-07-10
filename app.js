@@ -94,8 +94,8 @@ const rolePermissions = {
     scope: "own"
   },
   Recepción: {
-    views: ["receptionPanel", "patients", "agenda", "billing", "reports"],
-    actions: ["patients:create", "appointments:create", "appointments:confirm", "payments:create"],
+    views: ["receptionPanel", "patients", "agenda", "billing", "inventory", "reports"],
+    actions: ["patients:create", "appointments:create", "appointments:confirm", "payments:create", "inventory:manage"],
     scope: "all"
   },
   "Recursos Humanos": {
@@ -104,8 +104,8 @@ const rolePermissions = {
     scope: "all"
   },
   Contabilidad: {
-    views: ["accountingPanel", "billing", "reports"],
-    actions: ["payments:create"],
+    views: ["accountingPanel", "billing", "inventory", "reports"],
+    actions: ["payments:create", "inventory:manage"],
     scope: "all"
   }
 };
@@ -214,6 +214,10 @@ const seedState = {
   settings: {},
   payroll: [],
   payrollNovelties: [],
+  hrAttendance: [],
+  hrVacations: [],
+  hrShifts: [],
+  hrEvaluations: [],
   cashOpenings: [],
   cashClosings: [],
   odontogramHistory: [],
@@ -366,6 +370,14 @@ seedState.payroll = users.map((user) => ({
   status: payrollSeed[user.id]?.status || "Pendiente"
 }));
 
+seedState.hrShifts = [
+  { id: makeId(), userId: "recepcion", name: "Apertura", area: "Recepción", start: "08:00", end: "16:00", day: "Lunes a viernes" },
+  { id: makeId(), userId: "contabilidad", name: "Caja", area: "Contabilidad", start: "08:00", end: "17:00", day: "Lunes a viernes" },
+  { id: makeId(), userId: "rrhh", name: "Administrativo", area: "Recursos Humanos", start: "08:30", end: "17:30", day: "Lunes a viernes" },
+  { id: makeId(), userId: "rivera", name: "Consulta mañana", area: "Odontología", start: "09:00", end: "13:00", day: "Lunes a viernes" },
+  { id: makeId(), userId: "mendez", name: "Consulta tarde", area: "Ortodoncia", start: "14:00", end: "18:00", day: "Lunes a viernes" }
+];
+
 seedState.payments = [
   {
     id: makeId(),
@@ -407,7 +419,7 @@ const views = {
   odontogram: "Odontograma",
   treatments: "Tratamientos",
   billing: "Facturación",
-  inventory: "Inventario",
+  inventory: "Almacén",
   reports: "Reportes",
   adminPanel: "Administración"
 };
@@ -425,15 +437,15 @@ const permissionCatalog = [
   { view: "billing", label: "Facturación", panel: "Contabilidad", actions: ["payments:create"] },
   { view: "odontogram", label: "Expediente odontológico", panel: "Doctores", actions: ["odontogram:edit"] },
   { view: "treatments", label: "Tratamientos", panel: "Doctores", actions: ["treatments:create", "treatments:progress"] },
-  { view: "inventory", label: "Inventario", panel: "Doctores", actions: ["inventory:manage"] },
+  { view: "inventory", label: "Almacén de productos", panel: "Caja y almacén", actions: ["inventory:manage"] },
   { view: "reports", label: "Reportes", panel: "Contabilidad", actions: [] },
   { view: "adminPanel", label: "Administración", panel: "Paneles", actions: ["settings:manage"] }
 ];
 
 const panelModules = {
   dashboard: ["patients", "agenda", "odontogram", "treatments", "inventory"],
-  receptionPanel: ["patients", "agenda", "billing", "reports"],
-  accountingPanel: ["billing", "reports", "adminPanel"]
+  receptionPanel: ["patients", "agenda", "billing", "inventory", "reports"],
+  accountingPanel: ["billing", "inventory", "reports", "adminPanel"]
 };
 
 userPermissionOverrides = normalizeUserPermissionOverrides(userPermissionOverrides);
@@ -460,9 +472,19 @@ function loadState() {
 function normalizeState(loadedState) {
   const next = { ...cloneSeed(), ...loadedState };
   next.inventory = (next.inventory || []).map((item) => ({ price: 0, ...item }));
+  next.payments = (next.payments || []).map((payment) => ({
+    type: "Servicio",
+    billTo: "patient",
+    cashierId: payment.createdBy || "",
+    attendedDoctorId: payment.doctorId || "",
+    ...payment
+  }));
   next.cashOpenings ||= [];
   next.cashClosings ||= [];
-  next.payments ||= [];
+  next.hrAttendance ||= [];
+  next.hrVacations ||= [];
+  next.hrShifts = Array.isArray(next.hrShifts) && next.hrShifts.length ? next.hrShifts : cloneSeed().hrShifts;
+  next.hrEvaluations ||= [];
   return next;
 }
 
@@ -1038,6 +1060,9 @@ function bindForms() {
     event.preventDefault();
     if (!can("payments:create")) return;
     const patient = patientById(value("paymentPatient"));
+    const attendedDoctorId = value("paymentDoctor");
+    const cashierId = value("paymentCashier") || currentUser?.id || "sin-usuario";
+    const billTo = value("paymentBillTo");
     const paymentType = value("paymentType");
     const productId = value("paymentProduct");
     const quantity = Math.max(1, Number(value("paymentQuantity")) || 1);
@@ -1057,8 +1082,13 @@ function bindForms() {
     state.payments.unshift({
       id: makeId(),
       patientId: patient.id,
-      doctorId: currentUser?.role === "Doctor" ? currentUser.id : "sin-doctor",
-      createdBy: currentUser?.id || "sin-usuario",
+      doctorId: attendedDoctorId,
+      attendedDoctorId,
+      cashierId,
+      billTo,
+      billedToDoctorId: billTo === "doctor" ? attendedDoctorId : "",
+      billedToPatientId: billTo === "patient" ? patient.id : "",
+      createdBy: cashierId,
       amount,
       discount,
       discountReason: value("paymentDiscountReason"),
@@ -1079,6 +1109,7 @@ function bindForms() {
     }
     patient.balance = Math.max(0, patient.balance - amount - discount);
     event.target.reset();
+    document.getElementById("paymentCashier").value = currentUser?.id || "";
     syncPaymentProductFields();
     persistAndRender();
   });
@@ -1248,6 +1279,79 @@ function bindForms() {
     persistAndRender();
   });
 
+  document.getElementById("attendanceForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!can("payroll:manage")) return;
+    state.hrAttendance ||= [];
+    state.hrAttendance.unshift({
+      id: makeId(),
+      userId: value("attendanceUser"),
+      date: value("attendanceDate"),
+      status: value("attendanceStatus"),
+      timeIn: value("attendanceIn"),
+      timeOut: value("attendanceOut"),
+      note: value("attendanceNote"),
+      createdBy: currentUser?.id || "sin-usuario"
+    });
+    event.target.reset();
+    document.getElementById("attendanceDate").value = todayIso;
+    persistAndRender();
+  });
+
+  document.getElementById("vacationForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!can("payroll:manage")) return;
+    state.hrVacations ||= [];
+    state.hrVacations.unshift({
+      id: makeId(),
+      userId: value("vacationUser"),
+      start: value("vacationStart"),
+      end: value("vacationEnd"),
+      status: value("vacationStatus"),
+      note: value("vacationNote"),
+      createdBy: currentUser?.id || "sin-usuario"
+    });
+    event.target.reset();
+    persistAndRender();
+  });
+
+  document.getElementById("shiftForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!can("payroll:manage")) return;
+    state.hrShifts ||= [];
+    state.hrShifts.unshift({
+      id: makeId(),
+      userId: value("shiftUser"),
+      name: value("shiftName"),
+      area: value("shiftArea") || userById(value("shiftUser")).room || "Sin área",
+      start: value("shiftStart"),
+      end: value("shiftEnd"),
+      day: value("shiftDay"),
+      createdBy: currentUser?.id || "sin-usuario"
+    });
+    event.target.reset();
+    persistAndRender();
+  });
+
+  document.getElementById("evaluationForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!can("payroll:manage")) return;
+    state.hrEvaluations ||= [];
+    state.hrEvaluations.unshift({
+      id: makeId(),
+      userId: value("evaluationUser"),
+      date: value("evaluationDate"),
+      score: Number(value("evaluationScore")) || 0,
+      status: value("evaluationStatus"),
+      credential: value("evaluationCredential"),
+      note: value("evaluationNote"),
+      createdBy: currentUser?.id || "sin-usuario"
+    });
+    event.target.reset();
+    document.getElementById("evaluationDate").value = todayIso;
+    persistAndRender();
+  });
+
   document.getElementById("printClinicalRecord").addEventListener("click", () => window.print());
   document.getElementById("printReports").addEventListener("click", () => window.print());
 
@@ -1336,6 +1440,10 @@ function applyPermissions() {
   toggleAction("markPayrollPaid", "payroll:manage");
   toggleAction("processPayrollMonth", "payroll:manage");
   toggleAction("payrollNoveltyForm", "payroll:manage");
+  toggleAction("attendanceForm", "payroll:manage");
+  toggleAction("vacationForm", "payroll:manage");
+  toggleAction("shiftForm", "payroll:manage");
+  toggleAction("evaluationForm", "payroll:manage");
   toggleAction("openUserModal", "users:create");
   toggleAction("editSelectedUser", "users:create");
 
@@ -1433,6 +1541,31 @@ function populateSelects() {
     }
   });
 
+  const paymentDoctor = document.getElementById("paymentDoctor");
+  if (paymentDoctor) {
+    const current = paymentDoctor.value;
+    paymentDoctor.innerHTML = doctorOptions;
+    if (current && doctors.some((doctor) => doctor.id === current)) {
+      paymentDoctor.value = current;
+    } else if (currentUser?.role === "Doctor") {
+      paymentDoctor.value = currentUser.id;
+    }
+  }
+
+  const paymentCashier = document.getElementById("paymentCashier");
+  if (paymentCashier) {
+    const current = paymentCashier.value;
+    paymentCashier.innerHTML = users
+      .filter((user) => ["Administrador", "Recepción", "Contabilidad"].includes(user.role))
+      .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} · ${escapeHtml(user.role)}</option>`)
+      .join("");
+    if (current && users.some((user) => user.id === current)) {
+      paymentCashier.value = current;
+    } else if (currentUser) {
+      paymentCashier.value = currentUser.id;
+    }
+  }
+
   ["appointmentDoctor", "treatmentDoctor"].forEach((id) => {
     const select = document.getElementById(id);
     const current = select.value;
@@ -1469,9 +1602,21 @@ function populateSelects() {
     }
   }
 
+  ["attendanceUser", "vacationUser", "shiftUser", "evaluationUser"].forEach((id) => {
+    const select = document.getElementById(id);
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = userOptions;
+    if (current && users.some((user) => user.id === current)) {
+      select.value = current;
+    }
+  });
+
   document.getElementById("appointmentDate").value ||= todayIso;
   document.getElementById("agendaDateFilter").value ||= todayIso;
   document.getElementById("evolutionDate").value ||= todayIso;
+  document.getElementById("attendanceDate").value ||= todayIso;
+  document.getElementById("evaluationDate").value ||= todayIso;
 }
 
 function renderDashboard() {
@@ -1554,6 +1699,10 @@ function renderHrPanel() {
   const payrollItems = normalizedPayroll().map(payrollDisplayItem);
   const payrollTotal = payrollItems.reduce((sum, item) => sum + payrollNet(item), 0);
   const pendingPayroll = payrollItems.filter((item) => item.status !== "Pagado").length;
+  state.hrAttendance ||= [];
+  state.hrVacations ||= [];
+  state.hrShifts ||= [];
+  state.hrEvaluations ||= [];
 
   document.getElementById("hrPanelCards").innerHTML = [
     ["Personal activo", activeUsers],
@@ -1577,18 +1726,86 @@ function renderHrPanel() {
   `).join("");
 
   document.getElementById("hrNotes").innerHTML = [
-    ["Asistencia", "Preparado para registrar asistencia del personal."],
-    ["Vacaciones", "Espacio para solicitudes y aprobaciones."],
-    ["Turnos", `${shiftCount} turnos registrados para el personal.`],
-    ["Evaluaciones", "Seguimiento de desempeño y credenciales."]
+    ["Asistencia", `${state.hrAttendance.filter((item) => item.date === todayIso).length} registros hoy.`],
+    ["Vacaciones", `${state.hrVacations.filter((item) => item.status === "Solicitada").length} solicitudes pendientes.`],
+    ["Turnos", `${state.hrShifts.length || shiftCount} turnos registrados para el personal.`],
+    ["Evaluaciones", `${state.hrEvaluations.length} evaluaciones registradas.`]
   ].map(([label, detail]) => `
     <article class="alert-item">
       <span class="status-pill pendiente">${label}</span>
-      <div><strong>${detail}</strong><p>Disponible para ampliar el módulo de RRHH.</p></div>
+      <div><strong>${detail}</strong><p>Módulo activo dentro de RRHH.</p></div>
     </article>
   `).join("");
 
+  renderHrControls();
   renderPayroll(payrollItems);
+}
+
+function renderHrControls() {
+  document.getElementById("attendanceTable").innerHTML = state.hrAttendance.length
+    ? state.hrAttendance.slice(0, 10).map((item) => `
+      <tr>
+        <td>${escapeHtml(userById(item.userId).name)}</td>
+        <td>${formatDate(item.date)}</td>
+        <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
+        <td>${escapeHtml(item.timeIn || "Sin entrada")}</td>
+        <td>${escapeHtml(item.timeOut || "Sin salida")}</td>
+        <td>${escapeHtml(item.note || "Sin nota")}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="6">${emptyState("Sin asistencia registrada.")}</td></tr>`;
+
+  document.getElementById("vacationTable").innerHTML = state.hrVacations.length
+    ? state.hrVacations.slice(0, 10).map((item) => `
+      <tr>
+        <td>${escapeHtml(userById(item.userId).name)}</td>
+        <td>${formatDate(item.start)}</td>
+        <td>${formatDate(item.end)}</td>
+        <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
+        <td>${escapeHtml(item.note || "Sin comentario")}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="5">${emptyState("Sin solicitudes de vacaciones.")}</td></tr>`;
+
+  document.getElementById("shiftTable").innerHTML = state.hrShifts.length
+    ? state.hrShifts.slice(0, 10).map((item) => `
+      <tr>
+        <td>${escapeHtml(userById(item.userId).name)}</td>
+        <td><strong>${escapeHtml(item.name)}</strong></td>
+        <td>${escapeHtml(item.area || "Sin área")}</td>
+        <td>${escapeHtml(item.start)} - ${escapeHtml(item.end)}</td>
+        <td>${escapeHtml(item.day || "Sin día")}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="5">${emptyState("Sin turnos registrados.")}</td></tr>`;
+
+  document.getElementById("evaluationTable").innerHTML = state.hrEvaluations.length
+    ? state.hrEvaluations.slice(0, 10).map((item) => `
+      <tr>
+        <td>${escapeHtml(userById(item.userId).name)}</td>
+        <td>${formatDate(item.date)}</td>
+        <td><strong>${Number(item.score) || 0}/100</strong></td>
+        <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
+        <td>${escapeHtml(item.credential || "Sin credencial")}</td>
+        <td>${escapeHtml(item.note || "Sin observación")}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="6">${emptyState("Sin evaluaciones registradas.")}</td></tr>`;
+}
+
+function hrStatusClass(status) {
+  return {
+    Presente: "confirmada",
+    Aprobada: "confirmada",
+    Completada: "confirmada",
+    Tarde: "pendiente",
+    Solicitada: "pendiente",
+    "En seguimiento": "pendiente",
+    Ausente: "cancelada",
+    Rechazada: "cancelada",
+    "Requiere mejora": "cancelada",
+    "Credencial vencida": "cancelada"
+  }[status] || "pendiente";
 }
 
 function renderPayrollLegacy(payrollItems) {
@@ -2279,7 +2496,7 @@ function paymentRecordTemplate(payment) {
       <span class="amount-pill">${currency.format(payment.amount)}</span>
       <div>
         <strong>${escapeHtml(payment.invoiceNumber || payment.receiptNumber || "Sin número")}</strong>
-        <p>${escapeHtml(payment.concept)} · ${escapeHtml(payment.method)} · ${formatDate(payment.date)}</p>
+        <p>${escapeHtml(payment.concept)} · ${escapeHtml(payment.method)} · ${escapeHtml(paymentBillToLabel(payment))} · Doctor ${escapeHtml(paymentDoctorLabel(payment))} · Cajero ${escapeHtml(paymentCashierLabel(payment))} · ${formatDate(payment.date)}</p>
       </div>
     </article>
   `;
@@ -2726,7 +2943,7 @@ function renderBilling() {
             <span class="amount-pill">${currency.format(payment.amount)}</span>
             <div>
               <strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} · ${escapeHtml(payment.receiptNumber || "REC-S/N")} · ${escapeHtml(patientById(payment.patientId).name)}</strong>
-              <p>${escapeHtml(payment.concept)}${payment.type === "Producto" ? ` · Cant. ${payment.quantity || 1}` : ""} · ${escapeHtml(payment.method)} · ${escapeHtml(payment.invoiceStatus || "Pagada")}${payment.reference ? ` · Ref. ${escapeHtml(payment.reference)}` : ""} · Registrado por ${escapeHtml(userById(payment.createdBy || payment.doctorId).name)} · ${formatDate(payment.date)}</p>
+              <p>${escapeHtml(payment.concept)}${payment.type === "Producto" ? ` · Cant. ${payment.quantity || 1}` : ""} · ${escapeHtml(payment.method)} · ${escapeHtml(payment.invoiceStatus || "Pagada")}${payment.reference ? ` · Ref. ${escapeHtml(payment.reference)}` : ""} · ${escapeHtml(paymentBillToLabel(payment))} · Doctor ${escapeHtml(paymentDoctorLabel(payment))} · Cajero ${escapeHtml(paymentCashierLabel(payment))} · ${formatDate(payment.date)}</p>
               ${(payment.discount || 0) > 0 ? `<p>Descuento: ${currency.format(payment.discount)} · ${escapeHtml(payment.discountReason || "Sin motivo")}</p>` : ""}
             </div>
             <button class="ghost-button" data-receipt="${payment.id}">Recibo</button>
@@ -2876,11 +3093,15 @@ function nextInvoiceNumber() {
 }
 
 function syncPaymentProductFields() {
-  const isProduct = value("paymentType") === "Producto";
+  const paymentType = value("paymentType");
+  const isProduct = paymentType === "Producto";
   const productSelect = document.getElementById("paymentProduct");
   const quantityInput = document.getElementById("paymentQuantity");
   productSelect.disabled = !isProduct;
   quantityInput.disabled = !isProduct;
+  if (paymentType === "Laboratorio") {
+    document.getElementById("paymentBillTo").value = "doctor";
+  }
   if (isProduct) {
     syncSelectedProductSale();
   }
@@ -2898,6 +3119,21 @@ function syncSelectedProductSale() {
 function currentCashOpening() {
   state.cashOpenings ||= [];
   return state.cashOpenings.find((opening) => opening.date === todayIso && opening.status === "Abierta");
+}
+
+function paymentBillToLabel(payment) {
+  if (payment.billTo === "doctor") {
+    return `Doctor: ${doctorById(payment.billedToDoctorId || payment.attendedDoctorId || payment.doctorId).name}`;
+  }
+  return `Paciente: ${patientById(payment.billedToPatientId || payment.patientId).name}`;
+}
+
+function paymentDoctorLabel(payment) {
+  return doctorById(payment.attendedDoctorId || payment.doctorId).name;
+}
+
+function paymentCashierLabel(payment) {
+  return userById(payment.cashierId || payment.createdBy).name;
 }
 
 function paymentMethodTotals(date = null) {
@@ -2933,6 +3169,9 @@ function openReceipt(paymentId) {
       <div class="receipt-row"><span>Recibo</span><strong>${escapeHtml(payment.receiptNumber || "REC-S/N")}</strong></div>
       <div class="receipt-row"><span>Fecha</span><strong>${formatDate(payment.date)}</strong></div>
       <div class="receipt-row"><span>Paciente</span><strong>${escapeHtml(patient.name)}</strong></div>
+      <div class="receipt-row"><span>Facturado a</span><strong>${escapeHtml(paymentBillToLabel(payment))}</strong></div>
+      <div class="receipt-row"><span>Doctor que atendió</span><strong>${escapeHtml(paymentDoctorLabel(payment))}</strong></div>
+      <div class="receipt-row"><span>Cajero</span><strong>${escapeHtml(paymentCashierLabel(payment))}</strong></div>
       <div class="receipt-row"><span>Tipo</span><strong>${escapeHtml(payment.type || "Servicio")}</strong></div>
       <div class="receipt-row"><span>Concepto</span><strong>${escapeHtml(payment.concept)}</strong></div>
       ${payment.type === "Producto" ? `<div class="receipt-row"><span>Producto</span><strong>${escapeHtml(payment.productName || payment.concept)} · Cant. ${payment.quantity || 1}</strong></div>` : ""}
@@ -2943,7 +3182,7 @@ function openReceipt(paymentId) {
       <div class="receipt-row"><span>Motivo descuento</span><strong>${escapeHtml(payment.discountReason || "No aplica")}</strong></div>
       <div class="receipt-total"><span>Total pagado</span><strong>${currency.format(payment.amount)}</strong></div>
       <div class="receipt-row"><span>Balance pendiente</span><strong>${currency.format(patient.balance)}</strong></div>
-      <div class="receipt-row"><span>Registrado por</span><strong>${escapeHtml(userById(payment.createdBy || payment.doctorId).name)}</strong></div>
+      <div class="receipt-row"><span>Registrado por</span><strong>${escapeHtml(paymentCashierLabel(payment))}</strong></div>
     </div>
   `;
   document.getElementById("receiptDialog").showModal();

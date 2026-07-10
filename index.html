@@ -164,12 +164,161 @@
               <div class="panel-header">
                 <div>
                   <h2>Próximos controles</h2>
-                  <p>Espacio reservado para vacaciones, asistencia y turnos.</p>
+                  <p>Asistencia, vacaciones, turnos y evaluaciones del personal.</p>
                 </div>
               </div>
               <div class="alert-list" id="hrNotes"></div>
             </section>
           </div>
+          <section class="panel payroll-section">
+            <div class="panel-header">
+              <div>
+                <h2>Asistencia</h2>
+                <p>Registro diario de entrada, salida y estado del personal.</p>
+              </div>
+            </div>
+            <form class="inline-form" id="attendanceForm">
+              <select id="attendanceUser" required></select>
+              <input id="attendanceDate" type="date" required>
+              <select id="attendanceStatus">
+                <option>Presente</option>
+                <option>Tarde</option>
+                <option>Ausente</option>
+                <option>Permiso</option>
+              </select>
+              <input id="attendanceIn" type="time">
+              <input id="attendanceOut" type="time">
+              <input id="attendanceNote" placeholder="Nota">
+              <button class="primary-button" type="submit">Registrar asistencia</button>
+            </form>
+            <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Entrada</th>
+                    <th>Salida</th>
+                    <th>Nota</th>
+                  </tr>
+                </thead>
+                <tbody id="attendanceTable"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel payroll-section">
+            <div class="panel-header">
+              <div>
+                <h2>Vacaciones</h2>
+                <p>Solicitudes, aprobaciones y seguimiento de ausencias programadas.</p>
+              </div>
+            </div>
+            <form class="inline-form" id="vacationForm">
+              <select id="vacationUser" required></select>
+              <input id="vacationStart" type="date" required>
+              <input id="vacationEnd" type="date" required>
+              <select id="vacationStatus">
+                <option>Solicitada</option>
+                <option>Aprobada</option>
+                <option>Rechazada</option>
+                <option>Completada</option>
+              </select>
+              <input id="vacationNote" placeholder="Motivo o comentario">
+              <button class="primary-button" type="submit">Registrar solicitud</button>
+            </form>
+            <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Desde</th>
+                    <th>Hasta</th>
+                    <th>Estado</th>
+                    <th>Comentario</th>
+                  </tr>
+                </thead>
+                <tbody id="vacationTable"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel payroll-section">
+            <div class="panel-header">
+              <div>
+                <h2>Turnos</h2>
+                <p>Asignación de horarios y áreas de trabajo del personal.</p>
+              </div>
+            </div>
+            <form class="inline-form" id="shiftForm">
+              <select id="shiftUser" required></select>
+              <input id="shiftName" placeholder="Nombre del turno" required>
+              <input id="shiftArea" placeholder="Área">
+              <input id="shiftStart" type="time" required>
+              <input id="shiftEnd" type="time" required>
+              <select id="shiftDay">
+                <option>Lunes a viernes</option>
+                <option>Lunes</option>
+                <option>Martes</option>
+                <option>Miércoles</option>
+                <option>Jueves</option>
+                <option>Viernes</option>
+                <option>Sábado</option>
+                <option>Domingo</option>
+              </select>
+              <button class="primary-button" type="submit">Asignar turno</button>
+            </form>
+            <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Turno</th>
+                    <th>Área</th>
+                    <th>Horario</th>
+                    <th>Día</th>
+                  </tr>
+                </thead>
+                <tbody id="shiftTable"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel payroll-section">
+            <div class="panel-header">
+              <div>
+                <h2>Evaluaciones</h2>
+                <p>Seguimiento de desempeño, credenciales y observaciones.</p>
+              </div>
+            </div>
+            <form class="inline-form" id="evaluationForm">
+              <select id="evaluationUser" required></select>
+              <input id="evaluationDate" type="date" required>
+              <input id="evaluationScore" type="number" min="0" max="100" placeholder="Puntuación" required>
+              <select id="evaluationStatus">
+                <option>En seguimiento</option>
+                <option>Aprobada</option>
+                <option>Requiere mejora</option>
+                <option>Credencial vencida</option>
+              </select>
+              <input id="evaluationCredential" placeholder="Credencial o documento">
+              <input id="evaluationNote" placeholder="Observación">
+              <button class="primary-button" type="submit">Registrar evaluación</button>
+            </form>
+            <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Fecha</th>
+                    <th>Puntuación</th>
+                    <th>Estado</th>
+                    <th>Credencial</th>
+                    <th>Observación</th>
+                  </tr>
+                </thead>
+                <tbody id="evaluationTable"></tbody>
+              </table>
+            </div>
+          </section>
           <section class="panel payroll-panel">
             <div class="panel-header">
               <div>
@@ -593,8 +742,8 @@
         <section class="view" id="inventory">
           <div class="section-toolbar">
             <div>
-              <h2>Inventario</h2>
-              <p>Materiales odontológicos, stock, vencimientos y proveedores.</p>
+              <h2>Almacén de productos</h2>
+              <p>Productos facturables, stock, vencimientos y proveedores.</p>
             </div>
             <form class="inline-form" id="inventoryForm">
               <input id="inventoryName" placeholder="Material" required>
@@ -732,8 +881,15 @@
             </div>
             <form class="inline-form" id="paymentForm">
               <select id="paymentPatient" required></select>
+              <select id="paymentDoctor" required></select>
+              <select id="paymentCashier" required></select>
+              <select id="paymentBillTo">
+                <option value="patient">Facturar al paciente</option>
+                <option value="doctor">Facturar al doctor</option>
+              </select>
               <select id="paymentType">
                 <option>Servicio</option>
+                <option>Laboratorio</option>
                 <option>Producto</option>
               </select>
               <select id="paymentProduct" disabled></select>
