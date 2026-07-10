@@ -432,6 +432,96 @@ p {
   font-size: 26px;
 }
 
+.report-hero {
+  align-items: end;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff, #eef7f3);
+  box-shadow: var(--shadow);
+}
+
+.report-kicker {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: var(--green-dark);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.report-command-grid,
+.pos-report-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.report-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr);
+  gap: 18px;
+}
+
+.report-metric-card,
+.pos-summary-card {
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.report-metric-card strong,
+.pos-summary-card strong {
+  font-size: 28px;
+  line-height: 1.05;
+}
+
+.report-metric-card p,
+.pos-summary-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.pos-summary-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.report-panel,
+.pos-report-panel {
+  border-color: #cfe1d8;
+}
+
+.report-list-item {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.report-rank {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--green-dark);
+  font-weight: 900;
+}
+
+.report-alert {
+  background: #fff;
+}
+
 .quick-actions {
   display: grid;
   gap: 10px;
@@ -1590,6 +1680,8 @@ dialog::backdrop {
 
   .metric-grid,
   .panel-card-grid,
+  .report-command-grid,
+  .pos-report-summary,
   .module-grid,
   .billing-summary,
   .cards-grid {
@@ -1597,6 +1689,7 @@ dialog::backdrop {
   }
 
   .content-grid,
+  .report-layout,
   .odontogram-layout,
   .agenda-layout,
   .record-grid,
@@ -1650,6 +1743,8 @@ dialog::backdrop {
 
   .metric-grid,
   .panel-card-grid,
+  .report-command-grid,
+  .pos-report-summary,
   .module-grid,
   .billing-summary,
   .cards-grid,

@@ -3561,21 +3561,21 @@ function renderReports() {
   const receivable = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
 
   document.getElementById("reportCards").innerHTML = [
-    ["Ingresos", currency.format(income)],
-    ["Cuentas por cobrar", currency.format(receivable)],
-    ["Citas canceladas", cancelled],
-    ["Tratamientos completados", completedTreatments]
-  ].map(panelCardTemplate).join("");
+    ["Ingresos acumulados", currency.format(income), "Cobros y facturación registrada", "confirmada"],
+    ["Cuentas por cobrar", currency.format(receivable), "Balance pendiente de pacientes", receivable > 0 ? "pendiente" : "confirmada"],
+    ["Citas canceladas", cancelled, "Impacto operativo de agenda", cancelled ? "cancelada" : "confirmada"],
+    ["Tratamientos completados", completedTreatments, "Procedimientos cerrados", "confirmada"]
+  ].map(reportMetricTemplate).join("");
 
   document.getElementById("doctorProductivity").innerHTML = doctors.map((doctor) => {
     const appointments = state.appointments.filter((appointment) => appointment.doctorId === doctor.id).length;
     const treatments = state.treatments.filter((treatment) => treatment.doctorId === doctor.id && treatment.progress < 100).length;
     return `
-      <article class="clinical-item">
-        <span class="status-pill confirmada">${appointments} citas</span>
+      <article class="clinical-item report-list-item">
+        <span class="report-rank">${appointments}</span>
         <div>
           <strong>${escapeHtml(doctor.name)}</strong>
-          <p>${treatments} tratamientos activos · ${escapeHtml(doctor.specialty)}</p>
+          <p>${appointments} citas · ${treatments} tratamientos activos · ${escapeHtml(doctor.specialty)}</p>
         </div>
       </article>
     `;
@@ -3586,7 +3586,7 @@ function renderReports() {
     ["Balances", `${state.patients.filter((patient) => patient.balance > 0).length} pacientes con deuda.`],
     ["Seguimiento", `${state.treatments.filter((treatment) => treatment.progress > 0 && treatment.progress < 100).length} tratamientos en curso.`]
   ].map(([label, detail]) => `
-    <article class="alert-item">
+    <article class="alert-item report-alert">
       <span class="status-pill pendiente">${label}</span>
       <div><strong>${detail}</strong><p>Revise el módulo correspondiente.</p></div>
     </article>
@@ -3602,11 +3602,11 @@ function renderPosInvoiceReport() {
   const emitted = posInvoices.filter((payment) => payment.invoiceStatus === "Emitida").length;
 
   document.getElementById("posInvoiceSummary").innerHTML = [
-    ["Facturas POS/POST", posInvoices.length],
-    ["Total cobrado", currency.format(total)],
-    ["Descuentos", currency.format(discounts)],
-    ["Emitidas", emitted]
-  ].map(panelCardTemplate).join("");
+    ["Facturas", posInvoices.length, "Transacciones detectadas"],
+    ["Total cobrado", currency.format(total), "Monto procesado por POS/POST"],
+    ["Descuentos", currency.format(discounts), "Ajustes aplicados"],
+    ["Emitidas", emitted, "Pendientes de cierre o cobro"]
+  ].map(posSummaryTemplate).join("");
 
   document.getElementById("posInvoiceTable").innerHTML = posInvoices.length
     ? posInvoices.map((payment) => `
@@ -3621,6 +3621,26 @@ function renderPosInvoiceReport() {
       </tr>
     `).join("")
     : `<tr><td colspan="7">${emptyState("No hay facturas POS/POST registradas.")}</td></tr>`;
+}
+
+function reportMetricTemplate([label, valueText, detail, status]) {
+  return `
+    <article class="report-metric-card">
+      <span class="status-pill ${status}">${label}</span>
+      <strong>${valueText}</strong>
+      <p>${detail}</p>
+    </article>
+  `;
+}
+
+function posSummaryTemplate([label, valueText, detail]) {
+  return `
+    <article class="pos-summary-card">
+      <span>${label}</span>
+      <strong>${valueText}</strong>
+      <p>${detail}</p>
+    </article>
+  `;
 }
 
 function isPosInvoice(payment) {

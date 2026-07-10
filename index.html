@@ -869,25 +869,26 @@
         </section>
 
         <section class="view" id="reports">
-          <div class="section-toolbar">
+          <div class="section-toolbar report-hero">
             <div>
-              <h2>Reportes</h2>
-              <p>Indicadores de ingresos, citas, pacientes y productividad.</p>
+              <span class="report-kicker">Centro de inteligencia</span>
+              <h2>Reportes ejecutivos</h2>
+              <p>Indicadores financieros, operativos y de productividad para la toma de decisiones.</p>
             </div>
             <button class="ghost-button" id="printReports" type="button">Imprimir reportes</button>
           </div>
-          <div class="panel-card-grid" id="reportCards"></div>
-          <div class="content-grid">
-            <section class="panel wide">
+          <div class="report-command-grid" id="reportCards"></div>
+          <div class="report-layout">
+            <section class="panel report-panel wide">
               <div class="panel-header">
                 <div>
                   <h2>Productividad por doctor</h2>
-                  <p>Citas y tratamientos activos.</p>
+                  <p>Volumen de citas y tratamientos activos por profesional.</p>
                 </div>
               </div>
               <div class="clinical-list" id="doctorProductivity"></div>
             </section>
-            <section class="panel">
+            <section class="panel report-panel">
               <div class="panel-header">
                 <div>
                   <h2>Alertas operativas</h2>
@@ -897,14 +898,14 @@
               <div class="alert-list" id="reportAlerts"></div>
             </section>
           </div>
-          <section class="panel payroll-section">
+          <section class="panel payroll-section pos-report-panel">
             <div class="panel-header">
               <div>
                 <h2>Reporte de facturas POS/POST</h2>
                 <p>Facturas cobradas por tarjeta o referencias POS/POST.</p>
               </div>
             </div>
-            <div class="panel-card-grid compact-payroll-summary" id="posInvoiceSummary"></div>
+            <div class="pos-report-summary" id="posInvoiceSummary"></div>
             <div class="table-panel">
               <table>
                 <thead>
