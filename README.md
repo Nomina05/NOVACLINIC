@@ -28,6 +28,7 @@ Abre `index.html` en el navegador. Los datos se guardan localmente en el navegad
 - Inicio de sesion por usuario y rol.
 - Paneles por area: Doctores, Recepcion, Usuarios, Recursos Humanos y Contabilidad.
 - Menu principal solo con paneles; los modulos se muestran agrupados dentro de cada panel.
+- Modulo de autoservicio para consulta rapida del paciente, confirmacion de llegada, citas y balance.
 - Matriz de permisos administrada por el usuario Administrador desde el panel de Usuarios.
 - Panel de Usuarios simplificado con busqueda, lista compacta, editor de permisos y boton Nuevo usuario.
 - Registro de pacientes con datos personales, tipo de documento, nacionalidad, alergias, historial clinico, fotografia por camara y balance.

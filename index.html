@@ -536,6 +536,39 @@
           </div>
         </section>
 
+        <section class="view" id="selfService">
+          <div class="section-toolbar">
+            <div>
+              <h2>Autoservicio</h2>
+              <p>Consulta rápida para llegada, citas, balance y solicitudes del paciente.</p>
+            </div>
+          </div>
+          <div class="content-grid">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Buscar paciente</h2>
+                  <p>Documento, teléfono, código o nombre.</p>
+                </div>
+              </div>
+              <form class="inline-form" id="selfServiceSearchForm">
+                <input id="selfServiceSearch" placeholder="Ej. P001, cédula, teléfono o nombre" required>
+                <button class="primary-button" type="submit">Consultar</button>
+              </form>
+              <div class="alert-list" id="selfServiceResults"></div>
+            </section>
+            <section class="panel wide">
+              <div class="panel-header">
+                <div>
+                  <h2>Resumen del paciente</h2>
+                  <p>Citas, balance y acciones disponibles.</p>
+                </div>
+              </div>
+              <div id="selfServiceDetail"></div>
+            </section>
+          </div>
+        </section>
+
         <section class="view" id="agenda">
           <div class="section-toolbar">
             <div>

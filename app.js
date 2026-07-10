@@ -84,7 +84,7 @@ let users = loadUsers();
 
 const rolePermissions = {
   Administrador: {
-    views: ["dashboard", "receptionPanel", "usersPanel", "hrPanel", "accountingPanel", "patients", "agenda", "odontogram", "treatments", "billing", "inventory", "reports", "adminPanel"],
+    views: ["dashboard", "receptionPanel", "usersPanel", "hrPanel", "accountingPanel", "patients", "selfService", "agenda", "odontogram", "treatments", "billing", "inventory", "reports", "adminPanel"],
     actions: ["patients:create", "appointments:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress", "payments:create", "payroll:manage", "users:create", "inventory:manage", "settings:manage"],
     scope: "all"
   },
@@ -94,7 +94,7 @@ const rolePermissions = {
     scope: "own"
   },
   Recepción: {
-    views: ["receptionPanel", "patients", "agenda", "billing", "inventory", "reports"],
+    views: ["receptionPanel", "patients", "selfService", "agenda", "billing", "inventory", "reports"],
     actions: ["patients:create", "appointments:create", "appointments:confirm", "payments:create", "inventory:manage"],
     scope: "all"
   },
@@ -402,6 +402,7 @@ let editingPatientId = null;
 let editingAppointmentId = null;
 let patientCameraStream = null;
 let capturedPatientPhoto = "";
+let selectedSelfServicePatientId = null;
 
 const currency = new Intl.NumberFormat("es-DO", {
   style: "currency",
@@ -416,6 +417,7 @@ const views = {
   hrPanel: "Panel recursos humanos",
   accountingPanel: "Panel contabilidad",
   patients: "Pacientes",
+  selfService: "Autoservicio",
   agenda: "Agenda",
   odontogram: "Odontograma",
   treatments: "Tratamientos",
@@ -434,6 +436,7 @@ const permissionCatalog = [
   { view: "hrPanel", label: "Panel Recursos Humanos", panel: "Paneles", actions: ["payroll:manage"] },
   { view: "accountingPanel", label: "Panel Contabilidad", panel: "Paneles", actions: [] },
   { view: "patients", label: "Pacientes", panel: "Recepción", actions: ["patients:create"] },
+  { view: "selfService", label: "Autoservicio", panel: "Recepción", actions: ["appointments:confirm"] },
   { view: "agenda", label: "Agenda", panel: "Recepción", actions: ["appointments:create", "appointments:confirm"] },
   { view: "billing", label: "Facturación", panel: "Contabilidad", actions: ["payments:create"] },
   { view: "odontogram", label: "Expediente odontológico", panel: "Doctores", actions: ["odontogram:edit"] },
@@ -445,7 +448,7 @@ const permissionCatalog = [
 
 const panelModules = {
   dashboard: ["patients", "agenda", "odontogram", "treatments", "inventory"],
-  receptionPanel: ["patients", "agenda", "billing", "inventory", "reports"],
+  receptionPanel: ["patients", "selfService", "agenda", "billing", "inventory", "reports"],
   accountingPanel: ["billing", "inventory", "reports", "adminPanel"]
 };
 
@@ -1054,6 +1057,12 @@ function bindForms() {
   document.getElementById("donePatientRecord").addEventListener("click", closePatientRecord);
   document.getElementById("printPatientRecord").addEventListener("click", () => window.print());
 
+  document.getElementById("selfServiceSearchForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    selectedSelfServicePatientId = null;
+    renderSelfService();
+  });
+
   document.getElementById("appointmentForm").addEventListener("submit", (event) => {
     event.preventDefault();
     if (!can("appointments:create")) return;
@@ -1541,6 +1550,7 @@ function render() {
   renderHrPanel();
   renderAccountingPanel();
   renderPatients();
+  renderSelfService();
   renderAgenda();
   renderOdontogram();
   renderTreatments();
@@ -2384,6 +2394,106 @@ function renderPatients() {
   document.querySelectorAll("[data-record-patient]").forEach((button) => {
     button.addEventListener("click", () => openPatientRecord(button.dataset.recordPatient));
   });
+}
+
+function renderSelfService() {
+  const resultsContainer = document.getElementById("selfServiceResults");
+  const detailContainer = document.getElementById("selfServiceDetail");
+  if (!resultsContainer || !detailContainer) return;
+  const term = normalizeText(value("selfServiceSearch"));
+  const matches = term
+    ? state.patients.filter((patient) => normalizeText([
+        patient.name,
+        patient.code,
+        patient.document,
+        patient.phone,
+        patient.email
+      ].join(" ")).includes(term)).slice(0, 8)
+    : [];
+
+  resultsContainer.innerHTML = matches.length
+    ? matches.map((patient) => `
+      <article class="alert-item">
+        <span class="status-pill confirmada">${escapeHtml(patient.code || "Paciente")}</span>
+        <div>
+          <strong>${escapeHtml(patient.name)}</strong>
+          <p>${escapeHtml(patient.phone)} · ${escapeHtml(patientDocumentLabel(patient))}</p>
+        </div>
+        <button class="ghost-button" data-self-service-patient="${patient.id}" type="button">Seleccionar</button>
+      </article>
+    `).join("")
+    : emptyState(term ? "No se encontraron pacientes." : "Digite un dato para consultar.");
+
+  if (!selectedSelfServicePatientId && matches[0]) {
+    selectedSelfServicePatientId = matches[0].id;
+  }
+  if (selectedSelfServicePatientId && !state.patients.some((patient) => patient.id === selectedSelfServicePatientId)) {
+    selectedSelfServicePatientId = null;
+  }
+  detailContainer.innerHTML = selectedSelfServicePatientId
+    ? selfServiceDetailTemplate(patientById(selectedSelfServicePatientId))
+    : emptyState("Seleccione un paciente para ver su autoservicio.");
+
+  document.querySelectorAll("[data-self-service-patient]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedSelfServicePatientId = button.dataset.selfServicePatient;
+      renderSelfService();
+    });
+  });
+  document.querySelectorAll("[data-self-checkin]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!can("appointments:confirm")) return;
+      const appointment = state.appointments.find((item) => item.id === button.dataset.selfCheckin);
+      if (!appointment) return;
+      appointment.status = "Confirmada";
+      appointment.checkInAt = new Date().toISOString();
+      persistAndRender();
+    });
+  });
+  document.querySelectorAll("[data-self-record]").forEach((button) => {
+    button.addEventListener("click", () => openPatientRecord(button.dataset.selfRecord));
+  });
+}
+
+function selfServiceDetailTemplate(patient) {
+  const appointments = state.appointments
+    .filter((appointment) => appointment.patientId === patient.id && appointment.date >= todayIso && appointment.status !== "Cancelada")
+    .sort(sortByDateTime)
+    .slice(0, 5);
+  return `
+    <div class="self-service-summary">
+      <article class="record-block">
+        <h3>${escapeHtml(patient.name)}</h3>
+        <p>${escapeHtml(patient.phone)} · ${escapeHtml(patient.email || "Sin correo")}</p>
+        <p>${escapeHtml(patient.documentType || "Documento")}: ${escapeHtml(patientDocumentLabel(patient))}</p>
+        <p>Balance: <strong>${currency.format(patient.balance || 0)}</strong></p>
+        <div class="table-actions">
+          <button class="ghost-button" data-self-record="${patient.id}" type="button">Abrir ficha</button>
+          <button class="ghost-button" data-view-jump="agenda" type="button">Ir a agenda</button>
+          <button class="ghost-button" data-view-jump="billing" type="button">Ir a facturación</button>
+        </div>
+      </article>
+      <section class="record-block">
+        <h3>Próximas citas</h3>
+        <div class="clinical-list">
+          ${appointments.length ? appointments.map((appointment) => `
+            <article class="clinical-item">
+              <span class="time-chip">${formatDate(appointment.date)}</span>
+              <div>
+                <strong>${escapeHtml(appointment.time)} · ${escapeHtml(appointment.type)}</strong>
+                <p>${escapeHtml(doctorById(appointment.doctorId).name)} · ${escapeHtml(appointment.status)}</p>
+              </div>
+              <button class="ghost-button ${can("appointments:confirm") ? "" : "permission-hidden"}" data-self-checkin="${appointment.id}" type="button">Confirmar llegada</button>
+            </article>
+          `).join("") : emptyState("No hay próximas citas.")}
+        </div>
+      </section>
+      <section class="record-block">
+        <h3>Solicitud rápida</h3>
+        <p>Para actualizar datos, solicitar cita o consultar balance, el personal puede abrir la ficha, agenda o facturación desde este autoservicio.</p>
+      </section>
+    </div>
+  `;
 }
 
 function ensurePatientCodes() {

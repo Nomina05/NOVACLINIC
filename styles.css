@@ -1393,6 +1393,11 @@ tbody tr:hover {
   background: #fff;
 }
 
+.self-service-summary {
+  display: grid;
+  gap: 12px;
+}
+
 .plate-form {
   margin: 4px 0 8px;
 }
