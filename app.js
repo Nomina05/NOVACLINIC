@@ -3591,6 +3591,42 @@ function renderReports() {
       <div><strong>${detail}</strong><p>Revise el módulo correspondiente.</p></div>
     </article>
   `).join("");
+
+  renderPosInvoiceReport();
+}
+
+function renderPosInvoiceReport() {
+  const posInvoices = state.payments.filter(isPosInvoice);
+  const total = posInvoices.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const discounts = posInvoices.reduce((sum, payment) => sum + Number(payment.discount || 0), 0);
+  const emitted = posInvoices.filter((payment) => payment.invoiceStatus === "Emitida").length;
+
+  document.getElementById("posInvoiceSummary").innerHTML = [
+    ["Facturas POS/POST", posInvoices.length],
+    ["Total cobrado", currency.format(total)],
+    ["Descuentos", currency.format(discounts)],
+    ["Emitidas", emitted]
+  ].map(panelCardTemplate).join("");
+
+  document.getElementById("posInvoiceTable").innerHTML = posInvoices.length
+    ? posInvoices.map((payment) => `
+      <tr>
+        <td><strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")}</strong></td>
+        <td>${escapeHtml(patientById(payment.patientId).name)}</td>
+        <td>${escapeHtml(paymentDoctorLabel(payment))}</td>
+        <td>${escapeHtml(payment.method || "Sin método")}</td>
+        <td>${escapeHtml(payment.reference || "Sin referencia")}</td>
+        <td><span class="status-pill ${payment.invoiceStatus === "Pagada" ? "confirmada" : "pendiente"}">${escapeHtml(payment.invoiceStatus || "Pagada")}</span></td>
+        <td>${currency.format(payment.amount || 0)}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="7">${emptyState("No hay facturas POS/POST registradas.")}</td></tr>`;
+}
+
+function isPosInvoice(payment) {
+  const method = normalizeText(payment.method || "");
+  const reference = normalizeText(payment.reference || "");
+  return method.includes("tarjeta") || reference.includes("pos") || reference.includes("post");
 }
 
 function renderAdmin() {

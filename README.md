@@ -59,4 +59,5 @@ Abre `index.html` en el navegador. Los datos se guardan localmente en el navegad
 - Recursos Humanos incluye asistencia, vacaciones, turnos y evaluaciones con registros operativos del personal.
 - Almacen de productos facturables con stock minimo, precio de venta, vencimiento y proveedor.
 - Reportes de ingresos, cuentas por cobrar, citas, tratamientos y productividad por doctor.
+- Reporte de facturas POS/POST con método, referencia, estado, paciente, doctor y monto.
 - Administracion de datos de la clinica, exportacion JSON y restauracion de datos demo.
