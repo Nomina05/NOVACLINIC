@@ -1507,6 +1507,14 @@ tbody tr:hover {
 
 .receipt-modal {
   background: #fff;
+  width: fit-content;
+  max-width: min(420px, calc(100vw - 32px));
+  margin: 0 auto;
+}
+
+#receiptContent {
+  display: grid;
+  justify-items: center;
 }
 
 .receipt-box {
@@ -1892,24 +1900,83 @@ dialog::backdrop {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    size: 80mm 297mm;
+    margin: 4mm;
   }
 
-  #receiptDialog,
-  #receiptDialog * {
-    visibility: visible;
+  html,
+  body {
+    width: 80mm;
+    min-width: 80mm;
+    margin: 0;
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  body > :not(#receiptDialog) {
+    display: none !important;
+  }
+
+  #receiptContent,
+  #receiptContent * {
+    visibility: visible !important;
   }
 
   #receiptDialog {
-    position: fixed;
-    inset: 0;
-    width: auto;
-    box-shadow: none;
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
-  .modal-actions,
+  #receiptDialog::backdrop {
+    display: none !important;
+  }
+
+  #receiptDialog .modal-card,
+  #receiptDialog .receipt-modal {
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  #receiptDialog .modal-header,
+  #receiptDialog .modal-actions,
   #closeReceipt {
-    display: none;
+    display: none !important;
+  }
+
+  #receiptContent {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    display: block !important;
+    width: 72mm !important;
+  }
+
+  #receiptContent .pos-ticket {
+    width: 72mm !important;
+    max-width: 72mm !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    font-size: 9px !important;
   }
 }

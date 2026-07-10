@@ -1213,6 +1213,7 @@ function bindForms() {
       invoiceNumber,
       invoiceStatus: value("paymentInvoiceStatus"),
       date: todayIso,
+      createdAt: new Date().toISOString(),
       concept: value("paymentConcept"),
       type: paymentType,
       productId: product?.id || "",
@@ -1975,6 +1976,7 @@ function createLaboratoryInvoice(requestId) {
     invoiceNumber,
     invoiceStatus: "Emitida",
     date: todayIso,
+    createdAt: new Date().toISOString(),
     concept: `Laboratorio: ${request.piece || "pieza dental"}`,
     type: "Laboratorio",
     laboratoryRequestId: request.id
@@ -3641,7 +3643,8 @@ function posInvoiceTicketTemplate(payment) {
       <div class="ticket-invoice-meta">
         <strong>Factura</strong>
         <span>${escapeHtml(payment.invoiceNumber || "FAC-S/N")}</span>
-        <p>Fecha: ${formatDate(payment.date)} · ${escapeHtml(payment.reference || "Sin referencia")}</p>
+        <p>Fecha: ${paymentIssuedAtLabel(payment)}</p>
+        <p>Referencia: ${escapeHtml(payment.reference || "Sin referencia")}</p>
         <p>Método de pago: ${escapeHtml(payment.method || "Tarjeta")}</p>
         <p>Vendedor: ${escapeHtml(paymentCashierLabel(payment))}</p>
       </div>
@@ -3699,6 +3702,12 @@ function isPosInvoice(payment) {
   const method = normalizeText(payment.method || "");
   const reference = normalizeText(payment.reference || "");
   return method.includes("tarjeta") || reference.includes("pos") || reference.includes("post");
+}
+
+function paymentIssuedAtLabel(payment) {
+  if (payment.createdAt) return formatDateTime(payment.createdAt);
+  if (payment.date) return formatDate(payment.date);
+  return "Sin fecha";
 }
 
 function renderAdmin() {
@@ -3790,29 +3799,7 @@ function topPaymentMethod(methodTotals) {
 function openReceipt(paymentId) {
   const payment = state.payments.find((item) => item.id === paymentId);
   if (!payment) return;
-  const patient = patientById(payment.patientId);
-  document.getElementById("receiptContent").innerHTML = `
-    <div class="receipt-box">
-      <div class="receipt-row"><span>Factura</span><strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")}</strong></div>
-      <div class="receipt-row"><span>Recibo</span><strong>${escapeHtml(payment.receiptNumber || "REC-S/N")}</strong></div>
-      <div class="receipt-row"><span>Fecha</span><strong>${formatDate(payment.date)}</strong></div>
-      <div class="receipt-row"><span>Paciente</span><strong>${escapeHtml(patient.name)}</strong></div>
-      <div class="receipt-row"><span>Facturado a</span><strong>${escapeHtml(paymentBillToLabel(payment))}</strong></div>
-      <div class="receipt-row"><span>Doctor que atendió</span><strong>${escapeHtml(paymentDoctorLabel(payment))}</strong></div>
-      <div class="receipt-row"><span>Cajero</span><strong>${escapeHtml(paymentCashierLabel(payment))}</strong></div>
-      <div class="receipt-row"><span>Tipo</span><strong>${escapeHtml(payment.type || "Servicio")}</strong></div>
-      <div class="receipt-row"><span>Concepto</span><strong>${escapeHtml(payment.concept)}</strong></div>
-      ${payment.type === "Producto" ? `<div class="receipt-row"><span>Producto</span><strong>${escapeHtml(payment.productName || payment.concept)} · Cant. ${payment.quantity || 1}</strong></div>` : ""}
-      <div class="receipt-row"><span>Estado factura</span><strong>${escapeHtml(payment.invoiceStatus || "Pagada")}</strong></div>
-      <div class="receipt-row"><span>Método</span><strong>${escapeHtml(payment.method)}</strong></div>
-      <div class="receipt-row"><span>Referencia</span><strong>${escapeHtml(payment.reference || "No aplica")}</strong></div>
-      <div class="receipt-row"><span>Descuento</span><strong>${currency.format(payment.discount || 0)}</strong></div>
-      <div class="receipt-row"><span>Motivo descuento</span><strong>${escapeHtml(payment.discountReason || "No aplica")}</strong></div>
-      <div class="receipt-total"><span>Total pagado</span><strong>${currency.format(payment.amount)}</strong></div>
-      <div class="receipt-row"><span>Balance pendiente</span><strong>${currency.format(patient.balance)}</strong></div>
-      <div class="receipt-row"><span>Registrado por</span><strong>${escapeHtml(paymentCashierLabel(payment))}</strong></div>
-    </div>
-  `;
+  document.getElementById("receiptContent").innerHTML = posInvoiceTicketTemplate(payment);
   document.getElementById("receiptDialog").showModal();
 }
 
