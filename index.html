@@ -32,7 +32,7 @@
         <button class="primary-button" type="submit">Iniciar sesión</button>
         <div class="demo-access">
           <strong>PIN de prueba</strong>
-          <span>Administrador: 0000 · Doctor: 1234 · Recepción: 1111 · RRHH: 2222 · Contabilidad: 3333</span>
+          <span>Administrador: 0000 · Doctor: 1234 · Recepción: 1111 · RRHH: 2222 · Contabilidad: 3333 · Laboratorio: 4444</span>
         </div>
       </form>
     </section>
@@ -52,6 +52,7 @@
           <button class="nav-item" data-view="receptionPanel">Recepción</button>
           <button class="nav-item" data-view="usersPanel">Usuarios</button>
           <button class="nav-item" data-view="hrPanel">Recursos Humanos</button>
+          <button class="nav-item" data-view="laboratoryPanel">Laboratorio</button>
           <button class="nav-item" data-view="accountingPanel">Contabilidad</button>
         </nav>
         <div class="clinic-card">
@@ -458,6 +459,7 @@
                     <option>Doctor</option>
                     <option>Recepción</option>
                     <option>Recursos Humanos</option>
+                    <option>Laboratorio</option>
                     <option>Contabilidad</option>
                     <option>Administrador</option>
                   </select>
@@ -475,6 +477,37 @@
                 <button class="ghost-button" id="editSelectedUser" type="button">Editar usuario</button>
               </div>
               <div class="permission-matrix compact" id="permissionMatrix"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="laboratoryPanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>Panel de laboratorio</h2>
+              <p>Solicitudes de piezas, trabajos pendientes y entregas al doctor.</p>
+            </div>
+          </div>
+          <div class="panel-card-grid" id="laboratoryPanelCards"></div>
+          <div class="content-grid">
+            <section class="panel wide">
+              <div class="panel-header">
+                <div>
+                  <h2>Trabajos de laboratorio</h2>
+                  <p>Piezas solicitadas desde autoservicio clínico.</p>
+                </div>
+                <div class="module-grid compact" id="laboratoryPanelModules"></div>
+              </div>
+              <div class="ledger" id="laboratoryRequestList"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Resumen</h2>
+                  <p>Estado de solicitudes por etapa.</p>
+                </div>
+              </div>
+              <div class="alert-list" id="laboratoryStatusList"></div>
             </section>
           </div>
         </section>
@@ -1177,6 +1210,7 @@
               <option>Doctor</option>
               <option>Recepción</option>
               <option>Recursos Humanos</option>
+              <option>Laboratorio</option>
               <option>Contabilidad</option>
               <option>Administrador</option>
             </select>

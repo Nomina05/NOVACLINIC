@@ -78,14 +78,23 @@ const defaultUsers = [
     room: "Oficina contable",
     shift: "8:00 a. m. - 5:00 p. m.",
     pin: "3333"
+  },
+  {
+    id: "laboratorio",
+    name: "Laboratorio",
+    role: "Laboratorio",
+    specialty: "Piezas y trabajos dentales",
+    room: "Laboratorio dental",
+    shift: "8:00 a. m. - 5:00 p. m.",
+    pin: "4444"
   }
 ];
 let users = loadUsers();
 
 const rolePermissions = {
   Administrador: {
-    views: ["dashboard", "receptionPanel", "usersPanel", "hrPanel", "accountingPanel", "patients", "selfService", "agenda", "odontogram", "treatments", "billing", "inventory", "reports", "adminPanel"],
-    actions: ["patients:create", "appointments:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress", "payments:create", "payroll:manage", "users:create", "inventory:manage", "settings:manage", "selfservice:clinical", "selfservice:employee", "selfservice:manage"],
+    views: ["dashboard", "receptionPanel", "usersPanel", "hrPanel", "laboratoryPanel", "accountingPanel", "patients", "selfService", "agenda", "odontogram", "treatments", "billing", "inventory", "reports", "adminPanel"],
+    actions: ["patients:create", "appointments:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress", "payments:create", "payroll:manage", "users:create", "inventory:manage", "settings:manage", "selfservice:clinical", "selfservice:employee", "selfservice:manage", "laboratory:manage"],
     scope: "all"
   },
   Doctor: {
@@ -107,6 +116,11 @@ const rolePermissions = {
     views: ["accountingPanel", "selfService", "billing", "inventory", "reports"],
     actions: ["payments:create", "inventory:manage", "selfservice:employee"],
     scope: "all"
+  },
+  Laboratorio: {
+    views: ["laboratoryPanel"],
+    actions: ["laboratory:manage"],
+    scope: "all"
   }
 };
 
@@ -120,7 +134,8 @@ const payrollSeed = {
   mendez: { base: 0, bonus: 0, deductions: 0, status: "Pendiente" },
   recepcion: { base: 48000, bonus: 3500, deductions: 2800, status: "Pendiente" },
   rrhh: { base: 62000, bonus: 4500, deductions: 3600, status: "Pendiente" },
-  contabilidad: { base: 68000, bonus: 5000, deductions: 4100, status: "Pendiente" }
+  contabilidad: { base: 68000, bonus: 5000, deductions: 4100, status: "Pendiente" },
+  laboratorio: { base: 52000, bonus: 3000, deductions: 2400, status: "Pendiente" }
 };
 
 const procedurePointCatalog = [
@@ -416,6 +431,7 @@ const views = {
   receptionPanel: "Panel recepción",
   usersPanel: "Panel usuarios",
   hrPanel: "Panel recursos humanos",
+  laboratoryPanel: "Panel laboratorio",
   accountingPanel: "Panel contabilidad",
   patients: "Pacientes",
   selfService: "Autoservicio",
@@ -428,13 +444,14 @@ const views = {
   adminPanel: "Administración"
 };
 
-const panelViews = ["dashboard", "receptionPanel", "usersPanel", "hrPanel", "accountingPanel"];
+const panelViews = ["dashboard", "receptionPanel", "usersPanel", "hrPanel", "laboratoryPanel", "accountingPanel"];
 
 const permissionCatalog = [
   { view: "dashboard", label: "Panel Doctores", panel: "Paneles", actions: [] },
   { view: "receptionPanel", label: "Panel Recepción", panel: "Paneles", actions: [] },
   { view: "usersPanel", label: "Panel Usuarios", panel: "Paneles", actions: [] },
   { view: "hrPanel", label: "Panel Recursos Humanos", panel: "Paneles", actions: ["payroll:manage"] },
+  { view: "laboratoryPanel", label: "Panel Laboratorio", panel: "Paneles", actions: ["laboratory:manage"] },
   { view: "accountingPanel", label: "Panel Contabilidad", panel: "Paneles", actions: [] },
   { view: "patients", label: "Pacientes", panel: "Recepción", actions: ["patients:create"] },
   { view: "selfService", label: "Autoservicio", panel: "Recepción", actions: ["appointments:confirm", "selfservice:clinical", "selfservice:employee", "selfservice:manage"] },
@@ -451,6 +468,7 @@ const panelModules = {
   dashboard: ["selfService", "patients", "agenda", "odontogram", "treatments", "inventory"],
   receptionPanel: ["patients", "selfService", "agenda", "billing", "inventory", "reports"],
   hrPanel: ["selfService"],
+  laboratoryPanel: [],
   accountingPanel: ["selfService", "billing", "inventory", "reports", "adminPanel"]
 };
 
@@ -1609,6 +1627,7 @@ function render() {
   renderReceptionPanel();
   renderUsersPanel();
   renderHrPanel();
+  renderLaboratoryPanel();
   renderAccountingPanel();
   renderPatients();
   renderSelfService();
@@ -1800,7 +1819,7 @@ function renderReceptionPanel() {
 function renderHrPanel() {
   const activeUsers = users.length;
   const doctorsCount = users.filter((user) => user.role === "Doctor").length;
-  const supportCount = users.filter((user) => ["Recepción", "Recursos Humanos", "Contabilidad"].includes(user.role)).length;
+  const supportCount = users.filter((user) => ["Recepción", "Recursos Humanos", "Laboratorio", "Contabilidad"].includes(user.role)).length;
   const shiftCount = new Set(users.map((user) => user.shift)).size;
   const payrollItems = normalizedPayroll().map(payrollDisplayItem);
   const payrollTotal = payrollItems.reduce((sum, item) => sum + payrollNet(item), 0);
@@ -1847,6 +1866,67 @@ function renderHrPanel() {
 
   renderHrControls();
   renderPayroll(payrollItems);
+}
+
+function renderLaboratoryPanel() {
+  const labRequests = (state.selfServiceRequests || [])
+    .filter((request) => request.type === "Laboratorio - pieza dental");
+  const pending = labRequests.filter((request) => request.status === "Pendiente").length;
+  const active = labRequests.filter((request) => ["Recibida", "En proceso"].includes(request.status)).length;
+  const completed = labRequests.filter((request) => request.status === "Completada").length;
+
+  document.getElementById("laboratoryPanelCards").innerHTML = [
+    ["Solicitudes", labRequests.length],
+    ["Pendientes", pending],
+    ["En proceso", active],
+    ["Completadas", completed]
+  ].map(panelCardTemplate).join("");
+
+  renderPanelModules("laboratoryPanelModules", "laboratoryPanel");
+
+  document.getElementById("laboratoryStatusList").innerHTML = [
+    ["Pendiente", `${pending} trabajos por recibir.`],
+    ["En proceso", `${active} trabajos activos.`],
+    ["Completada", `${completed} trabajos entregados.`]
+  ].map(([label, detail]) => `
+    <article class="alert-item">
+      <span class="status-pill ${label === "Completada" ? "confirmada" : "pendiente"}">${label}</span>
+      <div><strong>${detail}</strong><p>Solicitudes generadas desde Autoservicio.</p></div>
+    </article>
+  `).join("");
+
+  document.getElementById("laboratoryRequestList").innerHTML = labRequests.length
+    ? labRequests.map(laboratoryRequestTemplate).join("")
+    : emptyState("No hay trabajos de laboratorio registrados.");
+
+  document.querySelectorAll("[data-lab-status]").forEach((select) => {
+    select.addEventListener("change", () => {
+      if (!can("laboratory:manage")) return;
+      const request = state.selfServiceRequests.find((item) => item.id === select.dataset.labStatus);
+      if (!request) return;
+      request.status = select.value;
+      request.updatedAt = new Date().toISOString();
+      request.updatedBy = currentUser?.id || "sin-usuario";
+      persistAndRender();
+    });
+  });
+}
+
+function laboratoryRequestTemplate(request) {
+  const patient = request.patientId ? patientById(request.patientId) : null;
+  return `
+    <article class="ledger-item">
+      <span class="status-pill ${request.status === "Completada" ? "confirmada" : "pendiente"}">${escapeHtml(request.status)}</span>
+      <div>
+        <strong>${escapeHtml(request.piece || "Pieza sin especificar")}</strong>
+        <p>${patient ? `Paciente: ${escapeHtml(patient.name)} · ` : ""}${escapeHtml(request.detail || "Sin detalles")}</p>
+        <small>Solicitado por ${escapeHtml(userById(request.createdBy).name)} · ${formatDateTime(request.createdAt)}</small>
+      </div>
+      <select data-lab-status="${request.id}" ${can("laboratory:manage") ? "" : "disabled"}>
+        ${["Pendiente", "Recibida", "En proceso", "Completada", "Cancelada"].map((status) => `<option ${status === request.status ? "selected" : ""}>${status}</option>`).join("")}
+      </select>
+    </article>
+  `;
 }
 
 function renderHrControls() {
@@ -2195,7 +2275,7 @@ function renderUsersPanel() {
 }
 
 function renderUserDirectorySummary(visibleUsers) {
-  const roles = ["Doctor", "Recepción", "Recursos Humanos", "Contabilidad", "Administrador"];
+  const roles = ["Doctor", "Recepción", "Recursos Humanos", "Laboratorio", "Contabilidad", "Administrador"];
   document.getElementById("userDirectorySummary").innerHTML = roles.map((role) => {
     const total = users.filter((user) => user.role === role).length;
     const visible = visibleUsers.filter((user) => user.role === role).length;
@@ -2255,7 +2335,7 @@ function renderPermissionMatrix(targetUserId = selectedUserId) {
   const canEditPermissions = currentUser?.role === "Administrador";
   const user = users.find((item) => item.id === targetUserId) || users[0];
   const userPermissions = permissionsForUser(user.id);
-  const grouped = ["Paneles", "Doctores", "Recepción", "Contabilidad"]
+  const grouped = ["Paneles", "Doctores", "Recepción", "Laboratorio", "Contabilidad"]
       .map((group) => {
         const items = permissionCatalog.filter((item) => item.panel === group);
         return `
