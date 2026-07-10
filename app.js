@@ -3618,10 +3618,12 @@ function renderPosInvoiceReport() {
 function posInvoiceTicketTemplate(payment) {
   const patient = patientById(payment.patientId);
   const total = Number(payment.amount || 0);
-  const subtotal = total / 1.19;
+  const taxRate = 0.18;
+  const subtotal = total / (1 + taxRate);
   const tax = total - subtotal;
   const quantity = Number(payment.quantity || 1) || 1;
   const unit = total / quantity;
+  const seller = paymentCashierLabel(payment);
   const settings = state.settings || {};
   return `
     <article class="pos-ticket">
@@ -3646,7 +3648,7 @@ function posInvoiceTicketTemplate(payment) {
         <p>Fecha: ${paymentIssuedAtLabel(payment)}</p>
         <p>Referencia: ${escapeHtml(payment.reference || "Sin referencia")}</p>
         <p>Método de pago: ${escapeHtml(payment.method || "Tarjeta")}</p>
-        <p>Vendedor: ${escapeHtml(paymentCashierLabel(payment))}</p>
+        <p>Vendedor: ${escapeHtml(seller)}</p>
       </div>
       <div class="ticket-items">
         <div class="ticket-items-head">
@@ -3661,13 +3663,17 @@ function posInvoiceTicketTemplate(payment) {
       </div>
       <div class="ticket-totals">
         <div><span>Subtotal:</span><strong>${currency.format(subtotal)}</strong></div>
-        <div><span>IVA (19.00%):</span><strong>${currency.format(tax)}</strong></div>
+        <div><span>ITBIS (18.00%):</span><strong>${currency.format(tax)}</strong></div>
         <div class="ticket-grand-total"><span>Total:</span><strong>${currency.format(total)}</strong></div>
       </div>
       <div class="ticket-payments">
         <p>Total recibido: ${currency.format(total)}</p>
         <p>Total de líneas: 1</p>
         <p>Total de productos: ${quantity}</p>
+      </div>
+      <div class="ticket-signature">
+        <span>Elaborado por:</span>
+        <strong>${escapeHtml(seller)}</strong>
       </div>
       <div class="ticket-footer">
         <p>Todos nuestros servicios cuentan con garantía según la política de la clínica.</p>

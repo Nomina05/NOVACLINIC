@@ -603,6 +603,25 @@ p {
   font-weight: 700;
 }
 
+.ticket-signature {
+  display: grid;
+  gap: 5px;
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid #222;
+  text-align: center;
+}
+
+.ticket-signature span {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ticket-signature strong {
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  font-size: 11px;
+}
+
 .ticket-footer {
   margin-top: 12px;
   font-size: 10px;
