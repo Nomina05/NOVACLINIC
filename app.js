@@ -85,27 +85,27 @@ let users = loadUsers();
 const rolePermissions = {
   Administrador: {
     views: ["dashboard", "receptionPanel", "usersPanel", "hrPanel", "accountingPanel", "patients", "selfService", "agenda", "odontogram", "treatments", "billing", "inventory", "reports", "adminPanel"],
-    actions: ["patients:create", "appointments:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress", "payments:create", "payroll:manage", "users:create", "inventory:manage", "settings:manage"],
+    actions: ["patients:create", "appointments:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress", "payments:create", "payroll:manage", "users:create", "inventory:manage", "settings:manage", "selfservice:clinical", "selfservice:employee", "selfservice:manage"],
     scope: "all"
   },
   Doctor: {
     views: ["dashboard", "selfService", "patients", "agenda", "odontogram", "treatments", "inventory"],
-    actions: ["patients:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress"],
+    actions: ["patients:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress", "selfservice:clinical"],
     scope: "own"
   },
   Recepción: {
     views: ["receptionPanel", "patients", "selfService", "agenda", "billing", "inventory", "reports"],
-    actions: ["patients:create", "appointments:create", "appointments:confirm", "payments:create", "inventory:manage"],
+    actions: ["patients:create", "appointments:create", "appointments:confirm", "payments:create", "inventory:manage", "selfservice:employee", "selfservice:manage"],
     scope: "all"
   },
   "Recursos Humanos": {
     views: ["hrPanel", "selfService"],
-    actions: ["payroll:manage"],
+    actions: ["payroll:manage", "selfservice:employee", "selfservice:manage"],
     scope: "all"
   },
   Contabilidad: {
     views: ["accountingPanel", "selfService", "billing", "inventory", "reports"],
-    actions: ["payments:create", "inventory:manage"],
+    actions: ["payments:create", "inventory:manage", "selfservice:employee"],
     scope: "all"
   }
 };
@@ -437,7 +437,7 @@ const permissionCatalog = [
   { view: "hrPanel", label: "Panel Recursos Humanos", panel: "Paneles", actions: ["payroll:manage"] },
   { view: "accountingPanel", label: "Panel Contabilidad", panel: "Paneles", actions: [] },
   { view: "patients", label: "Pacientes", panel: "Recepción", actions: ["patients:create"] },
-  { view: "selfService", label: "Autoservicio", panel: "Recepción", actions: ["appointments:confirm"] },
+  { view: "selfService", label: "Autoservicio", panel: "Recepción", actions: ["appointments:confirm", "selfservice:clinical", "selfservice:employee", "selfservice:manage"] },
   { view: "agenda", label: "Agenda", panel: "Recepción", actions: ["appointments:create", "appointments:confirm"] },
   { view: "billing", label: "Facturación", panel: "Contabilidad", actions: ["payments:create"] },
   { view: "odontogram", label: "Expediente odontológico", panel: "Doctores", actions: ["odontogram:edit"] },
@@ -452,6 +452,14 @@ const panelModules = {
   receptionPanel: ["patients", "selfService", "agenda", "billing", "inventory", "reports"],
   hrPanel: ["selfService"],
   accountingPanel: ["selfService", "billing", "inventory", "reports", "adminPanel"]
+};
+
+const selfServiceActionsByRole = {
+  Administrador: ["selfservice:clinical", "selfservice:employee", "selfservice:manage"],
+  Doctor: ["selfservice:clinical"],
+  Recepción: ["selfservice:employee", "selfservice:manage"],
+  "Recursos Humanos": ["selfservice:employee", "selfservice:manage"],
+  Contabilidad: ["selfservice:employee"]
 };
 
 userPermissionOverrides = normalizeUserPermissionOverrides(userPermissionOverrides);
@@ -537,7 +545,9 @@ function normalizeUserPermissionOverrides(overrides) {
 
       viewsList.forEach((viewName) => {
         const catalogItem = permissionCatalog.find((item) => item.view === viewName);
-        catalogItem?.actions.forEach((action) => actionList.add(action));
+        const user = users.find((item) => item.id === userId);
+        const actions = viewName === "selfService" ? allowedSelfServiceActionsForRole(user?.role) : catalogItem?.actions || [];
+        actions.forEach((action) => actionList.add(action));
       });
 
       const next = {
@@ -1080,6 +1090,10 @@ function bindForms() {
     event.preventDefault();
     state.selfServiceRequests ||= [];
     const type = value("selfRequestType");
+    if (!canCreateSelfServiceRequest(type)) {
+      alert("No tiene permiso para crear este tipo de solicitud.");
+      return;
+    }
     state.selfServiceRequests.unshift({
       id: makeId(),
       type,
@@ -1553,6 +1567,10 @@ function can(action) {
   return permissions().actions.includes(action);
 }
 
+function allowedSelfServiceActionsForRole(role) {
+  return selfServiceActionsByRole[role] || ["selfservice:employee"];
+}
+
 function canView(viewName) {
   return permissions().views.includes(viewName);
 }
@@ -1568,16 +1586,21 @@ function permissionsForUser(userId) {
   if (!override) {
     return {
       views: [...defaults.views],
-      actions: [...defaults.actions],
+      actions: sanitizeSelfServiceActions([...defaults.actions], user?.role),
       scope: defaults.scope
     };
   }
 
   return {
     views: [...override.views],
-    actions: [...override.actions],
+    actions: sanitizeSelfServiceActions([...override.actions], user?.role),
     scope: defaults.scope
   };
+}
+
+function sanitizeSelfServiceActions(actions, role) {
+  const allowed = new Set(allowedSelfServiceActionsForRole(role));
+  return actions.filter((action) => !action.startsWith("selfservice:") || allowed.has(action));
 }
 
 function render() {
@@ -2213,9 +2236,19 @@ function selectedUserSummary(user) {
       <div class="staff-permissions">
         <strong>Permisos</strong>
         <span>${permissionsForUser(user.id).views.map((view) => views[view] || view).join(", ")}</span>
+        <small>${escapeHtml(selfServicePermissionLabel(permissionsForUser(user.id)))}</small>
       </div>
     </article>
   `;
+}
+
+function selfServicePermissionLabel(userPermissions) {
+  if (!userPermissions.views.includes("selfService")) return "Autoservicio: sin acceso";
+  const labels = [];
+  if (userPermissions.actions.includes("selfservice:clinical")) labels.push("clínico");
+  if (userPermissions.actions.includes("selfservice:employee")) labels.push("empleados");
+  if (userPermissions.actions.includes("selfservice:manage")) labels.push("gestión");
+  return `Autoservicio: ${labels.join(", ") || "solo consulta"}`;
 }
 
 function renderPermissionMatrix(targetUserId = selectedUserId) {
@@ -2276,7 +2309,9 @@ function updateUserPermission(input) {
 
   if (input.checked) {
     nextPermissions.views = [...new Set([...nextPermissions.views, viewName])];
-    nextPermissions.actions = [...new Set([...nextPermissions.actions, ...catalogItem.actions])];
+    const user = users.find((item) => item.id === userId);
+    const actions = viewName === "selfService" ? allowedSelfServiceActionsForRole(user?.role) : catalogItem.actions;
+    nextPermissions.actions = [...new Set([...nextPermissions.actions, ...actions])];
   } else {
     nextPermissions.views = nextPermissions.views.filter((view) => view !== viewName);
     nextPermissions.actions = nextPermissions.actions.filter((action) => !catalogItem.actions.includes(action));
@@ -2543,7 +2578,7 @@ function selfServiceDetailTemplate(patient) {
 
 function selfServiceVisibleRequests() {
   state.selfServiceRequests ||= [];
-  if (["Administrador", "Recepción", "Recursos Humanos", "Contabilidad"].includes(currentUser?.role)) {
+  if (can("selfservice:manage")) {
     return state.selfServiceRequests.slice(0, 12);
   }
   return state.selfServiceRequests
@@ -2554,12 +2589,24 @@ function selfServiceVisibleRequests() {
 function syncSelfServiceRequestOptions() {
   const typeSelect = document.getElementById("selfRequestType");
   if (!typeSelect) return;
-  const doctorOptions = ["Placa adicional", "Laboratorio - pieza dental", "Insumos de trabajo", "Ausencia doctor", "Reparación de equipo", "Ticket de TI"];
-  const employeeOptions = ["Vacaciones empleado", "Insumos de trabajo", "Ticket de TI", "Reparación de equipo"];
-  const options = currentUser?.role === "Doctor" ? doctorOptions : employeeOptions;
+  const options = selfServiceRequestOptionsForCurrentUser();
   const current = typeSelect.value;
   typeSelect.innerHTML = options.map((option) => `<option>${option}</option>`).join("");
   if (options.includes(current)) typeSelect.value = current;
+  document.getElementById("selfServiceRequestForm").classList.toggle("permission-disabled", !options.length);
+}
+
+function selfServiceRequestOptionsForCurrentUser() {
+  const clinicalOptions = ["Placa adicional", "Laboratorio - pieza dental", "Insumos de trabajo", "Ausencia doctor", "Reparación de equipo", "Ticket de TI"];
+  const employeeOptions = ["Vacaciones empleado", "Insumos de trabajo", "Ticket de TI", "Reparación de equipo"];
+  const options = [];
+  if (can("selfservice:clinical")) options.push(...clinicalOptions);
+  if (can("selfservice:employee")) options.push(...employeeOptions);
+  return [...new Set(options)];
+}
+
+function canCreateSelfServiceRequest(type) {
+  return selfServiceRequestOptionsForCurrentUser().includes(type);
 }
 
 function selfServiceRequestTemplate(request) {
