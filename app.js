@@ -972,6 +972,35 @@ function saveAppointmentFromForm() {
   return appointment;
 }
 
+function appointmentConflictsFromForm() {
+  const patientId = value("appointmentPatient");
+  const doctorId = value("appointmentDoctor");
+  const date = value("appointmentDate");
+  const time = value("appointmentTime");
+  const currentId = editingAppointmentId;
+  const sameDayPatientAppointments = state.appointments.filter((appointment) =>
+    appointment.id !== currentId &&
+    appointment.patientId === patientId &&
+    appointment.date === date &&
+    appointment.status !== "Cancelada"
+  );
+  const sameTimeDoctorAppointments = state.appointments.filter((appointment) =>
+    appointment.id !== currentId &&
+    appointment.doctorId === doctorId &&
+    appointment.date === date &&
+    appointment.time === time &&
+    appointment.status !== "Cancelada"
+  );
+  const conflicts = [];
+  if (sameDayPatientAppointments.length) {
+    conflicts.push(`El paciente ya tiene ${sameDayPatientAppointments.length} cita(s) ese día: ${sameDayPatientAppointments.map((appointment) => `${appointment.time} con ${doctorById(appointment.doctorId).name}`).join(", ")}.`);
+  }
+  if (sameTimeDoctorAppointments.length) {
+    conflicts.push(`El doctor ya tiene una cita a las ${time}: ${sameTimeDoctorAppointments.map((appointment) => patientById(appointment.patientId).name).join(", ")}.`);
+  }
+  return conflicts;
+}
+
 function bindForms() {
   const dialog = document.getElementById("patientDialog");
   const userDialog = document.getElementById("userDialog");
@@ -1028,6 +1057,10 @@ function bindForms() {
   document.getElementById("appointmentForm").addEventListener("submit", (event) => {
     event.preventDefault();
     if (!can("appointments:create")) return;
+    const conflicts = appointmentConflictsFromForm();
+    if (conflicts.length && !confirm(`Aviso de agenda:\n\n${conflicts.join("\n")}\n\n¿Desea guardar la cita de todos modos?`)) {
+      return;
+    }
     const savedAppointment = saveAppointmentFromForm();
     event.target.reset();
     document.getElementById("appointmentDate").value = todayIso;
@@ -2396,6 +2429,9 @@ function openPatientRecord(patientId) {
   const patientAppointments = state.appointments
     .filter((appointment) => appointment.patientId === patientId)
     .sort(sortByDateTime);
+  const upcomingAppointments = patientAppointments.filter((appointment) =>
+    appointment.date >= todayIso && appointment.status !== "Cancelada"
+  );
   const patientTreatments = state.treatments
     .filter((treatment) => treatment.patientId === patientId);
   const patientPayments = state.payments
@@ -2447,6 +2483,7 @@ function openPatientRecord(patientId) {
         <p>Balance: <strong>${currency.format(patient.balance)}</strong></p>
       </section>
     </div>
+    ${upcomingAppointmentsByDoctorSection(upcomingAppointments)}
     ${patientRecordSection("Citas", patientAppointments, appointmentRecordTemplate)}
     ${patientRecordSection("Tratamientos", patientTreatments, treatmentRecordTemplate)}
     ${patientRecordSection("Pagos y facturas", patientPayments, paymentRecordTemplate)}
@@ -2468,6 +2505,38 @@ function patientRecordSection(title, items, template) {
       <h3>${title}</h3>
       <div class="clinical-list">
         ${items.length ? items.map(template).join("") : emptyState("Sin registros.")}
+      </div>
+    </section>
+  `;
+}
+
+function upcomingAppointmentsByDoctorSection(appointments) {
+  const grouped = appointments.reduce((summary, appointment) => {
+    summary[appointment.doctorId] ||= [];
+    summary[appointment.doctorId].push(appointment);
+    return summary;
+  }, {});
+  const groups = Object.entries(grouped);
+  return `
+    <section class="record-block full">
+      <h3>Próximas citas por doctor</h3>
+      <div class="appointment-doctor-groups">
+        ${groups.length ? groups.map(([doctorId, items]) => `
+          <article class="doctor-appointment-group">
+            <strong>${escapeHtml(doctorById(doctorId).name)}</strong>
+            <div class="clinical-list">
+              ${items.sort(sortByDateTime).map((appointment) => `
+                <article class="clinical-item">
+                  <span class="time-chip">${formatDate(appointment.date)}</span>
+                  <div>
+                    <strong>${escapeHtml(appointment.time)} · ${escapeHtml(appointment.type)}</strong>
+                    <p>${escapeHtml(appointment.status)} · ${appointment.duration || 30} min · ${escapeHtml(appointment.reminder || "Sin recordatorio")}</p>
+                  </div>
+                </article>
+              `).join("")}
+            </div>
+          </article>
+        `).join("") : emptyState("No hay próximas citas registradas.")}
       </div>
     </section>
   `;

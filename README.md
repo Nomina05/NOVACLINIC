@@ -39,6 +39,8 @@ Abre `index.html` en el navegador. Los datos se guardan localmente en el navegad
 - Ficha historica del paciente con datos, alertas, citas, tratamientos, pagos, documentos y odontograma.
 - Historico de placas por paciente con archivo cargado, tipo de placa, nota, fecha y hora tomada.
 - Agenda odontologica con calendario mensual, recordatorios, duracion y estado de citas.
+- Avisos al agendar si el paciente ya tiene citas ese dia o si el doctor esta ocupado a la misma hora.
+- Ficha del paciente con proximas citas agrupadas por doctor.
 - Edicion rapida de citas desde la agenda.
 - Expediente odontologico con diagnosticos, evolucion, tratamientos, documentos clinicos e impresion.
 - Odontograma visual por arcada superior e inferior, con marcado persistente por pieza o superficie.
