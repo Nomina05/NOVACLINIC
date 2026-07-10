@@ -3608,19 +3608,71 @@ function renderPosInvoiceReport() {
     ["Emitidas", emitted, "Pendientes de cierre o cobro"]
   ].map(posSummaryTemplate).join("");
 
-  document.getElementById("posInvoiceTable").innerHTML = posInvoices.length
-    ? posInvoices.map((payment) => `
-      <tr>
-        <td><strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")}</strong></td>
-        <td>${escapeHtml(patientById(payment.patientId).name)}</td>
-        <td>${escapeHtml(paymentDoctorLabel(payment))}</td>
-        <td>${escapeHtml(payment.method || "Sin método")}</td>
-        <td>${escapeHtml(payment.reference || "Sin referencia")}</td>
-        <td><span class="status-pill ${payment.invoiceStatus === "Pagada" ? "confirmada" : "pendiente"}">${escapeHtml(payment.invoiceStatus || "Pagada")}</span></td>
-        <td>${currency.format(payment.amount || 0)}</td>
-      </tr>
-    `).join("")
-    : `<tr><td colspan="7">${emptyState("No hay facturas POS/POST registradas.")}</td></tr>`;
+  document.getElementById("posInvoiceTickets").innerHTML = posInvoices.length
+    ? posInvoices.map(posInvoiceTicketTemplate).join("")
+    : emptyState("No hay facturas POS/POST registradas.");
+}
+
+function posInvoiceTicketTemplate(payment) {
+  const patient = patientById(payment.patientId);
+  const total = Number(payment.amount || 0);
+  const subtotal = total / 1.19;
+  const tax = total - subtotal;
+  const quantity = Number(payment.quantity || 1) || 1;
+  const unit = total / quantity;
+  const settings = state.settings || {};
+  return `
+    <article class="pos-ticket">
+      <div class="pos-ticket-brand">
+        <div class="ticket-logo-mark">N</div>
+        <h3>${escapeHtml(settings.clinicName || "NovaClinic")}</h3>
+        <p>${escapeHtml(settings.clinicTaxId || "RNC-000000")}</p>
+        <p>${escapeHtml(settings.clinicAddress || "Santo Domingo, República Dominicana")}</p>
+        <p>Teléfono: ${escapeHtml(settings.clinicPhone || "809-555-0100")}</p>
+      </div>
+      <div class="ticket-separator"></div>
+      <div class="ticket-client">
+        <strong>Cliente: ${escapeHtml(patient.name)}</strong>
+        <p>${escapeHtml(patient.address || "Dirección no registrada")}</p>
+        <p>Teléfono: ${escapeHtml(patient.phone || "No registrado")}</p>
+        <p>Identificación: ${escapeHtml(patientDocumentLabel(patient))}</p>
+      </div>
+      <div class="ticket-separator"></div>
+      <div class="ticket-invoice-meta">
+        <strong>Factura</strong>
+        <span>${escapeHtml(payment.invoiceNumber || "FAC-S/N")}</span>
+        <p>Fecha: ${formatDate(payment.date)} · ${escapeHtml(payment.reference || "Sin referencia")}</p>
+        <p>Método de pago: ${escapeHtml(payment.method || "Tarjeta")}</p>
+        <p>Vendedor: ${escapeHtml(paymentCashierLabel(payment))}</p>
+      </div>
+      <div class="ticket-items">
+        <div class="ticket-items-head">
+          <span>Producto</span><span>Cant.</span><span>Unit.</span><span>Total</span>
+        </div>
+        <div class="ticket-item-row">
+          <span>${escapeHtml(payment.concept || "Servicio odontológico")}</span>
+          <span>${quantity}</span>
+          <span>${currency.format(unit)}</span>
+          <span>${currency.format(total)}</span>
+        </div>
+      </div>
+      <div class="ticket-totals">
+        <div><span>Subtotal:</span><strong>${currency.format(subtotal)}</strong></div>
+        <div><span>IVA (19.00%):</span><strong>${currency.format(tax)}</strong></div>
+        <div class="ticket-grand-total"><span>Total:</span><strong>${currency.format(total)}</strong></div>
+      </div>
+      <div class="ticket-payments">
+        <p>Total recibido: ${currency.format(total)}</p>
+        <p>Total de líneas: 1</p>
+        <p>Total de productos: ${quantity}</p>
+      </div>
+      <div class="ticket-footer">
+        <p>Todos nuestros servicios cuentan con garantía según la política de la clínica.</p>
+        <p>Gracias por su compra.</p>
+        <small>Generado en NovaClinic POS</small>
+      </div>
+    </article>
+  `;
 }
 
 function reportMetricTemplate([label, valueText, detail, status]) {

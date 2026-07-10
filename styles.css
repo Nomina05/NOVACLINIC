@@ -498,6 +498,116 @@ p {
   text-transform: uppercase;
 }
 
+.pos-ticket-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 320px));
+  gap: 18px;
+  align-items: start;
+}
+
+.pos-ticket {
+  width: 100%;
+  max-width: 320px;
+  padding: 18px 16px;
+  border: 1px solid #d7ddd9;
+  border-radius: 6px;
+  background: #fff;
+  color: #111;
+  box-shadow: 0 18px 42px rgba(16, 24, 20, .12);
+  font-family: "Courier New", Consolas, monospace;
+  font-size: 11px;
+}
+
+.pos-ticket-brand,
+.ticket-invoice-meta,
+.ticket-footer {
+  text-align: center;
+}
+
+.ticket-logo-mark {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 8px;
+  border: 1px solid #d55;
+  color: #b83232;
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  font-weight: 900;
+}
+
+.pos-ticket h3,
+.pos-ticket p {
+  margin: 0 0 3px;
+}
+
+.pos-ticket h3 {
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  font-size: 14px;
+}
+
+.ticket-separator {
+  height: 1px;
+  margin: 10px 0;
+  background: #222;
+}
+
+.ticket-client strong,
+.ticket-invoice-meta strong {
+  display: block;
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  font-size: 13px;
+}
+
+.ticket-items {
+  margin-top: 12px;
+}
+
+.ticket-items-head,
+.ticket-item-row,
+.ticket-totals div {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) .45fr .75fr .8fr;
+  gap: 6px;
+  align-items: start;
+}
+
+.ticket-items-head {
+  margin-bottom: 6px;
+  font-weight: 900;
+}
+
+.ticket-item-row span,
+.ticket-items-head span {
+  overflow-wrap: anywhere;
+}
+
+.ticket-totals {
+  display: grid;
+  gap: 3px;
+  margin-top: 12px;
+  text-align: right;
+}
+
+.ticket-totals div {
+  grid-template-columns: 1fr auto;
+}
+
+.ticket-grand-total {
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  font-size: 15px;
+}
+
+.ticket-payments {
+  margin-top: 10px;
+  font-weight: 700;
+}
+
+.ticket-footer {
+  margin-top: 12px;
+  font-size: 10px;
+}
+
 .report-panel,
 .pos-report-panel {
   border-color: #cfe1d8;
