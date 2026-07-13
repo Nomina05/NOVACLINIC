@@ -1483,7 +1483,7 @@ function bindForms() {
     selectedSelfServicePatientId = null;
     renderSelfService();
   });
-  document.getElementById("selfServiceRequestForm").addEventListener("submit", (event) => {
+  document.getElementById("selfServiceRequestForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     state.selfServiceRequests ||= [];
     const type = value("selfRequestType");
@@ -1491,15 +1491,27 @@ function bindForms() {
       alert("No tiene permiso para crear este tipo de solicitud.");
       return;
     }
+    const attachmentFile = document.getElementById("selfRequestAttachment")?.files?.[0];
+    const attachments = attachmentFile ? [{
+      id: makeId(),
+      fileName: attachmentFile.name,
+      file: await readFileAsDataUrl(attachmentFile),
+      type: attachmentFile.type || "archivo",
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser?.id || "sin-usuario"
+    }] : [];
     state.selfServiceRequests.unshift({
       id: makeId(),
       type,
       patientId: value("selfRequestPatient"),
       piece: value("selfRequestPiece"),
       amount: Number(value("selfRequestAmount")) || 0,
+      labCost: 0,
+      labInstructions: value("selfRequestDetail"),
       start: value("selfRequestStart"),
       end: value("selfRequestEnd") || value("selfRequestStart"),
       detail: value("selfRequestDetail"),
+      attachments,
       status: type === "Ausencia doctor" ? "Activa" : type === "Laboratorio - pieza dental" ? "Solicitado" : "Pendiente",
       createdBy: currentUser?.id || "sin-usuario",
       createdAt: new Date().toISOString()
@@ -2622,32 +2634,34 @@ function renderHrPanel() {
 function renderLaboratoryPanel() {
   const labRequests = (state.selfServiceRequests || [])
     .filter((request) => request.type === "Laboratorio - pieza dental");
-  const pending = labRequests.filter((request) => request.status === "Pendiente").length;
-  const active = labRequests.filter((request) => ["Recibida", "En proceso", "Terminada"].includes(request.status)).length;
-  const completed = labRequests.filter((request) => ["Completada", "Entregada"].includes(request.status)).length;
-  const invoiced = labRequests.filter((request) => request.status === "Facturada").length;
-  const dueSoon = labRequests.filter((request) => request.promisedAt && request.status !== "Facturada" && request.status !== "Cancelada" && request.promisedAt <= todayIso).length;
+  const requested = labRequests.filter((request) => request.status === "Solicitado").length;
+  const active = labRequests.filter((request) => ["Recibido", "En proceso", "Terminado"].includes(request.status)).length;
+  const delivered = labRequests.filter((request) => request.status === "Entregado").length;
+  const invoiced = labRequests.filter((request) => request.status === "Facturado").length;
+  const dueSoon = labRequests.filter((request) => request.promisedAt && !["Facturado", "Cancelado"].includes(request.status) && request.promisedAt <= todayIso).length;
+  const profitability = laboratoryProfitabilityByDoctor(labRequests);
 
   document.getElementById("laboratoryPanelCards").innerHTML = [
     ["Solicitudes", labRequests.length],
-    ["Pendientes", pending],
+    ["Solicitadas", requested],
     ["En proceso", active],
-    ["Completadas", completed],
+    ["Entregadas", delivered],
     ["Facturadas", invoiced],
+    ["Rentabilidad", currency.format(profitability.reduce((sum, item) => sum + item.profit, 0))],
     ["Por vencer", dueSoon]
   ].map(panelCardTemplate).join("");
 
   renderPanelModules("laboratoryPanelModules", "laboratoryPanel");
 
   document.getElementById("laboratoryStatusList").innerHTML = [
-    ["Pendiente", `${pending} trabajos por recibir.`],
+    ["Solicitado", `${requested} trabajos solicitados por doctores.`],
     ["En proceso", `${active} trabajos activos.`],
-    ["Entregada", `${completed} trabajos entregados o completados.`],
+    ["Entregado", `${delivered} trabajos entregados al doctor.`],
     ["Vencimiento", `${dueSoon} trabajos requieren seguimiento por fecha prometida.`],
-    ["Facturada", `${invoiced} trabajos facturados al doctor.`]
+    ["Facturado", `${invoiced} trabajos facturados al doctor.`]
   ].map(([label, detail]) => `
     <article class="alert-item">
-      <span class="status-pill ${["Completada", "Entregada", "Facturada"].includes(label) ? "confirmada" : "pendiente"}">${label}</span>
+      <span class="status-pill ${laboratoryStatusClass(label)}">${label}</span>
       <div><strong>${detail}</strong><p>Solicitudes generadas desde Autoservicio.</p></div>
     </article>
   `).join("");
@@ -2656,13 +2670,25 @@ function renderLaboratoryPanel() {
     ? labRequests.map(laboratoryRequestTemplate).join("")
     : emptyState("No hay trabajos de laboratorio registrados.");
 
+  document.getElementById("laboratoryProfitabilityList").innerHTML = profitability.length
+    ? profitability.map((item) => `
+      <article class="clinical-item">
+        <span class="amount-pill">${currency.format(item.profit)}</span>
+        <div>
+          <strong>${escapeHtml(item.doctor)}</strong>
+          <p>Facturado ${currency.format(item.revenue)} Â· Costo ${currency.format(item.cost)} Â· ${item.count} trabajo(s)</p>
+        </div>
+      </article>
+    `).join("")
+    : emptyState("No hay trabajos facturados para calcular rentabilidad.");
+
   document.querySelectorAll("[data-lab-status]").forEach((select) => {
     select.addEventListener("change", () => {
       if (!can("laboratory:manage")) return;
       const request = state.selfServiceRequests.find((item) => item.id === select.dataset.labStatus);
       if (!request) return;
       request.status = select.value;
-      if (["Completada", "Entregada"].includes(select.value) && !request.deliveredAt) request.deliveredAt = todayIso;
+      if (select.value === "Entregado" && !request.deliveredAt) request.deliveredAt = todayIso;
       request.updatedAt = new Date().toISOString();
       request.updatedBy = currentUser?.id || "sin-usuario";
       persistAndRender();
@@ -2686,23 +2712,31 @@ function renderLaboratoryPanel() {
 function laboratoryRequestTemplate(request) {
   const patient = request.patientId ? patientById(request.patientId) : null;
   const attachments = request.attachments || [];
-  const canInvoice = ["Completada", "Entregada"].includes(request.status) && request.patientId && !request.invoiceId;
+  const canInvoice = ["Terminado", "Entregado"].includes(request.status) && request.patientId && !request.invoiceId;
+  const revenue = Number(request.amount || 0);
+  const cost = Number(request.labCost || 0);
+  const profit = revenue - cost;
   return `
     <article class="ledger-item lab-request-item">
-      <span class="status-pill ${["Completada", "Entregada", "Facturada"].includes(request.status) ? "confirmada" : "pendiente"}">${escapeHtml(request.status)}</span>
+      <span class="status-pill ${laboratoryStatusClass(request.status)}">${escapeHtml(request.status)}</span>
       <div>
         <strong>${escapeHtml(request.piece || "Pieza sin especificar")}</strong>
-        <p>${patient ? `Paciente: ${escapeHtml(patient.name)} Â· ` : ""}${escapeHtml(request.detail || "Sin detalles")}${request.amount ? ` Â· ${currency.format(request.amount)}` : ""}</p>
+        <p>${patient ? `Paciente: ${escapeHtml(patient.name)} Â· ` : ""}${escapeHtml(request.detail || "Sin detalles")}</p>
+        <p>Laboratorio: ${escapeHtml(request.labProvider || "Sin laboratorio")} Â· Costo ${currency.format(cost)} Â· Precio ${currency.format(revenue)} Â· Margen ${currency.format(profit)}</p>
         <p>Prometida: ${request.promisedAt ? formatDate(request.promisedAt) : "Sin fecha"} Â· Entrega: ${request.deliveredAt ? formatDate(request.deliveredAt) : "Pendiente"}</p>
         <small>Solicitado por ${escapeHtml(userById(request.createdBy).name)} Â· ${formatDateTime(request.createdAt)}</small>
+        ${request.labInstructions ? `<p>Instrucciones/diseÃ±o: ${escapeHtml(request.labInstructions)}</p>` : ""}
         ${request.labNote ? `<p>Nota laboratorio: ${escapeHtml(request.labNote)}</p>` : ""}
         ${attachments.length ? `<div class="lab-attachments">${attachments.map((file) => `<a class="ghost-link" href="${file.file}" target="_blank" rel="noopener">${escapeHtml(file.fileName || file.type || "Adjunto")}</a>`).join("")}</div>` : ""}
         <form class="inline-form lab-detail-form ${can("laboratory:manage") ? "" : "permission-hidden"}" data-lab-form="${request.id}">
           <input name="promisedAt" type="date" value="${escapeHtml(request.promisedAt || "")}" aria-label="Fecha prometida">
           <input name="deliveredAt" type="date" value="${escapeHtml(request.deliveredAt || "")}" aria-label="Fecha entregada">
-          <input name="amount" type="number" min="0" step="100" value="${Number(request.amount || 0)}" placeholder="Costo">
+          <input name="labProvider" value="${escapeHtml(request.labProvider || "")}" placeholder="Laboratorio/proveedor">
+          <input name="labCost" type="number" min="0" step="100" value="${Number(request.labCost || 0)}" placeholder="Costo laboratorio">
+          <input name="amount" type="number" min="0" step="100" value="${Number(request.amount || 0)}" placeholder="Precio a facturar">
+          <input name="instructions" value="${escapeHtml(request.labInstructions || "")}" placeholder="DiseÃ±o o instrucciones de pieza">
           <input name="note" value="${escapeHtml(request.labNote || "")}" placeholder="Nota laboratorio">
-          <input name="attachment" type="file" accept="image/*,.pdf">
+          <input name="attachment" type="file" accept="image/*,.pdf,.stl,.obj,.zip,.doc,.docx">
           <button class="ghost-button" type="submit">Guardar trabajo</button>
         </form>
       </div>
@@ -2715,7 +2749,48 @@ function laboratoryRequestTemplate(request) {
 }
 
 function laboratoryStatuses() {
-  return ["Pendiente", "Recibida", "En proceso", "Terminada", "Completada", "Entregada", "Facturada", "Cancelada"];
+  return ["Solicitado", "Recibido", "En proceso", "Terminado", "Entregado", "Facturado", "Cancelado"];
+}
+
+function normalizeLaboratoryStatus(status) {
+  const normalized = normalizeText(status);
+  if (normalized === "pendiente") return "Solicitado";
+  if (normalized === "recibida") return "Recibido";
+  if (normalized === "terminada" || normalized === "completada") return "Terminado";
+  if (normalized === "entregada") return "Entregado";
+  if (normalized === "facturada") return "Facturado";
+  if (normalized === "cancelada") return "Cancelado";
+  return laboratoryStatuses().includes(status) ? status : "Solicitado";
+}
+
+function laboratoryStatusClass(status) {
+  if (["Terminado", "Entregado", "Facturado"].includes(status)) return "confirmada";
+  if (status === "Cancelado") return "cancelada";
+  return "pendiente";
+}
+
+function laboratoryProfitabilityByDoctor(labRequests = []) {
+  const summary = {};
+  labRequests
+    .filter((request) => request.invoiceId || request.status === "Facturado")
+    .forEach((request) => {
+      const doctorId = request.createdBy || "sin-doctor";
+      const payment = state.payments.find((item) => item.id === request.invoiceId);
+      const revenue = Number(payment?.amount ?? request.amount ?? 0);
+      const cost = Number(payment?.laboratoryCost ?? request.labCost ?? 0);
+      summary[doctorId] ||= {
+        doctor: userById(doctorId).name,
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+        count: 0
+      };
+      summary[doctorId].revenue += revenue;
+      summary[doctorId].cost += cost;
+      summary[doctorId].profit += revenue - cost;
+      summary[doctorId].count += 1;
+    });
+  return Object.values(summary).sort((a, b) => b.profit - a.profit);
 }
 
 async function saveLaboratoryRequestDetails(requestId, form) {
@@ -2725,6 +2800,9 @@ async function saveLaboratoryRequestDetails(requestId, form) {
   request.promisedAt = formData.get("promisedAt") || "";
   request.deliveredAt = formData.get("deliveredAt") || "";
   request.amount = Number(formData.get("amount")) || 0;
+  request.labCost = Number(formData.get("labCost")) || 0;
+  request.labProvider = String(formData.get("labProvider") || "");
+  request.labInstructions = String(formData.get("instructions") || "");
   request.labNote = String(formData.get("note") || "");
   const file = form.querySelector('input[name="attachment"]')?.files?.[0];
   if (file) {
@@ -2738,8 +2816,8 @@ async function saveLaboratoryRequestDetails(requestId, form) {
       createdBy: currentUser?.id || "laboratorio"
     });
   }
-  if (request.deliveredAt && ["Terminada", "Completada"].includes(request.status)) {
-    request.status = "Entregada";
+  if (request.deliveredAt && ["Terminado"].includes(request.status)) {
+    request.status = "Entregado";
   }
   request.updatedAt = new Date().toISOString();
   request.updatedBy = currentUser?.id || "laboratorio";
@@ -2748,7 +2826,7 @@ async function saveLaboratoryRequestDetails(requestId, form) {
 
 function createLaboratoryInvoice(requestId) {
   const request = state.selfServiceRequests.find((item) => item.id === requestId);
-  if (!request || !["Completada", "Entregada"].includes(request.status) || request.invoiceId) return;
+  if (!request || !["Terminado", "Entregado"].includes(request.status) || request.invoiceId) return;
   if (!request.patientId) {
     alert("Debe existir un paciente asociado para facturar el trabajo.");
     return;
@@ -2794,13 +2872,17 @@ function createLaboratoryInvoice(requestId) {
     laboratoryRequestId: request.id,
     laboratoryPiece: request.piece || "",
     laboratoryDeliveredAt: request.deliveredAt || "",
-    laboratoryPatientName: patient?.name || ""
+    laboratoryPatientName: patient?.name || "",
+    laboratoryCost: Number(request.labCost || 0),
+    laboratoryProvider: request.labProvider || "",
+    laboratoryProfit: amount - Number(request.labCost || 0)
   };
   state.payments.unshift(payment);
   request.invoiceId = payment.id;
   request.invoiceNumber = invoiceNumber;
   request.amount = amount;
-  request.status = "Facturada";
+  request.status = "Facturado";
+  request.profit = amount - Number(request.labCost || 0);
   request.invoicedAt = new Date().toISOString();
   request.invoicedBy = currentUser?.id || "laboratorio";
   request.updatedAt = new Date().toISOString();
@@ -5921,8 +6003,8 @@ function receivablesAgingRows(payments) {
 function renderOperationsReportList(payments, filters) {
   const productSales = payments.filter((payment) => payment.type === "Producto").length;
   const labRequests = (state.selfServiceRequests || []).filter((request) => request.type === "Laboratorio - pieza dental");
-  const labCompleted = labRequests.filter((request) => ["Completada", "Entregada", "Facturada"].includes(request.status)).length;
-  const labPending = labRequests.filter((request) => !["Completada", "Entregada", "Facturada", "Cancelada"].includes(request.status)).length;
+  const labCompleted = labRequests.filter((request) => ["Terminado", "Entregado", "Facturado"].includes(request.status)).length;
+  const labPending = labRequests.filter((request) => !["Terminado", "Entregado", "Facturado", "Cancelado"].includes(request.status)).length;
   const lowStock = state.inventory.filter((item) => item.stock <= item.min);
   const reportType = filters.type;
   document.getElementById("operationsReportList").innerHTML = [
