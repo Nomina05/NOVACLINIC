@@ -1,16 +1,18 @@
-:root {
-  --bg: #f5f7f4;
+﻿:root {
+  --bg: #f4f8fb;
   --surface: #ffffff;
-  --surface-soft: #eef5ef;
-  --ink: #18221d;
-  --muted: #66746b;
-  --line: #dce5df;
-  --green: #117e63;
-  --green-dark: #0b5d4a;
-  --blue: #2d6cdf;
-  --amber: #b06a00;
-  --red: #b63d32;
-  --shadow: 0 18px 45px rgba(22, 38, 31, .10);
+  --surface-soft: #eef9fb;
+  --ink: #0b2545;
+  --muted: #617386;
+  --line: #d8e4ec;
+  --green: #18b6b8;
+  --green-dark: #0b2545;
+  --blue: #0b4f8a;
+  --amber: #a56a00;
+  --red: #b43b3b;
+  --shadow: 0 14px 34px rgba(11, 37, 69, .08);
+  --turquoise: #18b6b8;
+  --navy: #0b2545;
 }
 
 * {
@@ -33,7 +35,7 @@ body {
   place-items: center;
   padding: 22px;
   background:
-    linear-gradient(135deg, rgba(17, 126, 99, .92), rgba(19, 36, 30, .96)),
+    linear-gradient(135deg, rgba(11, 37, 69, .94), rgba(24, 182, 184, .88)),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.12' stroke-width='2'%3E%3Cpath d='M36 52c20-26 49-26 70 0 20 26 18 71-4 84-13 8-18-19-31-19s-18 27-31 19c-22-13-24-58-4-84z'/%3E%3C/g%3E%3C/svg%3E");
 }
 
@@ -86,7 +88,7 @@ body {
   gap: 4px;
   padding: 12px;
   border-radius: 8px;
-  background: #f3f7f5;
+  background: #f3f8fb;
   color: var(--muted);
   font-size: 13px;
 }
@@ -406,7 +408,7 @@ p {
   padding: 0 12px;
   border-radius: 8px;
   color: var(--green-dark);
-  background: #dff4eb;
+  background: #e1f7f8;
   font-size: 13px;
   font-weight: 850;
   white-space: nowrap;
@@ -476,28 +478,87 @@ p {
   border: 1px solid transparent;
   padding: 0 14px;
   font-weight: 750;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1;
 }
 
 .primary-button {
   color: #fff;
-  background: var(--green);
+  background: var(--navy);
 }
 
 .primary-button:hover {
-  background: var(--green-dark);
+  background: #123b66;
 }
 
 .ghost-button {
-  color: var(--green-dark);
-  background: #e8f5ee;
-  border-color: #cde8da;
+  color: var(--navy);
+  background: #eef9fb;
+  border-color: #c9edf0;
+}
+
+.primary-button::before,
+.ghost-button::before {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.primary-button::before {
+  content: "+";
+  color: var(--navy);
+  background: #ffffff;
+}
+
+.ghost-button::before {
+  content: ">";
+  color: #fff;
+  background: var(--turquoise);
+}
+
+#printReports::before,
+#printReceipt::before,
+#printClinicalRecord::before,
+#printPatientRecord::before,
+#printOdontogramSummary::before,
+[data-receipt]::before {
+  content: "P";
+}
+
+#exportReports::before,
+#exportData::before {
+  content: "E";
+}
+
+[data-reprint]::before {
+  content: "R";
+}
+
+[data-annul]::before,
+.pos-action-button.danger::before {
+  content: "!";
+}
+
+#processPayrollMonth::before,
+#markPayrollPaid::before,
+#closeCashRegister::before,
+#reopenCashRegister::before {
+  content: "$";
 }
 
 .icon-button {
   width: 40px;
   padding: 0;
   font-size: 25px;
-  background: #eef3f0;
+  background: #eef7fa;
   color: var(--ink);
 }
 
@@ -506,21 +567,22 @@ p {
 }
 
 .view.active {
-  display: block;
+  display: grid;
+  gap: 22px;
 }
 
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .panel-card-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .panel-card,
@@ -549,7 +611,7 @@ p {
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: linear-gradient(135deg, #ffffff, #eef7f3);
+  background: linear-gradient(135deg, #ffffff, #eef9fb);
   box-shadow: var(--shadow);
 }
 
@@ -685,7 +747,7 @@ p {
   height: 12px;
   overflow: hidden;
   border-radius: 999px;
-  background: #eef3f0;
+  background: #eef7fa;
 }
 
 .simple-chart-track i {
@@ -918,10 +980,10 @@ p {
 
 .module-button {
   min-height: 46px;
-  border: 1px solid #cde8da;
+  border: 1px solid #c9edf0;
   border-radius: 8px;
   color: var(--green-dark);
-  background: #e8f5ee;
+  background: #e8f6fb;
   font-weight: 850;
   text-align: left;
   padding: 0 14px;
@@ -960,7 +1022,7 @@ p {
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #f7fbf9;
+  background: #f7fbfd;
 }
 
 .permission-profile-select {
@@ -1063,7 +1125,7 @@ p {
   gap: 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfdfc;
+  background: #fbfdff;
   color: var(--ink);
   padding: 8px 10px;
   font-size: 12px;
@@ -1079,8 +1141,8 @@ p {
 }
 
 .user-role-chip:hover {
-  border-color: #98d7bf;
-  background: #eef9f4;
+  border-color: #9adfe4;
+  background: #eef9fb;
 }
 
 .compact-user-list {
@@ -1108,8 +1170,8 @@ p {
 
 .compact-user.active,
 .compact-user:hover {
-  border-color: #98d7bf;
-  background: #eef9f4;
+  border-color: #9adfe4;
+  background: #eef9fb;
 }
 
 .compact-user div {
@@ -1139,7 +1201,7 @@ p {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfdfc;
+  background: #fbfdff;
 }
 
 .permission-user h2 {
@@ -1210,12 +1272,12 @@ p {
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfdfc;
+  background: #fbfdff;
 }
 
 .permission-card-toggle.is-active {
-  border-color: #98d7bf;
-  background: #eef9f4;
+  border-color: #9adfe4;
+  background: #eef9fb;
 }
 
 .permission-card-toggle span {
@@ -1248,7 +1310,7 @@ p {
 .permission-chip.active,
 .permission-chip.full {
   color: #075a47;
-  background: #dff4eb;
+  background: #e1f7f8;
 }
 
 .permission-chip.partial,
@@ -1364,11 +1426,11 @@ p {
 
 .hr-tab {
   min-height: 38px;
-  border: 1px solid #cde8da;
+  border: 1px solid #c9edf0;
   border-radius: 8px;
   padding: 0 14px;
   color: var(--green-dark);
-  background: #e8f5ee;
+  background: #e8f6fb;
   font-weight: 850;
 }
 
@@ -1475,7 +1537,7 @@ p {
 .record-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(300px, .8fr);
-  gap: 18px;
+  gap: 24px;
 }
 
 .agenda-layout {
@@ -1484,11 +1546,11 @@ p {
 
 .record-grid {
   grid-template-columns: minmax(280px, .7fr) minmax(0, 1.3fr);
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 }
 
 .panel {
-  padding: 20px;
+  padding: 22px;
 }
 
 .wide {
@@ -1517,7 +1579,7 @@ p {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfdfc;
+  background: #fbfdff;
 }
 
 .lab-request-item {
@@ -1554,22 +1616,22 @@ p {
 .amount-pill {
   white-space: nowrap;
   border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
+  padding: 5px 9px;
+  font-size: 11px;
   font-weight: 800;
 }
 
 .time-chip {
-  color: var(--green-dark);
-  background: #dff4eb;
+  color: var(--navy);
+  background: #e8f6fb;
 }
 
 .status-pill.confirmada,
 .status-pill.pagado,
 .status-pill.sano,
 .status-pill.atendida {
-  color: #0d604e;
-  background: #dff4eb;
+  color: #075c61;
+  background: #e1f7f8;
 }
 
 .status-pill.pendiente,
@@ -1578,16 +1640,16 @@ p {
 .status-pill.lista-de-espera,
 .status-pill.corona,
 .status-pill.registrado {
-  color: #7c4b00;
-  background: #fff0cc;
+  color: #6b5200;
+  background: #fff6d8;
 }
 
 .status-pill.cancelada,
 .status-pill.no-asistio,
 .status-pill.caries,
 .status-pill.ausente {
-  color: #8a2d25;
-  background: #ffe2de;
+  color: #84322e;
+  background: #ffe8e5;
 }
 
 .agenda-tools {
@@ -1698,8 +1760,8 @@ p {
 }
 
 .month-day.active {
-  border-color: #98d7bf;
-  background: #e8f5ee;
+  border-color: #9adfe4;
+  background: #e8f6fb;
 }
 
 .month-day span {
@@ -1737,7 +1799,7 @@ p {
   align-items: start;
   padding: 10px;
   border-radius: 8px;
-  background: #eef5ef;
+  background: #eef9fb;
   border-left: 4px solid var(--green);
 }
 
@@ -1779,12 +1841,12 @@ p {
 }
 
 .calendar-chip.atendida {
-  background: #e8f5ee;
+  background: #e8f6fb;
   border-left-color: var(--green);
 }
 
 .calendar-chip.confirmada {
-  background: #e8f5ee;
+  background: #e8f6fb;
   border-left-color: var(--green);
 }
 
@@ -1810,7 +1872,7 @@ p {
 
 .agenda-week-day.today,
 .agenda-month-summary.has-items {
-  border-color: #98d7bf;
+  border-color: #9adfe4;
   background: #f2fbf6;
 }
 
@@ -1893,7 +1955,7 @@ p {
 .appointment-card.confirmada,
 .appointment-card.atendida {
   border-left-color: var(--green);
-  background: #f7fcfa;
+  background: #f6fcfd;
 }
 
 .status-pill.implante {
@@ -1902,36 +1964,52 @@ p {
 }
 
 .section-toolbar {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .table-panel {
-  overflow: hidden;
+  max-height: 520px;
+  overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 760px;
 }
 
 th,
 td {
-  padding: 15px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: middle;
+  font-size: 13px;
 }
 
 th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   color: var(--muted);
-  background: #f9fbfa;
-  font-size: 12px;
+  background: #f6fbfd;
+  box-shadow: 0 1px 0 var(--line);
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0;
 }
 
+tbody tr {
+  background: #fff;
+}
+
+tbody tr:nth-child(even) {
+  background: #fbfdfe;
+}
+
 tbody tr:hover {
-  background: #f7fbf9;
+  background: #eef9fb;
 }
 
 .patient-name {
@@ -1957,7 +2035,7 @@ tbody tr:hover {
   border-radius: 8px;
   object-fit: cover;
   border: 1px solid var(--line);
-  background: #eef5ef;
+  background: #eef9fb;
 }
 
 .patient-photo-empty {
@@ -2061,7 +2139,7 @@ tbody tr:hover {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfdfc;
+  background: #fbfdff;
 }
 
 .clinical-treatment small,
@@ -2370,7 +2448,7 @@ tbody tr:hover {
   display: grid;
   gap: 3px;
   padding-left: 12px;
-  border-left: 3px solid #98d7bf;
+  border-left: 3px solid #9adfe4;
 }
 
 .selected-tooth-timeline span,
@@ -2397,7 +2475,7 @@ tbody tr:hover {
 }
 
 .selected-tooth-history {
-  border-color: #98d7bf;
+  border-color: #9adfe4;
   background: #f2fbf6;
 }
 
@@ -2412,7 +2490,7 @@ tbody tr:hover {
 
 .amount-pill {
   color: var(--green-dark);
-  background: #e8f5ee;
+  background: #e8f6fb;
 }
 
 .billing-summary {
@@ -2548,7 +2626,7 @@ tbody tr:hover {
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfdfc;
+  background: #fbfdff;
 }
 
 .receipt-row,
@@ -2625,7 +2703,7 @@ tbody tr:hover {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #f7fbf9;
+  background: #f7fbfd;
 }
 
 .patient-record-photo .patient-photo {
@@ -2670,7 +2748,7 @@ tbody tr:hover {
 
 .record-badge.ok {
   color: #075a47;
-  background: #dff4eb;
+  background: #e1f7f8;
 }
 
 .record-badge.alert,
@@ -2720,9 +2798,9 @@ tbody tr:hover {
 }
 
 .record-tab.active {
-  border-color: #98d7bf;
+  border-color: #9adfe4;
   color: var(--green-dark);
-  background: #eef9f4;
+  background: #eef9fb;
 }
 
 .record-tab-panel {
@@ -2745,7 +2823,7 @@ tbody tr:hover {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfdfc;
+  background: #fbfdff;
   margin-top: 12px;
 }
 
@@ -2885,7 +2963,7 @@ dialog::backdrop {
   padding: 14px;
   border: 1px dashed #b8d4c7;
   border-radius: 8px;
-  background: #f7fbf9;
+  background: #f7fbfd;
 }
 
 .legacy-photo-field {
@@ -3108,7 +3186,8 @@ dialog::backdrop {
   }
 
   .table-panel {
-    overflow-x: auto;
+    max-height: 420px;
+    overflow: auto;
   }
 
   th,
@@ -3246,3 +3325,4 @@ dialog::backdrop {
     min-width: 0 !important;
   }
 }
+
