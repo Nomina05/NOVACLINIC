@@ -2171,6 +2171,46 @@ tbody tr:hover {
   color: var(--muted);
 }
 
+.clinical-alert-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #f0c4bd;
+  border-left: 5px solid var(--red);
+  border-radius: 8px;
+  background: #fff7f6;
+}
+
+.clinical-alert-panel strong {
+  color: #84322e;
+}
+
+.clinical-alert-panel div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.clinical-alert-panel span {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #84322e;
+  background: #ffe8e5;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.treatment-consent-check {
+  min-height: 40px !important;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
 .tooth-grid {
   width: 100%;
   overflow-x: auto;

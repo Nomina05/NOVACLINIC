@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8">
@@ -13,11 +13,11 @@
           <img class="brand-logo" src="NOVACLINIC LOGO.png" alt="NovaClinic">
           <div>
             <strong>NovaClinic</strong>
-            <small>Acceso odontológico</small>
+            <small>Acceso odontolÃ³gico</small>
           </div>
         </div>
         <div>
-          <p class="eyebrow">Inicio de sesión</p>
+          <p class="eyebrow">Inicio de sesiÃ³n</p>
           <h1>Entrar al sistema</h1>
         </div>
         <label>
@@ -26,68 +26,68 @@
         </label>
         <label>
           PIN
-          <input id="userPin" type="password" inputmode="numeric" placeholder="Código de acceso" required>
+          <input id="userPin" type="password" inputmode="numeric" placeholder="CÃ³digo de acceso" required>
         </label>
         <p class="login-error" id="loginError" role="alert"></p>
-        <button class="primary-button" type="submit">Iniciar sesión</button>
+        <button class="primary-button" type="submit">Iniciar sesiÃ³n</button>
         <div class="demo-access">
           <strong>PIN de prueba</strong>
-          <span>Administrador: 0000 · Doctor: 1234 · Recepción: 1111 · RRHH: 2222 · Contabilidad: 3333 · Laboratorio: 4444</span>
+          <span>Administrador: 0000 Â· Doctor: 1234 Â· RecepciÃ³n: 1111 Â· RRHH: 2222 Â· Contabilidad: 3333 Â· Laboratorio: 4444</span>
         </div>
       </form>
     </section>
 
     <div class="app-shell is-locked" id="appShell">
-      <aside class="sidebar" aria-label="Navegación principal">
+      <aside class="sidebar" aria-label="NavegaciÃ³n principal">
         <div class="brand">
           <img class="brand-logo" src="NOVACLINIC LOGO.png" alt="NovaClinic">
           <div>
             <strong>NovaClinic</strong>
-            <small>Odontología</small>
+            <small>OdontologÃ­a</small>
           </div>
         </div>
         <nav class="nav-list">
           <div class="nav-group">
             <span class="nav-section">Paneles</span>
             <button class="nav-item active" data-view="dashboard"><span class="nav-icon nav-icon-doctor" aria-hidden="true"></span><span>Doctores</span></button>
-            <button class="nav-item" data-view="receptionPanel"><span class="nav-icon nav-icon-reception" aria-hidden="true"></span><span>Recepción</span></button>
+            <button class="nav-item" data-view="receptionPanel"><span class="nav-icon nav-icon-reception" aria-hidden="true"></span><span>RecepciÃ³n</span></button>
             <button class="nav-item" data-view="usersPanel"><span class="nav-icon nav-icon-users" aria-hidden="true"></span><span>Usuarios</span></button>
             <button class="nav-item" data-view="hrPanel"><span class="nav-icon nav-icon-hr" aria-hidden="true"></span><span>Recursos Humanos</span></button>
             <button class="nav-item" data-view="laboratoryPanel"><span class="nav-icon nav-icon-lab" aria-hidden="true"></span><span>Laboratorio</span></button>
             <button class="nav-item" data-view="accountingPanel"><span class="nav-icon nav-icon-accounting" aria-hidden="true"></span><span>Contabilidad</span></button>
           </div>
           <div class="nav-group nav-group-modules">
-            <span class="nav-section">Módulos</span>
+            <span class="nav-section">MÃ³dulos</span>
             <button class="nav-item nav-item-module" data-view="patients"><span class="nav-icon nav-icon-patient" aria-hidden="true"></span><span>Pacientes</span></button>
             <button class="nav-item nav-item-module" data-view="selfService"><span class="nav-icon nav-icon-self" aria-hidden="true"></span><span>Autoservicio</span></button>
             <button class="nav-item nav-item-module" data-view="agenda"><span class="nav-icon nav-icon-agenda" aria-hidden="true"></span><span>Agenda</span></button>
             <button class="nav-item nav-item-module" data-view="odontogram"><span class="nav-icon nav-icon-tooth" aria-hidden="true"></span><span>Odontograma</span></button>
             <button class="nav-item nav-item-module" data-view="treatments"><span class="nav-icon nav-icon-treatment" aria-hidden="true"></span><span>Tratamientos</span></button>
-            <button class="nav-item nav-item-module" data-view="billing"><span class="nav-icon nav-icon-billing" aria-hidden="true"></span><span>Facturación</span></button>
-            <button class="nav-item nav-item-module" data-view="inventory"><span class="nav-icon nav-icon-inventory" aria-hidden="true"></span><span>Almacén</span></button>
+            <button class="nav-item nav-item-module" data-view="billing"><span class="nav-icon nav-icon-billing" aria-hidden="true"></span><span>FacturaciÃ³n</span></button>
+            <button class="nav-item nav-item-module" data-view="inventory"><span class="nav-icon nav-icon-inventory" aria-hidden="true"></span><span>AlmacÃ©n</span></button>
             <button class="nav-item nav-item-module" data-view="reports"><span class="nav-icon nav-icon-reports" aria-hidden="true"></span><span>Reportes</span></button>
-            <button class="nav-item nav-item-module" data-view="adminPanel"><span class="nav-icon nav-icon-admin" aria-hidden="true"></span><span>Administración</span></button>
+            <button class="nav-item nav-item-module" data-view="adminPanel"><span class="nav-icon nav-icon-admin" aria-hidden="true"></span><span>AdministraciÃ³n</span></button>
           </div>
         </nav>
         <div class="clinic-card">
           <span>Usuario conectado</span>
-          <strong id="currentShift">Sin sesión</strong>
+          <strong id="currentShift">Sin sesiÃ³n</strong>
           <small id="currentShiftMeta">Selecciona un usuario para entrar</small>
-          <button class="ghost-button logout-button" id="logoutButton" type="button">Cerrar sesión</button>
+          <button class="ghost-button logout-button" id="logoutButton" type="button">Cerrar sesiÃ³n</button>
         </div>
       </aside>
 
       <main class="main">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Sistema odontológico</p>
-            <h1 id="pageTitle">Panel clínico</h1>
+            <p class="eyebrow">Sistema odontolÃ³gico</p>
+            <h1 id="pageTitle">Panel clÃ­nico</h1>
           </div>
           <div class="top-actions">
-            <div class="doctor-badge" id="doctorBadge">Sin sesión</div>
+            <div class="doctor-badge" id="doctorBadge">Sin sesiÃ³n</div>
             <label class="search-box">
               <span>Buscar</span>
-              <input id="globalSearch" type="search" placeholder="Paciente, teléfono, tratamiento">
+              <input id="globalSearch" type="search" placeholder="Paciente, telÃ©fono, tratamiento">
             </label>
           </div>
         </header>
@@ -98,8 +98,8 @@
           <section class="panel panel-modules">
             <div class="panel-header">
               <div>
-                <h2>Módulos del panel</h2>
-                <p>Accesos clínicos disponibles para este usuario.</p>
+                <h2>MÃ³dulos del panel</h2>
+                <p>Accesos clÃ­nicos disponibles para este usuario.</p>
               </div>
             </div>
             <div class="module-grid" id="doctorPanelModules"></div>
@@ -109,7 +109,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Agenda de hoy</h2>
-                  <p>Citas, estado y próximos pasos.</p>
+                  <p>Citas, estado y prÃ³ximos pasos.</p>
                 </div>
                 <button class="ghost-button" data-view-jump="agenda">Ver agenda</button>
               </div>
@@ -118,7 +118,7 @@
             <section class="panel">
               <div class="panel-header">
                 <div>
-                  <h2>Alertas clínicas</h2>
+                  <h2>Alertas clÃ­nicas</h2>
                   <p>Seguimientos y balances pendientes.</p>
                 </div>
               </div>
@@ -130,8 +130,8 @@
         <section class="view" id="receptionPanel">
           <div class="section-toolbar">
             <div>
-              <h2>Panel de recepción</h2>
-              <p>Admisión, agenda, pacientes y cobros rápidos.</p>
+              <h2>Panel de recepciÃ³n</h2>
+              <p>AdmisiÃ³n, agenda, pacientes y cobros rÃ¡pidos.</p>
             </div>
           </div>
           <div class="panel-card-grid" id="receptionPanelCards"></div>
@@ -139,8 +139,8 @@
             <section class="panel wide">
               <div class="panel-header">
                 <div>
-                  <h2>Próximas citas</h2>
-                  <p>Seguimiento de llegada y confirmación.</p>
+                  <h2>PrÃ³ximas citas</h2>
+                  <p>Seguimiento de llegada y confirmaciÃ³n.</p>
                 </div>
                 <button class="ghost-button" data-view-jump="agenda">Abrir agenda</button>
               </div>
@@ -150,7 +150,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Accesos</h2>
-                  <p>Flujos frecuentes de recepción.</p>
+                  <p>Flujos frecuentes de recepciÃ³n.</p>
                 </div>
               </div>
               <div class="module-grid compact" id="receptionPanelModules"></div>
@@ -162,7 +162,7 @@
           <div class="section-toolbar">
             <div>
               <h2>Panel de Recursos Humanos</h2>
-              <p>Información del personal, turnos y estructura interna.</p>
+              <p>InformaciÃ³n del personal, turnos y estructura interna.</p>
             </div>
           </div>
           <div class="panel-card-grid" id="hrPanelCards"></div>
@@ -172,8 +172,8 @@
             <section class="panel wide">
               <div class="panel-header">
                 <div>
-                  <h2>Personal clínico y operativo</h2>
-                  <p>Información general para gestión humana.</p>
+                  <h2>Personal clÃ­nico y operativo</h2>
+                  <p>InformaciÃ³n general para gestiÃ³n humana.</p>
                 </div>
               </div>
               <div class="cards-grid" id="hrStaffCards"></div>
@@ -181,21 +181,316 @@
             <section class="panel">
               <div class="panel-header">
                 <div>
-                  <h2>Próximos controles</h2>
+                  <h2>PrÃ³ximos controles</h2>
                   <p>Asistencia, vacaciones, turnos y evaluaciones del personal.</p>
                 </div>
               </div>
               <div class="alert-list" id="hrNotes"></div>
             </section>
           </div>
-          <div class="hr-tab-bar" id="hrTabBar" role="tablist" aria-label="Módulos de Recursos Humanos">
-            <button class="hr-tab active" data-hr-tab="payroll" type="button">Nómina</button>
+          <div class="hr-tab-bar" id="hrTabBar" role="tablist" aria-label="MÃ³dulos de Recursos Humanos">
+            <button class="hr-tab active" data-hr-tab="payroll" type="button">NÃ³mina</button>
             <button class="hr-tab" data-hr-tab="attendance" type="button">Asistencia</button>
             <button class="hr-tab" data-hr-tab="vacations" type="button">Vacaciones</button>
             <button class="hr-tab" data-hr-tab="shifts" type="button">Turnos</button>
             <button class="hr-tab" data-hr-tab="evaluations" type="button">Evaluaciones</button>
           </div>
           <section class="panel payroll-panel hr-tab-panel active" data-hr-panel="payroll">
+            <div class="panel-header">
+              <div>
+                <h2>NÃƒÂ³mina</h2>
+                <p>Personal administrativo por salario fijo y doctores por comisiÃƒÂ³n de puntos.</p>
+              </div>
+              <label class="compact-field">
+                PerÃƒÂ­odo
+                <input id="payrollPeriod" type="month">
+              </label>
+              <button class="ghost-button" id="markPayrollPaid" type="button">Marcar nÃƒÂ³mina pagada</button>
+              <button class="primary-button" id="processPayrollMonth" type="button">Procesar nÃƒÂ³mina del mes</button>
+            </div>
+            <div class="panel-card-grid" id="payrollSummary"></div>
+            <section class="payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>Novedades de nÃƒÂ³mina</h3>
+                  <p>Registra ingresos, descuentos, ausencias, avances y ajustes antes de procesar.</p>
+                </div>
+              </div>
+              <form class="inline-form" id="payrollNoveltyForm">
+                <select id="payrollNoveltyUser" required></select>
+                <select id="payrollNoveltyType" required>
+                  <option value="Ingreso">Ingreso adicional</option>
+                  <option value="Descuento">Descuento</option>
+                  <option value="Ausencia">Ausencia</option>
+                  <option value="Avance">Avance</option>
+                  <option value="Ajuste">Ajuste</option>
+                </select>
+                <input id="payrollNoveltyPeriod" type="month">
+                <input id="payrollNoveltyAmount" type="number" min="0" step="100" placeholder="Monto" required>
+                <input id="payrollNoveltyNote" placeholder="Detalle de la novedad" required>
+                <button class="primary-button" type="submit">Aplicar novedad</button>
+              </form>
+              <div class="table-panel">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Empleado</th>
+                      <th>Tipo</th>
+                      <th>Monto</th>
+                      <th>Detalle</th>
+                      <th>PerÃƒÂ­odo</th>
+                      <th>Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody id="payrollNoveltyTable"></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="payroll-section doctor-payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>NÃƒÂ³mina doctores</h3>
+                  <p>Comisiones por puntos de seguros y procedimientos completados.</p>
+                </div>
+              </div>
+              <div class="panel-card-grid compact-payroll-summary" id="doctorPayrollSummary"></div>
+              <div class="table-panel commission-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Procedimiento</th>
+                    <th>Valor en punto</th>
+                    <th>Valor en dinero</th>
+                  </tr>
+                </thead>
+                <tbody id="procedurePointTable"></tbody>
+              </table>
+              </div>
+              <div class="table-panel">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Doctor</th>
+                      <th>Especialidad</th>
+                      <th>Puntos</th>
+                      <th>Procedimientos</th>
+                      <th>ComisiÃƒÂ³n</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="doctorPayrollTable"></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="payroll-section admin-payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>NÃƒÂ³mina administrativa</h3>
+                  <p>Personal con salario fijo, bonos y deducciones.</p>
+                </div>
+              </div>
+              <div class="panel-card-grid compact-payroll-summary" id="adminPayrollSummary"></div>
+              <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Rol</th>
+                    <th>Salario base</th>
+                    <th>Bonos</th>
+                    <th>Deducciones</th>
+                    <th>Neto</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="adminPayrollTable"></tbody>
+              </table>
+              </div>
+            </section>
+            <section class="payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>Historial de procesamiento</h3>
+                  <p>Meses procesados, totales pagados y responsable del cierre de nÃƒÂ³mina.</p>
+                </div>
+              </div>
+              <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>PerÃƒÂ­odo</th>
+                    <th>Administrativa</th>
+                    <th>Doctores</th>
+                    <th>Novedades</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Procesado por</th>
+                  </tr>
+                </thead>
+                <tbody id="payrollRunTable"></tbody>
+              </table>
+              </div>
+            </section>
+          </section>
+          <section class="panel payroll-section hr-tab-panel" data-hr-panel="attendance">
+            <div class="panel-header">
+              <div>
+                <h2>Asistencia</h2>
+                <p>Registro diario de entrada, salida y estado del personal.</p>
+              </div>
+            </div>
+            <form class="inline-form" id="attendanceForm">
+              <select id="attendanceUser" required></select>
+              <input id="attendanceDate" type="date" required>
+              <select id="attendanceStatus">
+                <option>Presente</option>
+                <option>Tarde</option>
+                <option>Ausente</option>
+                <option>Permiso</option>
+              </select>
+              <input id="attendanceIn" type="time">
+              <input id="attendanceOut" type="time">
+              <input id="attendanceNote" placeholder="Nota">
+              <button class="primary-button" type="submit">Registrar asistencia</button>
+            </form>
+            <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Entrada</th>
+                    <th>Salida</th>
+                    <th>Horas</th>
+                    <th>Nota</th>
+                  </tr>
+                </thead>
+                <tbody id="attendanceTable"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel payroll-section hr-tab-panel" data-hr-panel="vacations">
+            <div class="panel-header">
+              <div>
+                <h2>Vacaciones</h2>
+                <p>Solicitudes, aprobaciones y seguimiento de ausencias programadas.</p>
+              </div>
+            </div>
+            <form class="inline-form" id="vacationForm">
+              <select id="vacationUser" required></select>
+              <select id="vacationType" required>
+                <option>Vacaciones</option>
+                <option>Permiso</option>
+                <option>Licencia mÃ©dica</option>
+                <option>Ausencia programada</option>
+              </select>
+              <input id="vacationStart" type="date" required>
+              <input id="vacationEnd" type="date" required>
+              <select id="vacationStatus">
+                <option>Solicitada</option>
+                <option>Aprobada</option>
+                <option>Rechazada</option>
+                <option>Completada</option>
+              </select>
+              <input id="vacationNote" placeholder="Motivo o comentario">
+              <button class="primary-button" type="submit">Registrar solicitud</button>
+            </form>
+            <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Tipo</th>
+                    <th>Desde</th>
+                    <th>Hasta</th>
+                    <th>Estado</th>
+                    <th>AprobaciÃ³n</th>
+                    <th>Comentario</th>
+                  </tr>
+                </thead>
+                <tbody id="vacationTable"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel payroll-section hr-tab-panel" data-hr-panel="shifts">
+            <div class="panel-header">
+              <div>
+                <h2>Turnos</h2>
+                <p>AsignaciÃ³n de horarios y Ã¡reas de trabajo del personal.</p>
+              </div>
+            </div>
+            <form class="inline-form" id="shiftForm">
+              <select id="shiftUser" required></select>
+              <input id="shiftName" placeholder="Nombre del turno" required>
+              <input id="shiftArea" placeholder="Ãrea">
+              <input id="shiftStart" type="time" required>
+              <input id="shiftEnd" type="time" required>
+              <select id="shiftDay">
+                <option>Lunes a viernes</option>
+                <option>Lunes</option>
+                <option>Martes</option>
+                <option>MiÃ©rcoles</option>
+                <option>Jueves</option>
+                <option>Viernes</option>
+                <option>SÃ¡bado</option>
+                <option>Domingo</option>
+              </select>
+              <button class="primary-button" type="submit">Asignar turno</button>
+            </form>
+            <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Turno</th>
+                    <th>Ãrea</th>
+                    <th>Horario</th>
+                    <th>DÃ­a</th>
+                  </tr>
+                </thead>
+                <tbody id="shiftTable"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel payroll-section hr-tab-panel" data-hr-panel="evaluations">
+            <div class="panel-header">
+              <div>
+                <h2>Evaluaciones</h2>
+                <p>Seguimiento de desempeÃ±o, credenciales y observaciones.</p>
+              </div>
+            </div>
+            <form class="inline-form" id="evaluationForm">
+              <select id="evaluationUser" required></select>
+              <input id="evaluationDate" type="date" required>
+              <input id="evaluationScore" type="number" min="0" max="100" placeholder="PuntuaciÃ³n" required>
+              <select id="evaluationStatus">
+                <option>En seguimiento</option>
+                <option>Aprobada</option>
+                <option>Requiere mejora</option>
+                <option>Credencial vencida</option>
+              </select>
+              <input id="evaluationCredential" placeholder="Credencial o documento">
+              <input id="evaluationNote" placeholder="ObservaciÃ³n">
+              <button class="primary-button" type="submit">Registrar evaluaciÃ³n</button>
+            </form>
+            <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Fecha</th>
+                    <th>PuntuaciÃ³n</th>
+                    <th>Estado</th>
+                    <th>Credencial</th>
+                    <th>ObservaciÃ³n</th>
+                  </tr>
+                </thead>
+                <tbody id="evaluationTable"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel payroll-panel">
             <div class="panel-header">
               <div>
                 <h2>NÃ³mina</h2>
@@ -332,301 +627,6 @@
               </div>
             </section>
           </section>
-          <section class="panel payroll-section hr-tab-panel" data-hr-panel="attendance">
-            <div class="panel-header">
-              <div>
-                <h2>Asistencia</h2>
-                <p>Registro diario de entrada, salida y estado del personal.</p>
-              </div>
-            </div>
-            <form class="inline-form" id="attendanceForm">
-              <select id="attendanceUser" required></select>
-              <input id="attendanceDate" type="date" required>
-              <select id="attendanceStatus">
-                <option>Presente</option>
-                <option>Tarde</option>
-                <option>Ausente</option>
-                <option>Permiso</option>
-              </select>
-              <input id="attendanceIn" type="time">
-              <input id="attendanceOut" type="time">
-              <input id="attendanceNote" placeholder="Nota">
-              <button class="primary-button" type="submit">Registrar asistencia</button>
-            </form>
-            <div class="table-panel">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Empleado</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                    <th>Entrada</th>
-                    <th>Salida</th>
-                    <th>Horas</th>
-                    <th>Nota</th>
-                  </tr>
-                </thead>
-                <tbody id="attendanceTable"></tbody>
-              </table>
-            </div>
-          </section>
-          <section class="panel payroll-section hr-tab-panel" data-hr-panel="vacations">
-            <div class="panel-header">
-              <div>
-                <h2>Vacaciones</h2>
-                <p>Solicitudes, aprobaciones y seguimiento de ausencias programadas.</p>
-              </div>
-            </div>
-            <form class="inline-form" id="vacationForm">
-              <select id="vacationUser" required></select>
-              <select id="vacationType" required>
-                <option>Vacaciones</option>
-                <option>Permiso</option>
-                <option>Licencia médica</option>
-                <option>Ausencia programada</option>
-              </select>
-              <input id="vacationStart" type="date" required>
-              <input id="vacationEnd" type="date" required>
-              <select id="vacationStatus">
-                <option>Solicitada</option>
-                <option>Aprobada</option>
-                <option>Rechazada</option>
-                <option>Completada</option>
-              </select>
-              <input id="vacationNote" placeholder="Motivo o comentario">
-              <button class="primary-button" type="submit">Registrar solicitud</button>
-            </form>
-            <div class="table-panel">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Empleado</th>
-                    <th>Tipo</th>
-                    <th>Desde</th>
-                    <th>Hasta</th>
-                    <th>Estado</th>
-                    <th>Aprobación</th>
-                    <th>Comentario</th>
-                  </tr>
-                </thead>
-                <tbody id="vacationTable"></tbody>
-              </table>
-            </div>
-          </section>
-          <section class="panel payroll-section hr-tab-panel" data-hr-panel="shifts">
-            <div class="panel-header">
-              <div>
-                <h2>Turnos</h2>
-                <p>Asignación de horarios y áreas de trabajo del personal.</p>
-              </div>
-            </div>
-            <form class="inline-form" id="shiftForm">
-              <select id="shiftUser" required></select>
-              <input id="shiftName" placeholder="Nombre del turno" required>
-              <input id="shiftArea" placeholder="Área">
-              <input id="shiftStart" type="time" required>
-              <input id="shiftEnd" type="time" required>
-              <select id="shiftDay">
-                <option>Lunes a viernes</option>
-                <option>Lunes</option>
-                <option>Martes</option>
-                <option>Miércoles</option>
-                <option>Jueves</option>
-                <option>Viernes</option>
-                <option>Sábado</option>
-                <option>Domingo</option>
-              </select>
-              <button class="primary-button" type="submit">Asignar turno</button>
-            </form>
-            <div class="table-panel">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Empleado</th>
-                    <th>Turno</th>
-                    <th>Área</th>
-                    <th>Horario</th>
-                    <th>Día</th>
-                  </tr>
-                </thead>
-                <tbody id="shiftTable"></tbody>
-              </table>
-            </div>
-          </section>
-          <section class="panel payroll-section hr-tab-panel" data-hr-panel="evaluations">
-            <div class="panel-header">
-              <div>
-                <h2>Evaluaciones</h2>
-                <p>Seguimiento de desempeño, credenciales y observaciones.</p>
-              </div>
-            </div>
-            <form class="inline-form" id="evaluationForm">
-              <select id="evaluationUser" required></select>
-              <input id="evaluationDate" type="date" required>
-              <input id="evaluationScore" type="number" min="0" max="100" placeholder="Puntuación" required>
-              <select id="evaluationStatus">
-                <option>En seguimiento</option>
-                <option>Aprobada</option>
-                <option>Requiere mejora</option>
-                <option>Credencial vencida</option>
-              </select>
-              <input id="evaluationCredential" placeholder="Credencial o documento">
-              <input id="evaluationNote" placeholder="Observación">
-              <button class="primary-button" type="submit">Registrar evaluación</button>
-            </form>
-            <div class="table-panel">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Empleado</th>
-                    <th>Fecha</th>
-                    <th>Puntuación</th>
-                    <th>Estado</th>
-                    <th>Credencial</th>
-                    <th>Observación</th>
-                  </tr>
-                </thead>
-                <tbody id="evaluationTable"></tbody>
-              </table>
-            </div>
-          </section>
-          <section class="panel payroll-panel">
-            <div class="panel-header">
-              <div>
-                <h2>Nómina</h2>
-                <p>Personal administrativo por salario fijo y doctores por comisión de puntos.</p>
-              </div>
-              <label class="compact-field">
-                Período
-                <input id="payrollPeriod" type="month">
-              </label>
-              <button class="ghost-button" id="markPayrollPaid" type="button">Marcar nómina pagada</button>
-              <button class="primary-button" id="processPayrollMonth" type="button">Procesar nómina del mes</button>
-            </div>
-            <div class="panel-card-grid" id="payrollSummary"></div>
-            <section class="payroll-section">
-              <div class="panel-header">
-                <div>
-                  <h3>Novedades de nómina</h3>
-                  <p>Registra ingresos, descuentos, ausencias, avances y ajustes antes de procesar.</p>
-                </div>
-              </div>
-              <form class="inline-form" id="payrollNoveltyForm">
-                <select id="payrollNoveltyUser" required></select>
-                <select id="payrollNoveltyType" required>
-                  <option value="Ingreso">Ingreso adicional</option>
-                  <option value="Descuento">Descuento</option>
-                  <option value="Ausencia">Ausencia</option>
-                  <option value="Avance">Avance</option>
-                  <option value="Ajuste">Ajuste</option>
-                </select>
-                <input id="payrollNoveltyPeriod" type="month">
-                <input id="payrollNoveltyAmount" type="number" min="0" step="100" placeholder="Monto" required>
-                <input id="payrollNoveltyNote" placeholder="Detalle de la novedad" required>
-                <button class="primary-button" type="submit">Aplicar novedad</button>
-              </form>
-              <div class="table-panel">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Empleado</th>
-                      <th>Tipo</th>
-                      <th>Monto</th>
-                      <th>Detalle</th>
-                      <th>Período</th>
-                      <th>Fecha</th>
-                    </tr>
-                  </thead>
-                  <tbody id="payrollNoveltyTable"></tbody>
-                </table>
-              </div>
-            </section>
-            <section class="payroll-section doctor-payroll-section">
-              <div class="panel-header">
-                <div>
-                  <h3>Nómina doctores</h3>
-                  <p>Comisiones por puntos de seguros y procedimientos completados.</p>
-                </div>
-              </div>
-              <div class="panel-card-grid compact-payroll-summary" id="doctorPayrollSummary"></div>
-              <div class="table-panel commission-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Procedimiento</th>
-                    <th>Valor en punto</th>
-                    <th>Valor en dinero</th>
-                  </tr>
-                </thead>
-                <tbody id="procedurePointTable"></tbody>
-              </table>
-              </div>
-              <div class="table-panel">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Doctor</th>
-                      <th>Especialidad</th>
-                      <th>Puntos</th>
-                      <th>Procedimientos</th>
-                      <th>Comisión</th>
-                      <th>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody id="doctorPayrollTable"></tbody>
-                </table>
-              </div>
-            </section>
-            <section class="payroll-section admin-payroll-section">
-              <div class="panel-header">
-                <div>
-                  <h3>Nómina administrativa</h3>
-                  <p>Personal con salario fijo, bonos y deducciones.</p>
-                </div>
-              </div>
-              <div class="panel-card-grid compact-payroll-summary" id="adminPayrollSummary"></div>
-              <div class="table-panel">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Empleado</th>
-                    <th>Rol</th>
-                    <th>Salario base</th>
-                    <th>Bonos</th>
-                    <th>Deducciones</th>
-                    <th>Neto</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody id="adminPayrollTable"></tbody>
-              </table>
-              </div>
-            </section>
-            <section class="payroll-section">
-              <div class="panel-header">
-                <div>
-                  <h3>Historial de procesamiento</h3>
-                  <p>Meses procesados, totales pagados y responsable del cierre de nómina.</p>
-                </div>
-              </div>
-              <div class="table-panel">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Período</th>
-                    <th>Administrativa</th>
-                    <th>Doctores</th>
-                    <th>Novedades</th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th>Procesado por</th>
-                  </tr>
-                </thead>
-                <tbody id="payrollRunTable"></tbody>
-              </table>
-              </div>
-            </section>
-          </section>
         </section>
 
         <section class="view" id="usersPanel">
@@ -648,7 +648,7 @@
               </div>
               <label class="search-box user-search">
                 <span>Buscar</span>
-                <input id="userSearch" type="search" placeholder="Nombre, rol o área">
+                <input id="userSearch" type="search" placeholder="Nombre, rol o Ã¡rea">
               </label>
               <div class="user-directory-tools">
                 <label>
@@ -656,7 +656,7 @@
                   <select id="userRoleFilter">
                     <option value="Todos">Todos</option>
                     <option>Doctor</option>
-                    <option>Recepción</option>
+                    <option>RecepciÃ³n</option>
                     <option>Recursos Humanos</option>
                     <option>Laboratorio</option>
                     <option>Contabilidad</option>
@@ -671,16 +671,16 @@
               <div class="panel-header">
                 <div>
                   <h2 id="selectedUserTitle">Permisos</h2>
-                  <p id="selectedUserMeta">El Administrador define qué paneles y módulos puede ver cada usuario.</p>
+                  <p id="selectedUserMeta">El Administrador define quÃ© paneles y mÃ³dulos puede ver cada usuario.</p>
                 </div>
                 <div class="permission-toolbar">
                   <label class="permission-profile-select">
-                    Perfil rápido
+                    Perfil rÃ¡pido
                     <select id="userPermissionProfile" aria-label="Perfil de permisos">
                       <option value="">Seleccionar perfil</option>
                       <option>Administrador</option>
                       <option>Doctor</option>
-                      <option>Recepción</option>
+                      <option>RecepciÃ³n</option>
                       <option>Recursos Humanos</option>
                       <option>Laboratorio</option>
                       <option>Contabilidad</option>
@@ -709,7 +709,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Trabajos de laboratorio</h2>
-                  <p>Piezas solicitadas desde autoservicio clínico.</p>
+                  <p>Piezas solicitadas desde autoservicio clÃ­nico.</p>
                 </div>
                 <div class="module-grid compact" id="laboratoryPanelModules"></div>
               </div>
@@ -731,7 +731,7 @@
           <div class="section-toolbar">
             <div>
               <h2>Panel de contabilidad</h2>
-              <p>Ingresos, recibos, métodos de pago y cuentas pendientes.</p>
+              <p>Ingresos, recibos, mÃ©todos de pago y cuentas pendientes.</p>
             </div>
           </div>
           <div class="panel-card-grid" id="accountingPanelCards"></div>
@@ -740,7 +740,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Recibos recientes</h2>
-                  <p>Últimos cobros registrados.</p>
+                  <p>Ãšltimos cobros registrados.</p>
                 </div>
                 <div class="module-grid compact" id="accountingPanelModules"></div>
               </div>
@@ -762,7 +762,7 @@
           <div class="section-toolbar">
             <div>
               <h2>Expedientes de pacientes</h2>
-              <p>Historial básico, alergias, contacto y balance.</p>
+              <p>Historial bÃ¡sico, alergias, contacto y balance.</p>
             </div>
             <button class="primary-button" id="addPatientToolbar">Agregar paciente</button>
           </div>
@@ -774,7 +774,7 @@
                   <th>Datos personales</th>
                   <th>Seguro</th>
                   <th>Alergias</th>
-                  <th>Historial clínico</th>
+                  <th>Historial clÃ­nico</th>
                   <th>Balance</th>
                   <th>Estado</th>
                   <th>Acciones</th>
@@ -797,11 +797,11 @@
               <div class="panel-header">
                 <div>
                   <h2>Buscar paciente</h2>
-                  <p>Documento, teléfono, código o nombre.</p>
+                  <p>Documento, telÃ©fono, cÃ³digo o nombre.</p>
                 </div>
               </div>
               <form class="inline-form" id="selfServiceSearchForm">
-                <input id="selfServiceSearch" placeholder="Ej. P001, cédula, teléfono o nombre" required>
+                <input id="selfServiceSearch" placeholder="Ej. P001, cÃ©dula, telÃ©fono o nombre" required>
                 <button class="primary-button" type="submit">Consultar</button>
               </form>
               <div class="alert-list" id="selfServiceResults"></div>
@@ -829,7 +829,7 @@
                 <option>Laboratorio - pieza dental</option>
                 <option>Insumos de trabajo</option>
                 <option>Ausencia doctor</option>
-                <option>Reparación de equipo</option>
+                <option>ReparaciÃ³n de equipo</option>
                 <option>Vacaciones empleado</option>
                 <option>Ticket de TI</option>
               </select>
@@ -848,7 +848,7 @@
         <section class="view" id="agenda">
           <div class="section-toolbar">
             <div>
-              <h2>Agenda odontológica</h2>
+              <h2>Agenda odontolÃ³gica</h2>
               <p>Calendario, recordatorios y estado de citas.</p>
             </div>
             <form class="inline-form" id="appointmentForm">
@@ -856,13 +856,13 @@
               <select id="appointmentDoctor" required></select>
               <input id="appointmentDate" type="date" required>
               <input id="appointmentTime" type="time" required>
-              <input id="appointmentDuration" type="number" min="15" step="15" value="30" aria-label="Duración en minutos">
+              <input id="appointmentDuration" type="number" min="15" step="15" value="30" aria-label="DuraciÃ³n en minutos">
               <select id="appointmentType" required>
                 <option>Limpieza</option>
                 <option>Ortodoncia</option>
                 <option>Endodoncia</option>
                 <option>Implante</option>
-                <option>Evaluación</option>
+                <option>EvaluaciÃ³n</option>
               </select>
               <select id="appointmentReminder" required>
                 <option value="Sin recordatorio">Sin recordatorio</option>
@@ -892,7 +892,7 @@
                 <option>Pendiente</option>
                 <option>Confirmada</option>
                 <option>Atendida</option>
-                <option>No asistió</option>
+                <option>No asistiÃ³</option>
                 <option>Lista de espera</option>
                 <option>Cancelada</option>
               </select>
@@ -905,7 +905,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Calendario</h2>
-                  <p id="calendarCaption">Citas del día seleccionado.</p>
+                  <p id="calendarCaption">Citas del dÃ­a seleccionado.</p>
                 </div>
               </div>
               <div class="month-calendar" id="monthCalendar"></div>
@@ -926,8 +926,8 @@
         <section class="view" id="odontogram">
           <div class="section-toolbar">
             <div>
-              <h2>Expediente odontológico</h2>
-              <p>Diagnósticos, tratamientos, evolución y odontograma.</p>
+              <h2>Expediente odontolÃ³gico</h2>
+              <p>DiagnÃ³sticos, tratamientos, evoluciÃ³n y odontograma.</p>
             </div>
             <div class="toolbar-controls">
               <select id="odontogramPatient"></select>
@@ -959,7 +959,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Paciente</h2>
-                  <p>Resumen clínico del expediente.</p>
+                  <p>Resumen clÃ­nico del expediente.</p>
                 </div>
               </div>
               <div class="record-patient" id="recordPatientSummary"></div>
@@ -967,19 +967,19 @@
             <section class="panel wide">
               <div class="panel-header">
                 <div>
-                  <h2>Diagnósticos</h2>
-                  <p>Registra hallazgos clínicos y prioridad.</p>
+                  <h2>DiagnÃ³sticos</h2>
+                  <p>Registra hallazgos clÃ­nicos y prioridad.</p>
                 </div>
               </div>
               <form class="clinical-form" id="diagnosisForm">
-                <input id="diagnosisTitle" placeholder="Diagnóstico" required>
+                <input id="diagnosisTitle" placeholder="DiagnÃ³stico" required>
                 <select id="diagnosisPriority">
                   <option>Alta</option>
                   <option>Media</option>
                   <option>Baja</option>
                 </select>
-                <textarea id="diagnosisNotes" placeholder="Detalle clínico, piezas involucradas y observaciones" rows="2" required></textarea>
-                <button class="primary-button" type="submit">Agregar diagnóstico</button>
+                <textarea id="diagnosisNotes" placeholder="Detalle clÃ­nico, piezas involucradas y observaciones" rows="2" required></textarea>
+                <button class="primary-button" type="submit">Agregar diagnÃ³stico</button>
               </form>
               <div class="clinical-list" id="diagnosisList"></div>
             </section>
@@ -988,14 +988,15 @@
             <section class="panel wide">
               <div class="panel-header">
                 <div>
-                  <h2>Evolución</h2>
-                  <p>Notas por consulta, respuesta y próximos pasos.</p>
+                  <h2>EvoluciÃ³n</h2>
+                  <p>Notas por consulta, respuesta y prÃ³ximos pasos.</p>
                 </div>
               </div>
               <form class="clinical-form" id="evolutionForm">
                 <input id="evolutionDate" type="date" required>
-                <textarea id="evolutionNote" placeholder="Evolución clínica del paciente" rows="2" required></textarea>
-                <button class="primary-button" type="submit">Guardar evolución</button>
+                <input id="evolutionSignature" placeholder="Firma del doctor" readonly>
+                <textarea id="evolutionNote" placeholder="EvoluciÃ³n clÃ­nica del paciente" rows="2" required></textarea>
+                <button class="primary-button" type="submit">Guardar evoluciÃ³n</button>
               </form>
               <div class="clinical-list" id="evolutionList"></div>
             </section>
@@ -1013,8 +1014,8 @@
             <section class="panel wide">
               <div class="panel-header">
                 <div>
-                  <h2>Documentos clínicos</h2>
-                  <p>Recetas, órdenes, consentimientos y adjuntos del paciente.</p>
+                  <h2>Documentos clÃ­nicos</h2>
+                  <p>Recetas, Ã³rdenes, consentimientos y adjuntos del paciente.</p>
                 </div>
               </div>
               <form class="clinical-form" id="clinicalDocumentForm">
@@ -1022,10 +1023,10 @@
                   <option>Receta</option>
                   <option>Orden de laboratorio</option>
                   <option>Consentimiento informado</option>
-                  <option>Adjunto clínico</option>
+                  <option>Adjunto clÃ­nico</option>
                 </select>
-                <input id="clinicalDocumentTitle" placeholder="Título del documento" required>
-                <textarea id="clinicalDocumentNote" rows="2" placeholder="Indicaciones, descripción o enlace al archivo" required></textarea>
+                <input id="clinicalDocumentTitle" placeholder="TÃ­tulo del documento" required>
+                <textarea id="clinicalDocumentNote" rows="2" placeholder="Indicaciones, descripciÃ³n o enlace al archivo" required></textarea>
                 <button class="primary-button" type="submit">Guardar documento</button>
               </form>
               <div class="clinical-list" id="clinicalDocumentList"></div>
@@ -1033,8 +1034,8 @@
             <section class="panel">
               <div class="panel-header">
                 <div>
-                  <h2>Impresión clínica</h2>
-                  <p>Salidas rápidas para consulta.</p>
+                  <h2>ImpresiÃ³n clÃ­nica</h2>
+                  <p>Salidas rÃ¡pidas para consulta.</p>
                 </div>
               </div>
               <div class="quick-actions">
@@ -1047,7 +1048,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Odontograma</h2>
-                  <p>Selecciona una condición y marca la pieza en la arcada dental.</p>
+                  <p>Selecciona una condiciÃ³n y marca la pieza en la arcada dental.</p>
                 </div>
               </div>
               <div class="tooth-grid" id="toothGrid" aria-label="Piezas dentales"></div>
@@ -1056,7 +1057,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Resumen dental</h2>
-                  <p>Estado actual por condición.</p>
+                  <p>Estado actual por condiciÃ³n.</p>
                 </div>
               </div>
               <div class="odontogram-legend" id="odontogramLegend" aria-label="Leyenda de estados dentales"></div>
@@ -1071,13 +1072,13 @@
         <section class="view" id="inventory">
           <div class="section-toolbar">
             <div>
-              <h2>Almacén de productos</h2>
+              <h2>AlmacÃ©n de productos</h2>
               <p>Productos facturables, stock, vencimientos y proveedores.</p>
             </div>
             <form class="inline-form" id="inventoryForm">
               <input id="inventoryName" placeholder="Material" required>
               <input id="inventoryStock" type="number" min="0" placeholder="Stock" required>
-              <input id="inventoryMin" type="number" min="0" placeholder="Mínimo" required>
+              <input id="inventoryMin" type="number" min="0" placeholder="MÃ­nimo" required>
               <input id="inventoryPrice" type="number" min="0" step="100" placeholder="Precio venta">
               <input id="inventoryExpiry" type="date">
               <input id="inventoryProvider" placeholder="Proveedor">
@@ -1091,7 +1092,7 @@
                 <tr>
                   <th>Material</th>
                   <th>Stock</th>
-                  <th>Mínimo</th>
+                  <th>MÃ­nimo</th>
                   <th>Precio</th>
                   <th>Vencimiento</th>
                   <th>Proveedor</th>
@@ -1123,7 +1124,7 @@
                 Tipo
                 <select id="reportTypeFilter">
                   <option value="general">General</option>
-                  <option value="facturacion">Facturación</option>
+                  <option value="facturacion">FacturaciÃ³n</option>
                   <option value="caja">Caja</option>
                   <option value="doctores">Doctores</option>
                   <option value="laboratorio">Laboratorio</option>
@@ -1193,7 +1194,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Alertas operativas</h2>
-                  <p>Datos que requieren atención.</p>
+                  <p>Datos que requieren atenciÃ³n.</p>
                 </div>
               </div>
               <div class="alert-list" id="reportAlerts"></div>
@@ -1203,8 +1204,8 @@
             <section class="panel report-panel wide">
               <div class="panel-header">
                 <div>
-                  <h2>Facturación y caja</h2>
-                  <p>Ingresos por método de pago, cajero y estado de caja.</p>
+                  <h2>FacturaciÃ³n y caja</h2>
+                  <p>Ingresos por mÃ©todo de pago, cajero y estado de caja.</p>
                 </div>
               </div>
               <div class="clinical-list" id="billingReportList"></div>
@@ -1212,8 +1213,8 @@
             <section class="panel report-panel">
               <div class="panel-header">
                 <div>
-                  <h2>Laboratorio y almacén</h2>
-                  <p>Trabajos facturables, productos y existencias críticas.</p>
+                  <h2>Laboratorio y almacÃ©n</h2>
+                  <p>Trabajos facturables, productos y existencias crÃ­ticas.</p>
                 </div>
               </div>
               <div class="alert-list" id="operationsReportList"></div>
@@ -1234,34 +1235,34 @@
         <section class="view" id="adminPanel">
           <div class="section-toolbar">
             <div>
-              <h2>Administración</h2>
-              <p>Configuración general de la clínica, servicios y respaldos.</p>
+              <h2>AdministraciÃ³n</h2>
+              <p>ConfiguraciÃ³n general de la clÃ­nica, servicios y respaldos.</p>
             </div>
           </div>
           <div class="content-grid">
             <section class="panel wide">
               <div class="panel-header">
                 <div>
-                  <h2>Datos de la clínica</h2>
-                  <p>Información usada en recibos y documentos.</p>
+                  <h2>Datos de la clÃ­nica</h2>
+                  <p>InformaciÃ³n usada en recibos y documentos.</p>
                 </div>
               </div>
               <form class="form-grid" id="clinicSettingsForm">
                 <label>Nombre<input id="clinicName" required></label>
-                <label>Teléfono<input id="clinicPhone"></label>
-                <label class="full">Dirección<input id="clinicAddress"></label>
+                <label>TelÃ©fono<input id="clinicPhone"></label>
+                <label class="full">DirecciÃ³n<input id="clinicAddress"></label>
                 <label>RNC<input id="clinicTaxId"></label>
                 <label>Moneda<input id="clinicCurrency" value="DOP"></label>
                 <label>NCF consumidor final<input id="ncfFinalPrefix" placeholder="B02"></label>
-                <label>Próximo consumidor final<input id="ncfFinalNext" type="number" min="1"></label>
-                <label>NCF crédito fiscal<input id="ncfFiscalPrefix" placeholder="B01"></label>
-                <label>Próximo crédito fiscal<input id="ncfFiscalNext" type="number" min="1"></label>
+                <label>PrÃ³ximo consumidor final<input id="ncfFinalNext" type="number" min="1"></label>
+                <label>NCF crÃ©dito fiscal<input id="ncfFiscalPrefix" placeholder="B01"></label>
+                <label>PrÃ³ximo crÃ©dito fiscal<input id="ncfFiscalNext" type="number" min="1"></label>
                 <label>NCF gubernamental<input id="ncfGovPrefix" placeholder="B15"></label>
-                <label>Próximo gubernamental<input id="ncfGovNext" type="number" min="1"></label>
-                <label>NCF régimen especial<input id="ncfSpecialPrefix" placeholder="B14"></label>
-                <label>Próximo régimen especial<input id="ncfSpecialNext" type="number" min="1"></label>
+                <label>PrÃ³ximo gubernamental<input id="ncfGovNext" type="number" min="1"></label>
+                <label>NCF rÃ©gimen especial<input id="ncfSpecialPrefix" placeholder="B14"></label>
+                <label>PrÃ³ximo rÃ©gimen especial<input id="ncfSpecialNext" type="number" min="1"></label>
                 <div class="modal-actions full">
-                  <button class="primary-button" type="submit">Guardar configuración</button>
+                  <button class="primary-button" type="submit">Guardar configuraciÃ³n</button>
                 </div>
               </form>
             </section>
@@ -1281,7 +1282,7 @@
               <div class="panel-header">
                 <div>
                   <h2>Seguridad</h2>
-                  <p>Sesiones, bloqueos, auditoría y controles de acceso.</p>
+                  <p>Sesiones, bloqueos, auditorÃ­a y controles de acceso.</p>
                 </div>
               </div>
               <div class="panel-card-grid compact-payroll-summary" id="securitySummary"></div>
@@ -1294,23 +1295,33 @@
           <div class="section-toolbar">
             <div>
               <h2>Planes de tratamiento</h2>
-              <p>Presupuesto, progreso clínico y responsable.</p>
+              <p>Presupuesto, progreso clÃ­nico y responsable.</p>
             </div>
             <form class="inline-form" id="treatmentForm">
               <select id="treatmentPatient" required></select>
               <select id="treatmentDoctor" required></select>
               <select id="treatmentName" required>
-                <option>Evaluación General</option>
-                <option>Evaluación Especial</option>
+                <option>EvaluaciÃ³n General</option>
+                <option>EvaluaciÃ³n Especial</option>
                 <option>Exodoncia Leche</option>
                 <option>Exodoncia Uni</option>
                 <option>Exodoncia Multi</option>
                 <option>Colgajos</option>
                 <option>Control Placa</option>
-                <option>Dentición Subior</option>
+                <option>DenticiÃ³n Subior</option>
                 <option>Denticion Superior</option>
               </select>
               <input id="treatmentCost" type="number" min="0" step="100" placeholder="Costo" required>
+              <select id="treatmentPhase">
+                <option>Diagnostico</option>
+                <option>Aprobado</option>
+                <option>En proceso</option>
+                <option>Terminado</option>
+              </select>
+              <label class="checkbox-field treatment-consent-check">
+                <input id="treatmentConsentSigned" type="checkbox">
+                Consentimiento firmado
+              </label>
               <button class="primary-button" type="submit">Crear plan</button>
             </form>
           </div>
@@ -1320,8 +1331,8 @@
         <section class="view" id="billing">
           <div class="section-toolbar">
             <div>
-              <h2>Facturación</h2>
-              <p>Cobros, recibos, métodos de pago y balance pendiente.</p>
+              <h2>FacturaciÃ³n</h2>
+              <p>Cobros, recibos, mÃ©todos de pago y balance pendiente.</p>
             </div>
             <form class="inline-form" id="paymentForm">
               <select id="paymentPatient" required></select>
@@ -1354,9 +1365,9 @@
                 <option>Consumidor Final</option>
                 <option>Gubernamental</option>
                 <option>Comprobante Fiscal</option>
-                <option>Crédito Fiscal</option>
-                <option>Régimen Especial</option>
-                <option>Cotización</option>
+                <option>CrÃ©dito Fiscal</option>
+                <option>RÃ©gimen Especial</option>
+                <option>CotizaciÃ³n</option>
               </select>
               <select id="paymentInvoiceStatus">
                 <option>Pagada</option>
@@ -1403,16 +1414,16 @@
             <div class="panel-header">
               <div>
                 <h2>Apertura y cierre de caja</h2>
-                <p>Totales por mÃ©todo de pago y cuadre del dÃ­a.</p>
+                <p>Totales por mÃƒÂ©todo de pago y cuadre del dÃƒÂ­a.</p>
               </div>
               <form class="inline-form" id="cashOpeningForm">
                 <input id="cashOpeningAmount" type="number" min="0" step="100" placeholder="Monto inicial" required>
-                <input id="cashOpeningNote" placeholder="Observación">
+                <input id="cashOpeningNote" placeholder="ObservaciÃ³n">
                 <button class="primary-button" type="submit">Abrir caja</button>
               </form>
               <form class="inline-form" id="cashCloseForm">
                 <input id="cashCountedAmount" type="number" min="0" step="100" placeholder="Efectivo contado" required>
-                <input id="cashCloseNote" placeholder="Observación del arqueo">
+                <input id="cashCloseNote" placeholder="ObservaciÃ³n del arqueo">
                 <button class="primary-button" id="closeCashRegister" type="submit">Cerrar caja</button>
               </form>
               <button class="ghost-button" id="reopenCashRegister" type="button">Reabrir caja cerrada</button>
@@ -1431,17 +1442,17 @@
             <h2 id="patientDialogTitle">Nuevo paciente</h2>
             <p id="patientDialogDescription">Completa el expediente inicial.</p>
           </div>
-          <button class="icon-button" value="cancel" aria-label="Cerrar">×</button>
+          <button class="icon-button" value="cancel" aria-label="Cerrar">Ã—</button>
         </div>
         <div class="form-grid">
           <div class="photo-field camera-field full">
-            <span>Fotografía</span>
+            <span>FotografÃ­a</span>
             <div class="camera-preview">
               <video id="patientCamera" autoplay playsinline muted></video>
               <img id="patientPhotoPreview" alt="Foto del paciente">
             </div>
             <div class="camera-actions">
-              <button class="ghost-button" id="startPatientCamera" type="button">Abrir cámara</button>
+              <button class="ghost-button" id="startPatientCamera" type="button">Abrir cÃ¡mara</button>
               <button class="primary-button" id="capturePatientPhoto" type="button">Tomar foto</button>
               <label class="ghost-button file-fallback">
                 Subir archivo
@@ -1449,19 +1460,19 @@
               </label>
             </div>
             <canvas id="patientPhotoCanvas" hidden></canvas>
-            <small id="patientCameraStatus">La cámara se abrirá al crear o editar paciente.</small>
+            <small id="patientCameraStatus">La cÃ¡mara se abrirÃ¡ al crear o editar paciente.</small>
           </div>
           <label class="photo-field full legacy-photo-field">
-            Fotografía
+            FotografÃ­a
             <input id="legacyPatientPhoto" type="file" accept="image/*">
-            <span>JPG, PNG o imagen tomada desde cámara.</span>
+            <span>JPG, PNG o imagen tomada desde cÃ¡mara.</span>
           </label>
           <label>Nombre completo<input id="patientName" required></label>
-          <label>Teléfono<input id="patientPhone" required></label>
-          <label>Correo electrónico<input id="patientEmail" type="email" placeholder="paciente@correo.com"></label>
+          <label>TelÃ©fono<input id="patientPhone" required></label>
+          <label>Correo electrÃ³nico<input id="patientEmail" type="email" placeholder="paciente@correo.com"></label>
           <label>Tipo de documento
             <select id="patientDocumentType">
-              <option>Cédula</option>
+              <option>CÃ©dula</option>
               <option>Pasaporte</option>
               <option>Licencia de conducir</option>
             </select>
@@ -1485,9 +1496,9 @@
               <option>No especificado</option>
             </select>
           </label>
-          <label class="full">Dirección<input id="patientAddress" placeholder="Calle, sector, ciudad"></label>
+          <label class="full">DirecciÃ³n<input id="patientAddress" placeholder="Calle, sector, ciudad"></label>
           <label>Emergencia: nombre<input id="patientEmergencyName" placeholder="Nombre completo"></label>
-          <label>Emergencia: teléfono<input id="patientEmergencyPhone" placeholder="Teléfono"></label>
+          <label>Emergencia: telÃ©fono<input id="patientEmergencyPhone" placeholder="TelÃ©fono"></label>
           <label>Emergencia: parentesco<input id="patientEmergencyRelation" placeholder="Madre, padre, tutor..."></label>
           <label>Tipo de sangre
             <select id="patientBloodType">
@@ -1521,12 +1532,12 @@
               <option>Privado</option>
             </select>
           </label>
-          <label>Alergias<input id="patientAllergies" placeholder="Medicamentos, alimentos, látex..."></label>
-          <label class="full">Condiciones médicas<textarea id="patientConditions" rows="2" placeholder="Hipertensión, diabetes, embarazo, cardiopatías..."></textarea></label>
+          <label>Alergias<input id="patientAllergies" placeholder="Medicamentos, alimentos, lÃ¡tex..."></label>
+          <label class="full">Condiciones mÃ©dicas<textarea id="patientConditions" rows="2" placeholder="HipertensiÃ³n, diabetes, embarazo, cardiopatÃ­as..."></textarea></label>
           <label class="full">Medicamentos actuales<textarea id="patientMedications" rows="2" placeholder="Medicamentos y dosis relevantes"></textarea></label>
-          <label class="full">Historial clínico odontológico<textarea id="patientClinicalHistory" rows="3" placeholder="Procedimientos previos, molestias, diagnósticos y evolución"></textarea></label>
-          <label>Última visita<input id="patientLastVisit" type="date"></label>
-          <label class="full">Notas clínicas<textarea id="patientNotes" rows="3"></textarea></label>
+          <label class="full">Historial clÃ­nico odontolÃ³gico<textarea id="patientClinicalHistory" rows="3" placeholder="Procedimientos previos, molestias, diagnÃ³sticos y evoluciÃ³n"></textarea></label>
+          <label>Ãšltima visita<input id="patientLastVisit" type="date"></label>
+          <label class="full">Notas clÃ­nicas<textarea id="patientNotes" rows="3"></textarea></label>
         </div>
         <div class="modal-actions">
           <button class="ghost-button" value="cancel" type="button" id="cancelPatient">Cancelar</button>
@@ -1540,9 +1551,9 @@
         <div class="modal-header">
           <div>
             <h2 id="patientRecordTitle">Ficha del paciente</h2>
-            <p id="patientRecordMeta">Histórico clínico, citas, tratamientos y facturación.</p>
+            <p id="patientRecordMeta">HistÃ³rico clÃ­nico, citas, tratamientos y facturaciÃ³n.</p>
           </div>
-          <button class="icon-button" id="closePatientRecord" type="button" aria-label="Cerrar">Ã—</button>
+          <button class="icon-button" id="closePatientRecord" type="button" aria-label="Cerrar">Ãƒâ€”</button>
         </div>
         <div id="patientRecordContent"></div>
         <div class="modal-actions">
@@ -1559,7 +1570,7 @@
             <h2>Recibo de pago</h2>
             <p>Comprobante generado por NovaClinic.</p>
           </div>
-          <button class="icon-button" id="closeReceipt" type="button" aria-label="Cerrar">×</button>
+          <button class="icon-button" id="closeReceipt" type="button" aria-label="Cerrar">Ã—</button>
         </div>
         <div id="receiptContent"></div>
         <div class="modal-actions">
@@ -1576,7 +1587,7 @@
             <h2 id="userDialogTitle">Nuevo usuario</h2>
             <p id="userDialogDescription">Registra acceso, rol y datos operativos.</p>
           </div>
-          <button class="icon-button" value="cancel" aria-label="Cerrar">×</button>
+          <button class="icon-button" value="cancel" aria-label="Cerrar">Ã—</button>
         </div>
         <div class="form-grid">
           <label>Nombre<input id="newUserName" required></label>
@@ -1584,18 +1595,18 @@
           <label>Rol
             <select id="newUserRole">
               <option>Doctor</option>
-              <option>Recepción</option>
+              <option>RecepciÃ³n</option>
               <option>Recursos Humanos</option>
               <option>Laboratorio</option>
               <option>Contabilidad</option>
               <option>Administrador</option>
             </select>
           </label>
-          <label>Área o especialidad<input id="newUserSpecialty" placeholder="Ortodoncia, caja, RRHH..."></label>
-          <label>Ubicación<input id="newUserRoom" placeholder="Consultorio, recepción, oficina"></label>
+          <label>Ãrea o especialidad<input id="newUserSpecialty" placeholder="Ortodoncia, caja, RRHH..."></label>
+          <label>UbicaciÃ³n<input id="newUserRoom" placeholder="Consultorio, recepciÃ³n, oficina"></label>
           <label>Turno<input id="newUserShift" placeholder="8:00 a. m. - 5:00 p. m."></label>
           <label>Salario base<input id="newUserBase" type="number" min="0" step="1000" value="45000"></label>
-          <label>Bonificación<input id="newUserBonus" type="number" min="0" step="500" value="0"></label>
+          <label>BonificaciÃ³n<input id="newUserBonus" type="number" min="0" step="500" value="0"></label>
           <label>Deducciones<input id="newUserDeductions" type="number" min="0" step="500" value="0"></label>
         </div>
         <div class="modal-actions">
@@ -1608,3 +1619,4 @@
     <script src="app.js"></script>
   </body>
 </html>
+
