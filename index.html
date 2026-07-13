@@ -84,16 +84,20 @@
             <h1 id="pageTitle">Panel clÃ­nico</h1>
           </div>
           <div class="top-actions">
+            <button class="icon-button compact-toggle" id="compactModeToggle" type="button" title="Modo compacto" aria-pressed="false">C</button>
             <div class="doctor-badge" id="doctorBadge">Sin sesiÃ³n</div>
             <label class="search-box">
               <span>Buscar</span>
-              <input id="globalSearch" type="search" placeholder="Paciente, telÃ©fono, tratamiento">
+              <input id="globalSearch" type="search" placeholder="Paciente, factura, cita o doctor" autocomplete="off">
             </label>
+            <div class="global-search-results" id="globalSearchResults"></div>
           </div>
+          <div class="top-notifications" id="topNotifications"></div>
         </header>
 
         <section class="view active" id="dashboard">
           <div class="dashboard-alert-strip" id="dashboardAlertStrip"></div>
+          <section class="role-dashboard-panel" id="roleDashboardPanel"></section>
           <div class="metric-grid" id="metricGrid"></div>
           <section class="panel panel-modules">
             <div class="panel-header">

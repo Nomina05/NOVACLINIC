@@ -440,6 +440,7 @@ let patientCameraStream = null;
 let capturedPatientPhoto = "";
 let selectedSelfServicePatientId = null;
 let sessionExpiryTimer = null;
+let compactMode = localStorage.getItem("novaclinic-compact-mode") === "true";
 
 const securityConfig = {
   maxLoginAttempts: 3,
@@ -493,24 +494,48 @@ const permissionCatalog = [
 ];
 
 const actionPermissionCatalog = [
+  { action: "patients:view", label: "Ver pacientes", group: "Pacientes" },
   { action: "patients:create", label: "Crear y editar pacientes", group: "Pacientes" },
+  { action: "patients:edit", label: "Editar pacientes", group: "Pacientes" },
+  { action: "appointments:view", label: "Ver agenda", group: "Agenda" },
   { action: "appointments:create", label: "Crear citas", group: "Agenda" },
+  { action: "appointments:edit", label: "Editar citas", group: "Agenda" },
   { action: "appointments:confirm", label: "Confirmar citas y llegada", group: "Agenda" },
+  { action: "billing:view", label: "Ver facturaciÃ³n", group: "Facturacion" },
   { action: "odontogram:edit", label: "Actualizar odontograma", group: "Doctores" },
   { action: "clinical-documents:create", label: "Crear documentos clinicos", group: "Doctores" },
   { action: "treatments:create", label: "Crear tratamientos", group: "Doctores" },
   { action: "treatments:progress", label: "Actualizar evolucion de tratamientos", group: "Doctores" },
   { action: "payments:create", label: "Crear facturas y recibos", group: "Facturacion" },
+  { action: "payments:edit", label: "Editar/abonar facturas", group: "Facturacion" },
+  { action: "payments:void", label: "Anular facturas y notas", group: "Facturacion" },
+  { action: "payments:print", label: "Imprimir facturas y recibos", group: "Facturacion" },
   { action: "cash:reopen", label: "Reabrir caja cerrada", group: "Caja" },
+  { action: "inventory:view", label: "Ver almacen", group: "Almacen" },
   { action: "inventory:manage", label: "Gestionar almacen", group: "Almacen" },
+  { action: "payroll:view", label: "Ver RRHH y nomina", group: "Recursos Humanos" },
   { action: "payroll:manage", label: "Procesar nomina y RRHH", group: "Recursos Humanos" },
+  { action: "laboratory:view", label: "Ver laboratorio", group: "Laboratorio" },
   { action: "laboratory:manage", label: "Gestionar laboratorio", group: "Laboratorio" },
   { action: "selfservice:clinical", label: "Autoservicio clinico", group: "Autoservicio" },
   { action: "selfservice:employee", label: "Autoservicio empleado", group: "Autoservicio" },
   { action: "selfservice:manage", label: "Gestionar solicitudes internas", group: "Autoservicio" },
   { action: "users:create", label: "Crear y editar usuarios", group: "Administracion" },
+  { action: "users:edit", label: "Editar usuarios y permisos", group: "Administracion" },
+  { action: "security:audit", label: "Ver bitacora de seguridad", group: "Administracion" },
   { action: "settings:manage", label: "Configurar clinica y comprobantes", group: "Administracion" }
 ];
+
+const legacyActionAliases = {
+  "patients:create": ["patients:view", "patients:edit"],
+  "appointments:create": ["appointments:view", "appointments:edit"],
+  "payments:create": ["billing:view", "payments:edit", "payments:print"],
+  "inventory:manage": ["inventory:view"],
+  "payroll:manage": ["payroll:view"],
+  "laboratory:manage": ["laboratory:view"],
+  "users:create": ["users:edit", "security:audit"],
+  "settings:manage": ["security:audit"]
+};
 
 const panelModules = {
   dashboard: ["selfService", "patients", "agenda", "odontogram", "treatments", "inventory"],
@@ -719,9 +744,26 @@ function bindNavigation() {
     if (canView(viewName)) {
       setView(viewName);
     }
+    hideGlobalSearchResults();
   });
 
-  document.getElementById("globalSearch").addEventListener("input", renderPatients);
+  const globalSearch = document.getElementById("globalSearch");
+  globalSearch.addEventListener("input", () => {
+    renderPatients();
+    renderGlobalSearch();
+  });
+  globalSearch.addEventListener("focus", renderGlobalSearch);
+  globalSearch.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    globalSearch.value = "";
+    hideGlobalSearchResults();
+    renderPatients();
+  });
+  document.getElementById("compactModeToggle").addEventListener("click", toggleCompactMode);
+  document.addEventListener("click", (event) => {
+    if (event.target.closest(".search-box") || event.target.closest("#globalSearchResults")) return;
+    hideGlobalSearchResults();
+  });
   document.getElementById("userSearch").addEventListener("input", renderUsersPanel);
   document.getElementById("userRoleFilter").addEventListener("change", renderUsersPanel);
   document.getElementById("agendaDateFilter").addEventListener("change", renderAgenda);
@@ -811,6 +853,7 @@ function applyUserSession(user) {
   document.getElementById("currentShift").textContent = user.name;
   document.getElementById("currentShiftMeta").textContent = `${user.role} Â· ${user.room} Â· ${user.shift}`;
   document.getElementById("doctorBadge").textContent = `${user.name} Â· ${user.role}`;
+  applyCompactMode();
   applyPermissions();
   render();
 }
@@ -865,6 +908,7 @@ function registerFailedLogin(userId) {
   lock.lastFailedAt = new Date().toISOString();
   if (lock.attempts >= securityConfig.maxLoginAttempts) {
     lock.lockedUntil = Date.now() + securityConfig.lockoutMinutes * 60000;
+    logAudit("login:locked", `Usuario bloqueado por ${lock.attempts} intentos fallidos`, userId);
   }
   state.securityLocks[userId] = lock;
   saveState();
@@ -1119,6 +1163,7 @@ async function savePatientFromForm() {
   patient.notes = value("patientNotes");
 
   if (!existing) state.patients.push(patient);
+  logAudit(existing ? "patients:edit" : "patients:create", `${existing ? "EditÃ³" : "CreÃ³"} paciente ${patient.name}`, patient.id);
   return patient;
 }
 
@@ -1441,17 +1486,17 @@ function bindForms() {
     stopPatientCamera();
   });
   document.getElementById("openUserModal").addEventListener("click", () => {
-    if (currentUser?.role === "Administrador") openUserForm();
+    if (can("users:create")) openUserForm();
   });
   document.getElementById("editSelectedUser").addEventListener("click", () => {
-    if (currentUser?.role === "Administrador") openUserForm(selectedUserId);
+    if (can("users:edit")) openUserForm(selectedUserId);
   });
   document.getElementById("applyPermissionProfile").addEventListener("click", () => {
-    if (currentUser?.role !== "Administrador") return;
+    if (!can("users:edit")) return;
     applyPermissionProfile(selectedUserId, value("userPermissionProfile"));
   });
   document.getElementById("resetPermissionProfile").addEventListener("click", () => {
-    if (currentUser?.role !== "Administrador") return;
+    if (!can("users:edit")) return;
     resetPermissionProfile(selectedUserId);
   });
   document.getElementById("cancelUser").addEventListener("click", () => closeUserForm());
@@ -1461,7 +1506,7 @@ function bindForms() {
 
   document.getElementById("userForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    if (currentUser?.role !== "Administrador") return;
+    if (!(editingUserId ? can("users:edit") : can("users:create"))) return;
     const savedUser = saveUserFromForm();
     if (!savedUser) return;
     selectedUserId = savedUser.id;
@@ -1536,7 +1581,9 @@ function bindForms() {
     if (conflicts.length && !confirm(`Aviso de agenda:\n\n${conflicts.join("\n")}\n\nÂ¿Desea guardar la cita de todos modos?`)) {
       return;
     }
+    const wasEditingAppointment = Boolean(editingAppointmentId);
     const savedAppointment = saveAppointmentFromForm();
+    logAudit(wasEditingAppointment ? "appointments:edit" : "appointments:create", `GuardÃ³ cita de ${patientById(savedAppointment.patientId).name} con ${doctorById(savedAppointment.doctorId).name}`, savedAppointment.patientId);
     event.target.reset();
     document.getElementById("appointmentDate").value = todayIso;
     document.getElementById("appointmentWaitlist").checked = false;
@@ -1585,6 +1632,7 @@ function bindForms() {
     });
     if (consentSigned) createTreatmentConsentDocument(treatment);
     patient.balance += cost;
+    logAudit("treatments:create", `CreÃ³ tratamiento ${treatment.name} para ${patient.name}`, patient.id);
     event.target.reset();
     persistAndRender();
   });
@@ -1690,6 +1738,7 @@ function bindForms() {
     if (!isQuote) {
       patient.balance = Math.max(0, patient.balance - initialPaid);
     }
+    logAudit(isQuote ? "billing:quote" : "billing:create", `${isQuote ? "CreÃ³ cotizaciÃ³n" : "CreÃ³ factura"} ${invoiceNumber} para ${patient.name}`, patient.id);
     event.target.reset();
     document.getElementById("paymentCashier").value = currentUser?.id || "";
     syncPaymentProductFields();
@@ -1719,6 +1768,7 @@ function bindForms() {
       openedAt: new Date().toISOString(),
       status: "Abierta"
     });
+    logAudit("cash:open", `Apertura de caja con ${currency.format(Number(value("cashOpeningAmount")) || 0)}`);
     event.target.reset();
     persistAndRender();
   });
@@ -1759,6 +1809,7 @@ function bindForms() {
       opening.status = "Cerrada";
       opening.closedAt = new Date().toISOString();
     }
+    logAudit("cash:close", `Cierre de caja. Esperado ${currency.format(expectedCash)} contado ${currency.format(countedAmount)}`);
     event.target.reset();
     persistAndRender();
   });
@@ -1788,7 +1839,11 @@ function bindForms() {
 
   document.getElementById("closeReceipt").addEventListener("click", closeReceipt);
   document.getElementById("doneReceipt").addEventListener("click", closeReceipt);
-  document.getElementById("printReceipt").addEventListener("click", () => window.print());
+  document.getElementById("printReceipt").addEventListener("click", () => {
+    if (!can("payments:print")) return;
+    logAudit("print:dialog", "ImprimiÃ³ documento desde visor POS");
+    window.print();
+  });
   document.getElementById("markPayrollPaid").addEventListener("click", () => {
     if (!can("payroll:manage")) return;
     const period = selectedPayrollPeriod();
@@ -1802,6 +1857,7 @@ function bindForms() {
     } else {
       state.payrollRuns.unshift({ ...payrollRunSummaryForPeriod(period), status: "Pagada", paidAt: new Date().toISOString(), paidBy: currentUser?.id || "sin-usuario" });
     }
+    logAudit("payroll:paid", `MarcÃ³ nÃ³mina pagada para ${formatPayrollPeriod(period)}`);
     persistAndRender();
   });
   document.getElementById("processPayrollMonth").addEventListener("click", () => {
@@ -1816,6 +1872,7 @@ function bindForms() {
     } else {
       state.payrollRuns.unshift({ ...summary, status: "Procesada", processedAt: new Date().toISOString(), processedBy: currentUser?.id || "sin-usuario" });
     }
+    logAudit("payroll:process", `ProcesÃ³ nÃ³mina de ${formatPayrollPeriod(period)}`);
     persistAndRender();
   });
   document.getElementById("payrollPeriod").addEventListener("change", () => {
@@ -1838,6 +1895,7 @@ function bindForms() {
       period: value("payrollNoveltyPeriod") || selectedPayrollPeriod(),
       createdBy: currentUser?.id || "sin-usuario"
     });
+    logAudit("payroll:novelty", `AplicÃ³ novedad ${value("payrollNoveltyType")} a ${userById(value("payrollNoveltyUser")).name}`, value("payrollNoveltyUser"));
     event.target.reset();
     persistAndRender();
   });
@@ -1940,6 +1998,7 @@ function bindForms() {
       previousStock: 0,
       newStock: item.stock
     });
+    logAudit("inventory:create", `CreÃ³ producto ${item.name} con stock ${item.stock}`);
     event.target.reset();
     persistAndRender();
   });
@@ -1978,6 +2037,7 @@ function bindForms() {
       unitCost: purchase.unitCost,
       expiry: purchase.expiry
     });
+    logAudit("inventory:purchase", `RegistrÃ³ compra ${quantity} de ${product.name} a ${supplier}`);
     event.target.reset();
     persistAndRender();
   });
@@ -1990,6 +2050,7 @@ function bindForms() {
     const quantity = Number(value("inventoryMovementQuantity")) || 0;
     const reason = value("inventoryMovementNote");
     if (!applyInventoryMovement({ productId, type, quantity, reason, reference: "Ajuste manual" })) return;
+    logAudit("inventory:movement", `${type} de ${quantity} en ${inventoryName(productId)}: ${reason}`);
     event.target.reset();
     persistAndRender();
   });
@@ -2008,6 +2069,7 @@ function bindForms() {
       note: value("attendanceNote"),
       createdBy: currentUser?.id || "sin-usuario"
     });
+    logAudit("hr:attendance", `RegistrÃ³ asistencia ${value("attendanceStatus")} de ${userById(value("attendanceUser")).name}`, value("attendanceUser"));
     event.target.reset();
     document.getElementById("attendanceDate").value = todayIso;
     persistAndRender();
@@ -2030,6 +2092,7 @@ function bindForms() {
       approvedAt: ["Aprobada", "Rechazada", "Completada"].includes(vacationStatus) ? new Date().toISOString() : "",
       createdBy: currentUser?.id || "sin-usuario"
     });
+    logAudit("hr:vacation", `RegistrÃ³ solicitud ${vacationStatus} para ${userById(value("vacationUser")).name}`, value("vacationUser"));
     event.target.reset();
     persistAndRender();
   });
@@ -2067,6 +2130,7 @@ function bindForms() {
       note: value("evaluationNote"),
       createdBy: currentUser?.id || "sin-usuario"
     });
+    logAudit("hr:evaluation", `RegistrÃ³ evaluaciÃ³n de ${userById(value("evaluationUser")).name}`, value("evaluationUser"));
     event.target.reset();
     document.getElementById("evaluationDate").value = todayIso;
     persistAndRender();
@@ -2199,7 +2263,7 @@ function applyPermissions() {
   toggleAction("shiftForm", "payroll:manage");
   toggleAction("evaluationForm", "payroll:manage");
   toggleAction("openUserModal", "users:create");
-  toggleAction("editSelectedUser", "users:create");
+  toggleAction("editSelectedUser", "users:edit");
 
   const activeView = document.querySelector(".view.active")?.id;
   if (!activeView || !canView(activeView)) {
@@ -2222,7 +2286,8 @@ function permissions() {
 }
 
 function can(action) {
-  return permissions().actions.includes(action);
+  const actions = permissions().actions;
+  return actions.includes(action) || actions.some((owned) => legacyActionAliases[owned]?.includes(action));
 }
 
 function allowedSelfServiceActionsForRole(role) {
@@ -2244,16 +2309,24 @@ function permissionsForUser(userId) {
   if (!override) {
     return {
       views: [...defaults.views],
-      actions: sanitizeSelfServiceActions([...defaults.actions], user?.role),
+      actions: sanitizeSelfServiceActions(expandPermissionActions([...defaults.actions]), user?.role),
       scope: defaults.scope
     };
   }
 
   return {
     views: [...override.views],
-    actions: sanitizeSelfServiceActions([...override.actions], user?.role),
+    actions: sanitizeSelfServiceActions(expandPermissionActions([...override.actions]), user?.role),
     scope: override.scope || defaults.scope
   };
+}
+
+function expandPermissionActions(actions) {
+  const expanded = new Set(actions);
+  actions.forEach((action) => {
+    (legacyActionAliases[action] || []).forEach((alias) => expanded.add(alias));
+  });
+  return [...expanded];
 }
 
 function sanitizeSelfServiceActions(actions, role) {
@@ -2262,8 +2335,12 @@ function sanitizeSelfServiceActions(actions, role) {
 }
 
 function render() {
+  applyCompactMode();
   populateSelects();
+  renderTopNotifications();
+  renderGlobalSearch();
   renderDashboard();
+  renderRoleDashboard();
   renderReceptionPanel();
   renderUsersPanel();
   renderHrPanel();
@@ -2453,6 +2530,240 @@ function populateSelects() {
   document.getElementById("payrollNoveltyPeriod").value ||= selectedPayrollPeriod();
   document.getElementById("reportStartDate").value ||= `${todayIso.slice(0, 8)}01`;
   document.getElementById("reportEndDate").value ||= todayIso;
+}
+
+function toggleCompactMode() {
+  compactMode = !compactMode;
+  localStorage.setItem("novaclinic-compact-mode", String(compactMode));
+  applyCompactMode();
+}
+
+function applyCompactMode() {
+  document.body.classList.toggle("compact-mode", compactMode);
+  const toggle = document.getElementById("compactModeToggle");
+  if (!toggle) return;
+  toggle.classList.toggle("active", compactMode);
+  toggle.setAttribute("aria-pressed", String(compactMode));
+  toggle.title = compactMode ? "Modo compacto activo" : "Modo compacto";
+}
+
+function renderTopNotifications() {
+  const container = document.getElementById("topNotifications");
+  if (!container) return;
+  const notifications = topNotificationItems().filter((item) => !item.view || canView(item.view));
+  container.innerHTML = notifications.length
+    ? notifications.map((item) => `
+      <button class="top-notification ${item.level}" data-view-jump="${item.view}" type="button">
+        <strong>${escapeHtml(item.label)}</strong>
+        <span>${escapeHtml(item.detail)}</span>
+      </button>
+    `).join("")
+    : `<span class="top-notification ok">Operacion estable</span>`;
+}
+
+function topNotificationItems() {
+  const cashOpening = currentCashOpening();
+  const lowStock = state.inventory.filter((item) => item.stock <= item.min);
+  const upcoming = state.appointments
+    .filter((appointment) => appointment.date >= todayIso && appointment.status !== "Cancelada")
+    .sort(sortByDateTime)
+    .slice(0, 3);
+  const overdue = activeBillingPayments().filter((payment) => invoiceBalance(payment) > 0 && receivableAgeDays(payment.date) > 30);
+
+  return [
+    {
+      label: cashOpening ? "Caja abierta" : "Caja sin abrir",
+      detail: cashOpening ? currency.format(cashOpening.openingAmount || 0) : "Pendiente",
+      level: cashOpening ? "ok" : "warning",
+      view: "billing"
+    },
+    {
+      label: "Stock bajo",
+      detail: lowStock.length ? `${lowStock.length} item(s)` : "Sin alerta",
+      level: lowStock.length ? "danger" : "ok",
+      view: "inventory"
+    },
+    {
+      label: "Citas proximas",
+      detail: upcoming.length ? `${upcoming.length} activas` : "Sin citas",
+      level: upcoming.length ? "info" : "ok",
+      view: "agenda"
+    },
+    {
+      label: "Balances vencidos",
+      detail: overdue.length ? `${overdue.length} factura(s)` : "Sin vencidos",
+      level: overdue.length ? "danger" : "ok",
+      view: "billing"
+    }
+  ];
+}
+
+function renderGlobalSearch() {
+  const container = document.getElementById("globalSearchResults");
+  const input = document.getElementById("globalSearch");
+  if (!container || !input) return;
+  const term = normalizeText(input.value);
+  if (term.length < 2) {
+    hideGlobalSearchResults();
+    return;
+  }
+
+  const results = globalSearchResults(term);
+  container.innerHTML = results.length
+    ? results.map(globalSearchResultTemplate).join("")
+    : `<div class="global-search-empty">Sin resultados para la busqueda.</div>`;
+  container.classList.add("active");
+}
+
+function hideGlobalSearchResults() {
+  const container = document.getElementById("globalSearchResults");
+  if (!container) return;
+  container.classList.remove("active");
+}
+
+function globalSearchResults(term) {
+  const results = [];
+  if (canView("patients")) {
+    state.patients
+      .filter((patient) => patientSearchHaystack(patient).includes(term))
+      .slice(0, 5)
+      .forEach((patient) => results.push({
+        type: "Paciente",
+        title: patient.name,
+        detail: `${patient.code || "Sin codigo"} · ${patient.phone || "Sin telefono"}`,
+        view: "patients"
+      }));
+  }
+
+  if (canView("billing")) {
+    activeBillingPayments()
+      .filter((payment) => normalizeText([
+        payment.invoiceNumber,
+        payment.receiptNumber,
+        payment.ncf,
+        payment.concept,
+        patientById(payment.patientId).name,
+        paymentBillToLabel(payment)
+      ].join(" ")).includes(term))
+      .slice(0, 5)
+      .forEach((payment) => results.push({
+        type: "Factura",
+        title: payment.invoiceNumber || payment.receiptNumber || "Documento sin numero",
+        detail: `${patientById(payment.patientId).name} · ${currency.format(invoiceBalance(payment))} pendiente`,
+        view: "billing"
+      }));
+  }
+
+  if (canView("agenda")) {
+    state.appointments
+      .filter((appointment) => appointmentBelongsToCurrentDoctor(appointment))
+      .filter((appointment) => normalizeText([
+        patientById(appointment.patientId).name,
+        doctorById(appointment.doctorId).name,
+        appointment.reason,
+        appointment.status,
+        appointment.date,
+        appointment.time
+      ].join(" ")).includes(term))
+      .sort(sortByDateTime)
+      .slice(0, 5)
+      .forEach((appointment) => results.push({
+        type: "Cita",
+        title: patientById(appointment.patientId).name,
+        detail: `${formatDate(appointment.date)} ${appointment.time} · ${doctorById(appointment.doctorId).name}`,
+        view: "agenda"
+      }));
+  }
+
+  if (canView("dashboard") || canView("usersPanel")) {
+    doctors
+      .filter((doctor) => normalizeText([doctor.name, doctor.specialty, doctor.room, doctor.shift].join(" ")).includes(term))
+      .slice(0, 5)
+      .forEach((doctor) => results.push({
+        type: "Doctor",
+        title: doctor.name,
+        detail: `${doctor.specialty} · ${doctor.room}`,
+        view: canView("usersPanel") ? "usersPanel" : "dashboard"
+      }));
+  }
+
+  return results.slice(0, 12);
+}
+
+function globalSearchResultTemplate(result) {
+  return `
+    <button class="global-search-result" data-view-jump="${result.view}" type="button">
+      <span>${escapeHtml(result.type)}</span>
+      <strong>${escapeHtml(result.title)}</strong>
+      <small>${escapeHtml(result.detail)}</small>
+    </button>
+  `;
+}
+
+function renderRoleDashboard() {
+  const container = document.getElementById("roleDashboardPanel");
+  if (!container) return;
+  const role = currentUser?.role || "RecepciÃ³n";
+  const config = roleDashboardConfig(role);
+  const modules = config.modules.filter((viewName) => canView(viewName));
+  container.innerHTML = `
+    <div class="role-dashboard-copy">
+      <span class="status-pill ${className(config.status)}">${escapeHtml(config.status)}</span>
+      <div>
+        <h2>${escapeHtml(config.title)}</h2>
+        <p>${escapeHtml(config.detail)}</p>
+      </div>
+    </div>
+    <div class="role-dashboard-actions">
+      ${modules.map((viewName) => `<button class="ghost-button" data-view-jump="${viewName}" type="button">${escapeHtml(views[viewName] || viewName)}</button>`).join("")}
+    </div>
+  `;
+}
+
+function roleDashboardConfig(role) {
+  const pendingLab = (state.selfServiceRequests || []).filter((request) => normalizeText(request.type).includes("laboratorio") && !["Completada", "Facturada"].includes(request.status)).length;
+  const pendingVacations = (state.vacations || []).filter((vacation) => vacation.status === "Solicitada").length;
+  const openInvoices = activeBillingPayments().filter((payment) => invoiceBalance(payment) > 0).length;
+  const todayAppointments = state.appointments.filter((appointment) => appointment.date === todayIso).length;
+  const roleMap = {
+    Administrador: {
+      title: "Panel ejecutivo administrador",
+      detail: `${todayAppointments} citas hoy, ${openInvoices} facturas con balance y control completo de seguridad.`,
+      status: "Acceso completo",
+      modules: ["receptionPanel", "usersPanel", "accountingPanel", "reports", "adminPanel"]
+    },
+    Doctor: {
+      title: "Panel clinico del doctor",
+      detail: `${appointmentsForCurrentDoctor().filter((appointment) => appointment.date === todayIso).length} citas propias hoy y seguimiento de odontograma/evolucion.`,
+      status: "Clinico",
+      modules: ["agenda", "patients", "odontogram", "treatments", "selfService"]
+    },
+    "RecepciÃ³n": {
+      title: "Panel operativo de recepcion",
+      detail: `${todayAppointments} citas para gestionar, admision de pacientes y cobros rapidos.`,
+      status: "Front desk",
+      modules: ["patients", "agenda", "billing", "selfService"]
+    },
+    "Recursos Humanos": {
+      title: "Panel de Recursos Humanos",
+      detail: `${pendingVacations} solicitudes pendientes, nomina, asistencia, turnos y evaluaciones.`,
+      status: "RRHH",
+      modules: ["hrPanel", "selfService"]
+    },
+    Laboratorio: {
+      title: "Panel de laboratorio",
+      detail: `${pendingLab} solicitudes activas para piezas, placas, detalles y facturacion al doctor.`,
+      status: "Laboratorio",
+      modules: ["laboratoryPanel"]
+    },
+    Contabilidad: {
+      title: "Panel de caja y contabilidad",
+      detail: `${currency.format(paymentCollections(todayIso).reduce((sum, item) => sum + item.amount, 0))} ingresados hoy y ${openInvoices} balances abiertos.`,
+      status: "Caja",
+      modules: ["accountingPanel", "billing", "reports", "inventory"]
+    }
+  };
+  return roleMap[role] || roleMap["RecepciÃ³n"];
 }
 
 function renderDashboard() {
@@ -2779,10 +3090,12 @@ function renderLaboratoryPanel() {
       if (!can("laboratory:manage")) return;
       const request = state.selfServiceRequests.find((item) => item.id === select.dataset.labStatus);
       if (!request) return;
+      const previousStatus = request.status;
       request.status = select.value;
       if (select.value === "Entregado" && !request.deliveredAt) request.deliveredAt = todayIso;
       request.updatedAt = new Date().toISOString();
       request.updatedBy = currentUser?.id || "sin-usuario";
+      logAudit("laboratory:status", `CambiÃ³ laboratorio ${request.piece || "pieza"} de ${previousStatus} a ${request.status}`, request.createdBy);
       persistAndRender();
     });
   });
@@ -2979,6 +3292,7 @@ function createLaboratoryInvoice(requestId) {
   request.invoicedBy = currentUser?.id || "laboratorio";
   request.updatedAt = new Date().toISOString();
   request.updatedBy = currentUser?.id || "laboratorio";
+  logAudit("laboratory:invoice", `FacturÃ³ laboratorio ${invoiceNumber} al doctor ${userById(doctorId).name}`, doctorId);
   persistAndRender();
 }
 
@@ -3571,7 +3885,7 @@ function selfServicePermissionLabel(userPermissions) {
 }
 
 function renderPermissionMatrix(targetUserId = selectedUserId) {
-  const canEditPermissions = currentUser?.role === "Administrador";
+  const canEditPermissions = can("users:edit");
   const user = users.find((item) => item.id === targetUserId) || users[0];
   const userPermissions = permissionsForUser(user.id);
   const grouped = [...new Set(permissionCatalog.map((item) => item.panel))]
@@ -3596,7 +3910,7 @@ function renderPermissionMatrix(targetUserId = selectedUserId) {
       }).join("");
   const actionsGrouped = [...new Set(actionPermissionCatalog.map((item) => item.group))].map((group) => {
     const items = actionPermissionCatalog.filter((item) => item.group === group);
-    const activeCount = items.filter((item) => userPermissions.actions.includes(item.action)).length;
+    const activeCount = items.filter((item) => permissionSetAllows(userPermissions.actions, item.action)).length;
     const status = permissionGroupStatus(activeCount, items.length);
     return `
       <div class="permission-panel-card permission-action-card">
@@ -3692,7 +4006,7 @@ function permissionViewToggleTemplate(item, user, userPermissions, canEditPermis
 }
 
 function permissionActionToggleTemplate(item, user, userPermissions, canEditPermissions) {
-  const enabled = userPermissions.actions.includes(item.action);
+  const enabled = permissionSetAllows(userPermissions.actions, item.action);
   const unavailable = item.action.startsWith("selfservice:") && !allowedSelfServiceActionsForRole(user.role).includes(item.action);
   return `
     <label class="permission-toggle permission-card-toggle ${enabled ? "is-active" : ""} ${unavailable ? "permission-disabled" : ""}">
@@ -3709,8 +4023,12 @@ function permissionActionToggleTemplate(item, user, userPermissions, canEditPerm
   `;
 }
 
+function permissionSetAllows(actions, action) {
+  return actions.includes(action) || actions.some((owned) => legacyActionAliases[owned]?.includes(action));
+}
+
 function updateUserPermission(input) {
-  if (currentUser?.role !== "Administrador") return;
+  if (!can("users:edit")) return;
   const userId = input.dataset.permissionUser;
   if (userId === "admin") return;
 
@@ -3742,7 +4060,7 @@ function updateUserPermission(input) {
 }
 
 function updateUserActionPermission(input) {
-  if (currentUser?.role !== "Administrador") return;
+  if (!can("users:edit")) return;
   const userId = input.dataset.permissionActionUser;
   if (userId === "admin") return;
   const user = users.find((item) => item.id === userId);
@@ -3767,7 +4085,7 @@ function updateUserActionPermission(input) {
 }
 
 function updateUserPermissionScope(userId, scope) {
-  if (currentUser?.role !== "Administrador" || userId === "admin") return;
+  if (!can("users:edit") || userId === "admin") return;
   const nextPermissions = permissionsForUser(userId);
   userPermissionOverrides[userId] = {
     views: nextPermissions.views,
@@ -4719,9 +5037,11 @@ function renderAgenda() {
     select.addEventListener("change", () => {
       if (!can("appointments:confirm")) return;
       const appointment = state.appointments.find((item) => item.id === select.dataset.statusAppointment);
+      const previousStatus = appointment.status;
       appointment.status = select.value;
       appointment.updatedAt = new Date().toISOString();
       appointment.updatedBy = currentUser?.id || "sin-usuario";
+      logAudit("appointments:status", `CambiÃ³ cita de ${patientById(appointment.patientId).name} de ${previousStatus} a ${appointment.status}`, appointment.patientId);
       persistAndRender();
     });
   });
@@ -4752,6 +5072,7 @@ function renderAgenda() {
       waitlistAppointment.updatedAt = new Date().toISOString();
       waitlistAppointment.updatedBy = currentUser?.id || "sin-usuario";
       waitlistAppointment.movedFromWaitlistAt = new Date().toISOString();
+      logAudit("appointments:waitlist", `MoviÃ³ lista de espera a ${cancelledAppointment.date} ${cancelledAppointment.time}`, waitlistAppointment.patientId);
       persistAndRender();
     });
   });
@@ -5560,12 +5881,12 @@ function renderBilling() {
               ${(payment.reprintCount || 0) > 0 ? `<p>Reimpresiones: ${payment.reprintCount}</p>` : ""}
             </div>
             <div class="table-actions">
-              <button class="ghost-button pos-action-button" data-receipt="${payment.id}">Imprimir</button>
-              <button class="ghost-button pos-action-button" data-reprint="${payment.id}">Reimprimir</button>
-              <button class="ghost-button pos-action-button" data-convert-quote="${payment.id}" ${payment.documentKind === "CotizaciÃ³n" ? "" : "disabled"}>Convertir</button>
-              <button class="ghost-button pos-action-button" data-add-payment="${payment.id}" ${invoiceBalance(payment) > 0 ? "" : "disabled"}>Abono</button>
-              <button class="ghost-button pos-action-button" data-credit-note="${payment.id}" ${payment.documentKind === "CotizaciÃ³n" || payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Nota crÃ©dito</button>
-              <button class="ghost-button pos-action-button danger" data-annul="${payment.id}" ${payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Anular</button>
+              <button class="ghost-button pos-action-button ${can("payments:print") ? "" : "permission-hidden"}" data-receipt="${payment.id}">Imprimir</button>
+              <button class="ghost-button pos-action-button ${can("payments:print") ? "" : "permission-hidden"}" data-reprint="${payment.id}">Reimprimir</button>
+              <button class="ghost-button pos-action-button ${can("payments:edit") ? "" : "permission-hidden"}" data-convert-quote="${payment.id}" ${payment.documentKind === "CotizaciÃ³n" ? "" : "disabled"}>Convertir</button>
+              <button class="ghost-button pos-action-button ${can("payments:edit") ? "" : "permission-hidden"}" data-add-payment="${payment.id}" ${invoiceBalance(payment) > 0 ? "" : "disabled"}>Abono</button>
+              <button class="ghost-button pos-action-button ${can("payments:void") ? "" : "permission-hidden"}" data-credit-note="${payment.id}" ${payment.documentKind === "CotizaciÃ³n" || payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Nota crÃ©dito</button>
+              <button class="ghost-button pos-action-button danger ${can("payments:void") ? "" : "permission-hidden"}" data-annul="${payment.id}" ${payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Anular</button>
             </div>
           </article>
         `)
@@ -6254,7 +6575,12 @@ function renderSecurityPanel() {
     ["Cambios permisos", permissionChanges]
   ].map(panelCardTemplate).join("");
 
-  list.innerHTML = (state.auditLog || []).slice(0, 12).map((item) => `
+  if (!can("security:audit")) {
+    list.innerHTML = emptyState("No tiene permiso para ver la bitÃ¡cora de seguridad.");
+    return;
+  }
+
+  list.innerHTML = (state.auditLog || []).slice(0, 20).map((item) => `
     <article class="ledger-item security-audit-item">
       <span class="status-pill ${item.action.includes("failed") || item.action.includes("blocked") ? "cancelada" : "confirmada"}">${escapeHtml(item.action)}</span>
       <div>
@@ -6568,20 +6894,28 @@ function receivableAgeBucket(dateValue) {
   return "MÃ¡s de 90 dÃ­as";
 }
 
+function receivableAgeDays(dateValue) {
+  if (!dateValue) return 0;
+  return Math.max(0, Math.floor((new Date(`${todayIso}T12:00:00`) - new Date(`${dateValue}T12:00:00`)) / 86400000));
+}
+
 function topPaymentMethod(methodTotals) {
   const entries = Object.entries(methodTotals).sort((a, b) => b[1] - a[1]);
   return entries[0] ? `${entries[0][0]} Â· ${currency.format(entries[0][1])}` : "Sin cobros";
 }
 
 function openReceipt(paymentId) {
+  if (!can("payments:print")) return;
   const payment = state.payments.find((item) => item.id === paymentId);
   if (!payment) return;
   const title = payment.documentKind === "CotizaciÃ³n" ? "COTIZACIÃ“N" : "RECIBO DE PAGO";
   document.getElementById("receiptContent").innerHTML = posInvoiceTicketTemplate(payment, title);
+  logAudit("print:receipt", `ImprimiÃ³ ${payment.invoiceNumber || payment.receiptNumber || "documento"}`, payment.cashierId || payment.createdBy);
   document.getElementById("receiptDialog").showModal();
 }
 
 function reprintInvoice(paymentId) {
+  if (!can("payments:print")) return;
   const payment = state.payments.find((item) => item.id === paymentId);
   if (!payment) return;
   payment.reprintCount = (Number(payment.reprintCount) || 0) + 1;
@@ -6591,11 +6925,13 @@ function reprintInvoice(paymentId) {
     by: currentUser?.id || "sin-usuario"
   });
   saveState();
+  logAudit("print:reprint", `ReimpresiÃ³ ${payment.invoiceNumber || payment.receiptNumber || "documento"}`, payment.cashierId || payment.createdBy);
   openReceipt(paymentId);
   renderBilling();
 }
 
 function annulInvoice(paymentId) {
+  if (!can("payments:void")) return;
   const payment = state.payments.find((item) => item.id === paymentId);
   if (!payment || payment.invoiceStatus === "Anulada") return;
   const reason = prompt("Motivo de anulaciÃ³n de la factura");
@@ -6618,11 +6954,13 @@ function annulInvoice(paymentId) {
   payment.voidReason = reason;
   payment.voidedAt = new Date().toISOString();
   payment.voidedBy = currentUser?.id || "sin-usuario";
+  logAudit("billing:void", `AnulÃ³ ${payment.invoiceNumber || payment.receiptNumber || "factura"}: ${reason}`, payment.patientId);
   saveState();
   renderBilling();
 }
 
 function convertQuoteToInvoice(paymentId) {
+  if (!can("payments:edit")) return;
   const payment = state.payments.find((item) => item.id === paymentId);
   if (!payment || payment.documentKind !== "CotizaciÃ³n") return;
   const invoiceType = prompt("Tipo de factura para convertir la cotizaciÃ³n", "Consumidor Final");
@@ -6653,11 +6991,13 @@ function convertQuoteToInvoice(paymentId) {
       reference: payment.invoiceNumber || payment.id
     });
   }
+  logAudit("billing:convert", `ConvirtiÃ³ cotizaciÃ³n a factura ${payment.invoiceNumber}`, payment.patientId);
   saveState();
   renderBilling();
 }
 
 function addInvoicePayment(paymentId) {
+  if (!can("payments:edit")) return;
   const payment = state.payments.find((item) => item.id === paymentId);
   if (!payment || invoiceBalance(payment) <= 0) return;
   if (!currentCashOpening()) {
@@ -6689,11 +7029,13 @@ function addInvoicePayment(paymentId) {
   payment.updatedBy = currentUser?.id || "sin-usuario";
   const patient = patientById(payment.patientId);
   patient.balance = Math.max(0, patient.balance - amount);
+  logAudit("billing:payment", `RegistrÃ³ abono ${currency.format(amount)} a ${payment.invoiceNumber || "factura"}`, payment.patientId);
   saveState();
   renderBilling();
 }
 
 function createCreditNote(paymentId) {
+  if (!can("payments:void")) return;
   const payment = state.payments.find((item) => item.id === paymentId);
   if (!payment || payment.invoiceStatus === "Anulada" || payment.documentKind === "CotizaciÃ³n") return;
   const reason = prompt("Motivo obligatorio de la nota de crÃ©dito");
@@ -6719,6 +7061,7 @@ function createCreditNote(paymentId) {
   payment.updatedBy = currentUser?.id || "sin-usuario";
   const patient = patientById(payment.patientId);
   patient.balance = Math.max(0, patient.balance - amount);
+  logAudit("billing:credit-note", `CreÃ³ nota de crÃ©dito ${currency.format(amount)}: ${reason}`, payment.patientId);
   saveState();
   renderBilling();
 }

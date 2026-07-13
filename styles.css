@@ -364,7 +364,9 @@ button {
 }
 
 .topbar {
+  position: relative;
   margin-bottom: 26px;
+  align-items: flex-start;
 }
 
 .eyebrow {
@@ -404,6 +406,72 @@ p {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.compact-toggle {
+  width: 40px;
+  padding: 0;
+  color: var(--green-dark);
+  background: #f3faf7;
+  border-color: var(--line);
+}
+
+.compact-toggle.active {
+  color: #fff;
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.top-notifications {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 760px;
+}
+
+.top-notification {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  display: grid;
+  gap: 1px;
+  text-align: left;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(15, 42, 64, .06);
+}
+
+.top-notification strong {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.top-notification span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.top-notification.ok {
+  border-color: #cdece4;
+  background: #f4fbf8;
+}
+
+.top-notification.info {
+  border-color: #cde8f2;
+  background: #f3f9fd;
+}
+
+.top-notification.warning {
+  border-color: #f1dfad;
+  background: #fff9e8;
+}
+
+.top-notification.danger {
+  border-color: #f2c9c9;
+  background: #fff4f4;
 }
 
 .compact-field {
@@ -453,6 +521,7 @@ p {
 }
 
 .search-box {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -485,6 +554,75 @@ p {
 .search-box input {
   border: 0;
   min-width: 180px;
+}
+
+.global-search-results {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 30;
+  width: min(520px, calc(100vw - 48px));
+  max-height: 460px;
+  overflow: auto;
+  display: none;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgba(15, 42, 64, .18);
+}
+
+.global-search-results.active {
+  display: grid;
+  gap: 6px;
+}
+
+.global-search-result {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #fbfdff;
+  text-align: left;
+}
+
+.global-search-result:hover {
+  border-color: #bfe6e7;
+  background: #f1faf9;
+}
+
+.global-search-result span {
+  grid-row: span 2;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--green-dark);
+  background: #e4f7f4;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.global-search-result strong,
+.global-search-result small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.global-search-result small,
+.global-search-empty {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.global-search-empty {
+  padding: 12px;
 }
 
 .inline-form input,
@@ -1510,6 +1648,41 @@ p {
   line-height: 1.35;
 }
 
+.role-dashboard-panel {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #cfe1d8;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #ffffff, #f2fbfa);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.role-dashboard-copy {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.role-dashboard-copy h2 {
+  margin: 0 0 3px;
+}
+
+.role-dashboard-copy p {
+  margin: 0;
+}
+
+.role-dashboard-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .metric-card,
 .panel,
 .table-panel {
@@ -1633,6 +1806,87 @@ p {
 .clinical-item small {
   margin: 3px 0 0;
   color: var(--muted);
+}
+
+.compact-mode .main {
+  padding: 18px;
+}
+
+.compact-mode .topbar {
+  margin-bottom: 16px;
+}
+
+.compact-mode h1 {
+  font-size: 28px;
+}
+
+.compact-mode h2 {
+  font-size: 18px;
+}
+
+.compact-mode .panel,
+.compact-mode .metric-card {
+  padding: 14px;
+}
+
+.compact-mode .executive-metric {
+  min-height: 112px;
+}
+
+.compact-mode .metric-card strong {
+  font-size: 23px;
+}
+
+.compact-mode .dashboard-alert-strip,
+.compact-mode .metric-grid,
+.compact-mode .content-grid,
+.compact-mode .panel-card-grid,
+.compact-mode .cards-grid {
+  gap: 12px;
+}
+
+.compact-mode .appointment-item,
+.compact-mode .alert-item,
+.compact-mode .schedule-item,
+.compact-mode .ledger-item,
+.compact-mode .clinical-item {
+  padding: 9px;
+  gap: 8px;
+}
+
+.compact-mode .table-panel {
+  max-height: 520px;
+  overflow: auto;
+}
+
+.compact-mode .table-panel thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8fcfd;
+}
+
+.compact-mode .sidebar {
+  padding: 14px 12px;
+  gap: 12px;
+}
+
+.compact-mode .brand-logo {
+  width: 44px;
+  height: 44px;
+}
+
+.compact-mode .nav-list {
+  gap: 9px;
+}
+
+.compact-mode .nav-item {
+  min-height: 38px;
+  padding: 6px 8px;
+}
+
+.compact-mode .clinic-card {
+  padding: 10px;
 }
 
 .time-chip,
@@ -3301,6 +3555,25 @@ dialog::backdrop {
   .compact-user-list {
     max-height: 420px;
   }
+
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .top-notifications {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .role-dashboard-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .role-dashboard-actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 720px) {
@@ -3327,6 +3600,7 @@ dialog::backdrop {
   }
 
   .search-box,
+  .top-notification,
   .inline-form input,
   .inline-form select,
   .inline-form button,
@@ -3339,6 +3613,16 @@ dialog::backdrop {
   .toolbar-controls button,
   .selected-tooth-chip {
     width: 100%;
+  }
+
+  .global-search-results {
+    left: 0;
+    right: auto;
+    width: 100%;
+  }
+
+  .role-dashboard-copy {
+    grid-template-columns: 1fr;
   }
 
   .metric-grid,
