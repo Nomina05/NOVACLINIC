@@ -2586,13 +2586,20 @@ function renderHrControls() {
 
 function hrStatusClass(status) {
   return {
+    Pendiente: "pendiente",
     Presente: "confirmada",
+    Aprobado: "confirmada",
     Aprobada: "confirmada",
     Completada: "confirmada",
+    Pagado: "pagado",
+    Pagada: "pagado",
+    Procesada: "confirmada",
+    Procesado: "confirmada",
     Tarde: "pendiente",
     Solicitada: "pendiente",
     "En seguimiento": "pendiente",
     Ausente: "cancelada",
+    Rechazado: "cancelada",
     Rechazada: "cancelada",
     "Requiere mejora": "cancelada",
     "Credencial vencida": "cancelada"
@@ -2652,7 +2659,7 @@ function renderPayrollLegacy(payrollItems) {
         <td>${currency.format(item.bonus)}</td>
         <td>${currency.format(item.deductions)}</td>
         <td><strong>${currency.format(payrollNet(item))}</strong></td>
-        <td><span class="status-pill ${item.status === "Pagado" ? "pagado" : "pendiente"}">${escapeHtml(item.status)}</span></td>
+        <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
       </tr>
     `;
   }).join("");
@@ -2730,7 +2737,7 @@ function renderPayroll(payrollItems) {
         <td>${currency.format(item.bonus)}</td>
         <td>${currency.format(item.deductions)}</td>
         <td><strong>${currency.format(payrollNet(item))}</strong></td>
-        <td><span class="status-pill ${item.status === "Pagado" ? "pagado" : "pendiente"}">${escapeHtml(item.status)}</span></td>
+        <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
       </tr>
     `;
   }).join("");
@@ -2749,7 +2756,7 @@ function renderPayroll(payrollItems) {
         <td>${item.commission?.points || 0} pts</td>
         <td>${item.commission?.procedures || 0}</td>
         <td><strong>${currency.format(item.bonus)}</strong></td>
-        <td><span class="status-pill ${item.status === "Pagado" ? "pagado" : "pendiente"}">${escapeHtml(item.status)}</span></td>
+        <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
       </tr>
     `;
   }).join("");
@@ -3309,6 +3316,26 @@ function panelCardTemplate([label, valueText]) {
       <strong>${valueText}</strong>
     </article>
   `;
+}
+
+function hrMonthlyCardTemplate([label, valueText, detail, status]) {
+  return `
+    <article class="hr-month-card ${className(status)}">
+      <span class="status-pill ${className(status)}">${label}</span>
+      <strong>${valueText}</strong>
+      <p>${detail}</p>
+    </article>
+  `;
+}
+
+function activateHrTab(tabName = "payroll") {
+  activeHrTab = tabName;
+  document.querySelectorAll("[data-hr-tab]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.hrTab === tabName);
+  });
+  document.querySelectorAll("[data-hr-panel]").forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.hrPanel === tabName);
+  });
 }
 
 function cashFlowCardTemplate([label, valueText, detail, status = "neutral"]) {

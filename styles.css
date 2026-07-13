@@ -1279,6 +1279,10 @@ p {
   margin-top: 18px;
 }
 
+.payroll-panel:not(.hr-tab-panel) {
+  display: none;
+}
+
 .payroll-panel .table-panel {
   box-shadow: none;
 }
@@ -1298,6 +1302,88 @@ p {
 
 .compact-payroll-summary {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.hr-monthly-summary {
+  margin-bottom: 18px;
+}
+
+.hr-month-card {
+  display: grid;
+  gap: 8px;
+  min-height: 126px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.hr-month-card strong {
+  font-size: 24px;
+  line-height: 1.05;
+}
+
+.hr-month-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hr-month-card.pagado,
+.hr-month-card.confirmada {
+  border-color: #9bd8c2;
+  background: #f1fbf6;
+}
+
+.hr-month-card.pendiente {
+  border-color: #f2d79a;
+  background: #fff9e8;
+}
+
+.hr-month-card.cancelada {
+  border-color: #efb4ad;
+  background: #fff1f0;
+}
+
+.hr-tab-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 12px 30px rgba(22, 38, 31, .08);
+}
+
+.hr-tab {
+  min-height: 38px;
+  border: 1px solid #cde8da;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: var(--green-dark);
+  background: #e8f5ee;
+  font-weight: 850;
+}
+
+.hr-tab.active {
+  color: #fff;
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.hr-tab-panel {
+  display: none;
+}
+
+.hr-tab-panel.active {
+  display: grid;
 }
 
 .commission-table {
