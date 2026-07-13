@@ -426,6 +426,7 @@ let selectedTooth = null;
 let currentUser = null;
 let selectedUserId = "admin";
 let editingUserId = null;
+let activeHrTab = "payroll";
 let editingPatientId = null;
 let editingAppointmentId = null;
 let patientCameraStream = null;
@@ -1806,8 +1807,12 @@ function bindForms() {
     persistAndRender();
   });
 
+  document.querySelectorAll("[data-hr-tab]").forEach((button) => {
+    button.addEventListener("click", () => activateHrTab(button.dataset.hrTab));
+  });
+
   document.getElementById("printClinicalRecord").addEventListener("click", () => window.print());
-  document.getElementById("printReports").addEventListener("click", () => window.print());
+  document.getElementById("printReports").addEventListener("click", printReports);
   document.getElementById("exportReports").addEventListener("click", exportReportsCsv);
   document.getElementById("reportFilterForm").addEventListener("change", renderReports);
   document.getElementById("reportFilterForm").addEventListener("submit", (event) => {
@@ -2283,6 +2288,7 @@ function renderHrPanel() {
   const payrollItems = normalizedPayroll().map(payrollDisplayItem);
   const payrollTotal = payrollItems.reduce((sum, item) => sum + payrollNet(item), 0);
   const pendingPayroll = payrollItems.filter((item) => item.status !== "Pagado").length;
+  const monthPrefix = selectedPayrollPeriod();
   state.hrAttendance ||= [];
   state.hrVacations ||= [];
   state.hrShifts ||= [];
@@ -2294,6 +2300,14 @@ function renderHrPanel() {
     ["Nómina neta", currency.format(payrollTotal)],
     ["Pagos pendientes", pendingPayroll]
   ].map(panelCardTemplate).join("");
+
+  document.getElementById("hrMonthlySummary").innerHTML = [
+    ["Nómina mensual", currency.format(payrollTotal), `${payrollItems.filter((item) => item.status === "Pagado").length} pagados`, "pagado"],
+    ["Asistencia", state.hrAttendance.filter((item) => item.date?.startsWith(monthPrefix)).length, "Registros del mes", "confirmada"],
+    ["Vacaciones", state.hrVacations.filter((item) => item.start?.startsWith(monthPrefix) || item.status === "Solicitada").length, "Solicitudes y ausencias", "pendiente"],
+    ["Turnos", state.hrShifts.length || shiftCount, "Asignaciones activas", "confirmada"],
+    ["Evaluaciones", state.hrEvaluations.filter((item) => item.date?.startsWith(monthPrefix)).length, "Evaluaciones del mes", "pendiente"]
+  ].map(hrMonthlyCardTemplate).join("");
 
   renderPanelModules("hrPanelModules", "hrPanel");
 
@@ -2325,6 +2339,7 @@ function renderHrPanel() {
 
   renderHrControls();
   renderPayroll(payrollItems);
+  activateHrTab(activeHrTab);
 }
 
 function renderLaboratoryPanel() {
@@ -5000,6 +5015,129 @@ function renderReports() {
   renderPosInvoiceReport(billablePayments);
 }
 
+function renderReportCharts(payments, appointments) {
+  const incomeByDay = groupPaymentTotals(payments, (payment) => payment.date || "Sin fecha");
+  const byMethod = groupPaymentTotals(payments, (payment) => payment.method || "Sin metodo");
+  const byDoctor = doctors.reduce((summary, doctor) => {
+    const doctorPayments = payments.filter((payment) => (payment.attendedDoctorId || payment.doctorId) === doctor.id);
+    const doctorAppointments = appointments.filter((appointment) => appointment.doctorId === doctor.id);
+    summary[doctor.name] = {
+      label: doctor.name,
+      total: doctorPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
+      count: doctorAppointments.length
+    };
+    return summary;
+  }, {});
+
+  renderSimpleBarChart("incomeByDayChart", Object.values(incomeByDay)
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .slice(-10)
+    .map((item) => ({ label: item.label === "Sin fecha" ? item.label : formatDate(item.label), value: item.total, detail: `${item.count} docs`, money: true })));
+
+  renderSimpleBarChart("paymentMethodChart", Object.values(byMethod)
+    .sort((a, b) => b.total - a.total)
+    .map((item) => ({ label: item.label, value: item.total, detail: `${item.count} docs`, money: true })));
+
+  renderSimpleBarChart("doctorProductivityChart", Object.values(byDoctor)
+    .sort((a, b) => (b.total + b.count) - (a.total + a.count))
+    .map((item) => ({ label: item.label, value: item.total || item.count, detail: `${item.count} citas - ${currency.format(item.total)}`, money: Boolean(item.total) })));
+}
+
+function renderSimpleBarChart(containerId, rows) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const max = Math.max(...rows.map((row) => Number(row.value) || 0), 1);
+  container.innerHTML = rows.length
+    ? rows.map((row) => {
+        const percent = Math.max(4, Math.round(((Number(row.value) || 0) / max) * 100));
+        return `
+          <article class="simple-chart-row">
+            <div>
+              <strong>${escapeHtml(row.label)}</strong>
+              <span>${escapeHtml(row.detail || "")}</span>
+            </div>
+            <div class="simple-chart-track">
+              <i style="width:${percent}%"></i>
+            </div>
+            <b>${row.money ? currency.format(row.value || 0) : row.value || 0}</b>
+          </article>
+        `;
+      }).join("")
+    : emptyState("No hay datos para graficar.");
+}
+
+function exportReportsCsv() {
+  const filters = reportFilters();
+  const payments = activeBillingPayments()
+    .filter((payment) => inReportRange(payment.date, filters))
+    .filter((payment) => filters.type !== "laboratorio" || payment.type === "Laboratorio" || payment.laboratoryRequestId)
+    .filter((payment) => filters.type !== "doctores" || payment.attendedDoctorId || payment.doctorId)
+    .filter((payment) => filters.doctor === "all" || (payment.attendedDoctorId || payment.doctorId) === filters.doctor)
+    .filter((payment) => filters.cashier === "all" || (payment.cashierId || payment.createdBy) === filters.cashier)
+    .filter((payment) => filters.invoiceType === "all" || normalizeText(payment.invoiceType || "Consumidor Final") === normalizeText(filters.invoiceType));
+  const rows = [
+    ["Fecha", "Factura", "Tipo factura", "Paciente", "Doctor", "Cajero", "Metodo", "Concepto", "Monto", "Estado"],
+    ...payments.map((payment) => [
+      payment.date,
+      payment.invoiceNumber || payment.receiptNumber || "",
+      payment.invoiceType || "Consumidor Final",
+      patientById(payment.patientId).name,
+      paymentDoctorLabel(payment),
+      paymentCashierLabel(payment),
+      payment.method || "",
+      payment.concept || "",
+      Number(payment.amount || 0),
+      payment.invoiceStatus || "Pagada"
+    ])
+  ];
+  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `novaclinic-reporte-${filters.start}-${filters.end}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function printReports() {
+  const filters = reportFilters();
+  const report = document.getElementById("reports").cloneNode(true);
+  report.querySelectorAll("form, .report-actions, button").forEach((item) => item.remove());
+  const printWindow = window.open("", "_blank", "width=1200,height=900");
+  if (!printWindow) {
+    alert("Permita ventanas emergentes para imprimir el reporte.");
+    return;
+  }
+  printWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>Reporte gerencial NovaClinic</title>
+        <link rel="stylesheet" href="styles.css">
+        <style>
+          @page { size: letter; margin: 12mm; }
+          body { width: auto; min-width: 0; margin: 0; background: #fff; color: #18221d; font-family: Inter, Segoe UI, Arial, sans-serif; }
+          .view { display: block !important; }
+          .report-hero { box-shadow: none; margin-bottom: 14px; }
+          .report-hero::after { content: "Periodo: ${escapeHtml(filters.start)} a ${escapeHtml(filters.end)}"; display: block; margin-top: 8px; color: #66746b; font-weight: 800; }
+          .report-command-grid, .pos-report-summary { grid-template-columns: repeat(4, 1fr); }
+          .report-chart-grid, .report-layout { grid-template-columns: 1fr; }
+          .pos-ticket-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .panel, .report-metric-card, .pos-summary-card, .report-chart-card { box-shadow: none; break-inside: avoid; }
+        </style>
+      </head>
+      <body>${report.outerHTML}</body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => printWindow.print(), 300);
+}
+
+function csvCell(valueText) {
+  return `"${String(valueText ?? "").replaceAll('"', '""')}"`;
+}
+
 function renderPosInvoiceReport(payments = activeBillingPayments()) {
   const posInvoices = payments.filter(isPosInvoice);
   const total = posInvoices.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
@@ -5089,7 +5227,10 @@ function reportFilters() {
   return {
     start: document.getElementById("reportStartDate")?.value || `${todayIso.slice(0, 8)}01`,
     end: document.getElementById("reportEndDate")?.value || todayIso,
-    type: document.getElementById("reportTypeFilter")?.value || "general"
+    type: document.getElementById("reportTypeFilter")?.value || "general",
+    doctor: document.getElementById("reportDoctorFilter")?.value || "all",
+    cashier: document.getElementById("reportCashierFilter")?.value || "all",
+    invoiceType: document.getElementById("reportInvoiceTypeFilter")?.value || "all"
   };
 }
 

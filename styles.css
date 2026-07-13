@@ -392,11 +392,11 @@ p {
 .compact-field select {
   height: 40px;
   min-width: 150px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0 11px;
   background: #fff;
-  color: var(--text);
+  color: var(--ink);
 }
 
 .doctor-badge {
@@ -564,10 +564,14 @@ p {
 }
 
 .report-filter-bar {
-  display: flex;
-  align-items: end;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
+  width: min(980px, 100%);
+  padding: 12px;
+  border: 1px solid #d4e4dc;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .72);
 }
 
 .report-filter-bar label {
@@ -581,12 +585,21 @@ p {
 .report-filter-bar input,
 .report-filter-bar select {
   height: 40px;
-  min-width: 145px;
-  border: 1px solid var(--border);
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0 11px;
   background: #fff;
-  color: var(--text);
+  color: var(--ink);
+}
+
+.report-actions {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .report-command-grid,
@@ -606,6 +619,85 @@ p {
   grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr);
   gap: 18px;
   margin-bottom: 18px;
+}
+
+.report-chart-panel {
+  margin-bottom: 18px;
+}
+
+.report-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.report-chart-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.report-chart-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.simple-chart {
+  display: grid;
+  gap: 10px;
+}
+
+.simple-chart-row {
+  display: grid;
+  grid-template-columns: minmax(96px, .9fr) minmax(120px, 1.2fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.simple-chart-row div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.simple-chart-row strong,
+.simple-chart-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.simple-chart-row strong {
+  font-size: 12px;
+}
+
+.simple-chart-row span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.simple-chart-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eef3f0;
+}
+
+.simple-chart-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--green), #4f8df7);
+}
+
+.simple-chart-row b {
+  justify-self: end;
+  font-size: 12px;
 }
 
 .report-metric-card,
@@ -882,11 +974,11 @@ p {
 .permission-toolbar select,
 .permission-scope select {
   height: 40px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0 11px;
   background: #fff;
-  color: var(--text);
+  color: var(--ink);
 }
 
 .permission-scope {
@@ -2806,10 +2898,15 @@ dialog::backdrop {
   .panel-card-grid,
   .report-command-grid,
   .pos-report-summary,
+  .report-chart-grid,
   .module-grid,
   .billing-summary,
   .cards-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .report-filter-bar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .content-grid,
@@ -2875,6 +2972,7 @@ dialog::backdrop {
   .panel-card-grid,
   .report-command-grid,
   .pos-report-summary,
+  .report-chart-grid,
   .module-grid,
   .billing-summary,
   .cards-grid,
@@ -2882,6 +2980,14 @@ dialog::backdrop {
   .user-directory-summary,
   .form-grid,
   .clinical-form {
+    grid-template-columns: 1fr;
+  }
+
+  .report-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .simple-chart-row {
     grid-template-columns: 1fr;
   }
 

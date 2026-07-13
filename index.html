@@ -166,6 +166,7 @@
             </div>
           </div>
           <div class="panel-card-grid" id="hrPanelCards"></div>
+          <div class="panel-card-grid hr-monthly-summary" id="hrMonthlySummary"></div>
           <div class="module-grid compact" id="hrPanelModules"></div>
           <div class="content-grid">
             <section class="panel wide">
@@ -187,7 +188,151 @@
               <div class="alert-list" id="hrNotes"></div>
             </section>
           </div>
-          <section class="panel payroll-section">
+          <div class="hr-tab-bar" id="hrTabBar" role="tablist" aria-label="Módulos de Recursos Humanos">
+            <button class="hr-tab active" data-hr-tab="payroll" type="button">Nómina</button>
+            <button class="hr-tab" data-hr-tab="attendance" type="button">Asistencia</button>
+            <button class="hr-tab" data-hr-tab="vacations" type="button">Vacaciones</button>
+            <button class="hr-tab" data-hr-tab="shifts" type="button">Turnos</button>
+            <button class="hr-tab" data-hr-tab="evaluations" type="button">Evaluaciones</button>
+          </div>
+          <section class="panel payroll-panel hr-tab-panel active" data-hr-panel="payroll">
+            <div class="panel-header">
+              <div>
+                <h2>NÃ³mina</h2>
+                <p>Personal administrativo por salario fijo y doctores por comisiÃ³n de puntos.</p>
+              </div>
+              <label class="compact-field">
+                PerÃ­odo
+                <input id="payrollPeriod" type="month">
+              </label>
+              <button class="ghost-button" id="markPayrollPaid" type="button">Marcar nÃ³mina pagada</button>
+              <button class="primary-button" id="processPayrollMonth" type="button">Procesar nÃ³mina del mes</button>
+            </div>
+            <div class="panel-card-grid" id="payrollSummary"></div>
+            <section class="payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>Novedades de nÃ³mina</h3>
+                  <p>Registra ingresos, descuentos, ausencias, avances y ajustes antes de procesar.</p>
+                </div>
+              </div>
+              <form class="inline-form" id="payrollNoveltyForm">
+                <select id="payrollNoveltyUser" required></select>
+                <select id="payrollNoveltyType" required>
+                  <option value="Ingreso">Ingreso adicional</option>
+                  <option value="Descuento">Descuento</option>
+                  <option value="Ausencia">Ausencia</option>
+                  <option value="Avance">Avance</option>
+                  <option value="Ajuste">Ajuste</option>
+                </select>
+                <input id="payrollNoveltyPeriod" type="month">
+                <input id="payrollNoveltyAmount" type="number" min="0" step="100" placeholder="Monto" required>
+                <input id="payrollNoveltyNote" placeholder="Detalle de la novedad" required>
+                <button class="primary-button" type="submit">Aplicar novedad</button>
+              </form>
+              <div class="table-panel">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Empleado</th>
+                      <th>Tipo</th>
+                      <th>Monto</th>
+                      <th>Detalle</th>
+                      <th>PerÃ­odo</th>
+                      <th>Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody id="payrollNoveltyTable"></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="payroll-section doctor-payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>NÃ³mina doctores</h3>
+                  <p>Comisiones por puntos de seguros y procedimientos completados.</p>
+                </div>
+              </div>
+              <div class="panel-card-grid compact-payroll-summary" id="doctorPayrollSummary"></div>
+              <div class="table-panel commission-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Procedimiento</th>
+                    <th>Valor en punto</th>
+                    <th>Valor en dinero</th>
+                  </tr>
+                </thead>
+                <tbody id="procedurePointTable"></tbody>
+              </table>
+              </div>
+              <div class="table-panel">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Doctor</th>
+                      <th>Especialidad</th>
+                      <th>Puntos</th>
+                      <th>Procedimientos</th>
+                      <th>ComisiÃ³n</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="doctorPayrollTable"></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="payroll-section admin-payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>NÃ³mina administrativa</h3>
+                  <p>Personal con salario fijo, bonos y deducciones.</p>
+                </div>
+              </div>
+              <div class="panel-card-grid compact-payroll-summary" id="adminPayrollSummary"></div>
+              <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Rol</th>
+                    <th>Salario base</th>
+                    <th>Bonos</th>
+                    <th>Deducciones</th>
+                    <th>Neto</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="adminPayrollTable"></tbody>
+              </table>
+              </div>
+            </section>
+            <section class="payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>Historial de procesamiento</h3>
+                  <p>Meses procesados, totales pagados y responsable del cierre de nÃ³mina.</p>
+                </div>
+              </div>
+              <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>PerÃ­odo</th>
+                    <th>Administrativa</th>
+                    <th>Doctores</th>
+                    <th>Novedades</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Procesado por</th>
+                  </tr>
+                </thead>
+                <tbody id="payrollRunTable"></tbody>
+              </table>
+              </div>
+            </section>
+          </section>
+          <section class="panel payroll-section hr-tab-panel" data-hr-panel="attendance">
             <div class="panel-header">
               <div>
                 <h2>Asistencia</h2>
@@ -225,7 +370,7 @@
               </table>
             </div>
           </section>
-          <section class="panel payroll-section">
+          <section class="panel payroll-section hr-tab-panel" data-hr-panel="vacations">
             <div class="panel-header">
               <div>
                 <h2>Vacaciones</h2>
@@ -268,7 +413,7 @@
               </table>
             </div>
           </section>
-          <section class="panel payroll-section">
+          <section class="panel payroll-section hr-tab-panel" data-hr-panel="shifts">
             <div class="panel-header">
               <div>
                 <h2>Turnos</h2>
@@ -308,7 +453,7 @@
               </table>
             </div>
           </section>
-          <section class="panel payroll-section">
+          <section class="panel payroll-section hr-tab-panel" data-hr-panel="evaluations">
             <div class="panel-header">
               <div>
                 <h2>Evaluaciones</h2>
