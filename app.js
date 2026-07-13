@@ -2905,6 +2905,11 @@ function renderDashboard() {
     .map(dashboardMetricTemplate)
     .join("");
 
+  renderTaskFlow("doctorTaskFlow", "doctor", {
+    appointmentCount: todayAppointments.length,
+    pendingOdontograms: doctorTreatments.filter((treatment) => treatment.progress < 100).length
+  });
+
   document.getElementById("dashboardAlertStrip").innerHTML = [
     {
       label: "Stock bajo",
@@ -2986,6 +2991,69 @@ function dashboardAlertTemplate(alert) {
   `;
 }
 
+function renderTaskFlow(containerId, flowKey, stats = {}) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const tasks = taskFlowItems(flowKey, stats).filter((task) => canView(task.view));
+  container.classList.toggle("is-empty", !tasks.length);
+  container.innerHTML = tasks.length
+    ? `
+      <div class="task-flow-heading">
+        <span class="eyebrow">Qué hacer ahora</span>
+        <strong>${escapeHtml(taskFlowTitle(flowKey))}</strong>
+      </div>
+      <div class="task-flow-list">
+        ${tasks.map(taskFlowButtonTemplate).join("")}
+      </div>
+    `
+    : "";
+}
+
+function taskFlowTitle(flowKey) {
+  return {
+    reception: "Flujo de recepción",
+    doctor: "Flujo clínico del doctor",
+    cash: "Flujo de caja",
+    laboratory: "Flujo de laboratorio"
+  }[flowKey] || "Flujo operativo";
+}
+
+function taskFlowItems(flowKey, stats) {
+  const flows = {
+    reception: [
+      { label: "Buscar paciente", detail: "Abrir expedientes y validar datos", view: "patients", status: "Confirmada" },
+      { label: "Crear cita", detail: `${stats.todayAppointments || 0} citas hoy`, view: "agenda", status: "Pendiente" },
+      { label: "Confirmar llegada", detail: `${stats.pendingAppointments || 0} por confirmar`, view: "agenda", status: stats.pendingAppointments ? "Pendiente" : "Confirmada" }
+    ],
+    doctor: [
+      { label: "Ver citas", detail: `${stats.appointmentCount || 0} citas propias hoy`, view: "agenda", status: stats.appointmentCount ? "Pendiente" : "Confirmada" },
+      { label: "Abrir expediente", detail: "Ficha clínica y alertas médicas", view: "patients", status: "Confirmada" },
+      { label: "Actualizar odontograma", detail: `${stats.pendingOdontograms || 0} tratamientos activos`, view: "odontogram", status: stats.pendingOdontograms ? "Pendiente" : "Confirmada" }
+    ],
+    cash: [
+      { label: "Abrir caja", detail: stats.cashOpen ? "Caja abierta" : "Requiere apertura", view: "billing", status: stats.cashOpen ? "Confirmada" : "Cancelada" },
+      { label: "Facturar", detail: "Servicios, productos o laboratorio", view: "billing", status: "Pendiente" },
+      { label: "Cobrar e imprimir", detail: `${stats.pendingInvoices || 0} balances pendientes`, view: "billing", status: stats.pendingInvoices ? "Pendiente" : "Confirmada" }
+    ],
+    laboratory: [
+      { label: "Ver solicitudes", detail: `${stats.activeRequests || 0} trabajos activos`, view: "laboratoryPanel", status: stats.activeRequests ? "Pendiente" : "Confirmada" },
+      { label: "Cambiar estado", detail: "Recibido, proceso, terminado o entregado", view: "laboratoryPanel", status: "Pendiente" },
+      { label: "Facturar al doctor", detail: `${stats.billableRequests || 0} listos para facturar`, view: "laboratoryPanel", status: stats.billableRequests ? "Pendiente" : "Confirmada" }
+    ]
+  };
+  return flows[flowKey] || [];
+}
+
+function taskFlowButtonTemplate(task) {
+  return `
+    <button class="task-flow-step" data-view-jump="${task.view}" type="button">
+      <span class="status-pill ${className(task.status)}">${escapeHtml(task.status)}</span>
+      <strong>${escapeHtml(task.label)}</strong>
+      <small>${escapeHtml(task.detail)}</small>
+    </button>
+  `;
+}
+
 function renderDashboardQuickActions() {
   const container = document.getElementById("doctorPanelModules");
   if (!container) return;
@@ -3010,6 +3078,11 @@ function renderReceptionPanel() {
     ["Pacientes registrados", state.patients.length],
     ["Balance abierto", currency.format(pendingBalance)]
   ].map(panelCardTemplate).join("");
+
+  renderTaskFlow("receptionTaskFlow", "reception", {
+    pendingAppointments,
+    todayAppointments: todayAppointments.length
+  });
 
   renderPanelModules("receptionPanelModules", "receptionPanel");
 
@@ -3155,6 +3228,11 @@ function renderLaboratoryPanel() {
     ["Rentabilidad", currency.format(profitability.reduce((sum, item) => sum + item.profit, 0))],
     ["Por vencer", dueSoon]
   ].map(panelCardTemplate).join("");
+
+  renderTaskFlow("laboratoryTaskFlow", "laboratory", {
+    activeRequests: labRequests.filter((request) => !["Entregado", "Facturado"].includes(request.status)).length,
+    billableRequests: labRequests.filter((request) => request.status === "Terminado").length
+  });
 
   renderPanelModules("laboratoryPanelModules", "laboratoryPanel");
 
@@ -4237,6 +4315,12 @@ function renderAccountingPanel() {
     ["Recibos", billablePayments.length],
     ["Método principal", topPaymentMethod(methodTotals)]
   ].map(panelCardTemplate).join("");
+
+  renderTaskFlow("cashTaskFlow", "cash", {
+    cashOpen: Boolean(currentCashOpening()),
+    pendingInvoices: billablePayments.filter((payment) => invoiceBalance(payment) > 0).length,
+    collectedToday
+  });
 
   renderPanelModules("accountingPanelModules", "accountingPanel");
 

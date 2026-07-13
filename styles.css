@@ -1699,6 +1699,78 @@ p {
   margin-bottom: 16px;
 }
 
+.task-flow-strip {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: minmax(180px, .35fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.task-flow-strip.is-empty {
+  display: none;
+}
+
+.task-flow-heading {
+  display: grid;
+  gap: 3px;
+}
+
+.task-flow-heading .eyebrow {
+  margin: 0;
+}
+
+.task-flow-heading strong {
+  font-size: 18px;
+}
+
+.task-flow-list {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.task-flow-step {
+  min-width: 0;
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+  display: grid;
+  align-content: space-between;
+  gap: 6px;
+  text-align: left;
+}
+
+.task-flow-step:hover {
+  border-color: var(--turquoise);
+  box-shadow: 0 10px 24px rgba(24, 182, 184, .12);
+}
+
+.task-flow-step strong,
+.task-flow-step small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-flow-step strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.task-flow-step small {
+  color: var(--muted);
+  line-height: 1.25;
+}
+
 .dashboard-quick-actions .module-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -3831,6 +3903,7 @@ dialog::backdrop {
   .metric-grid,
   .dashboard-alert-strip,
   .dashboard-quick-actions .module-grid,
+  .task-flow-list,
   .panel-card-grid,
   .report-command-grid,
   .pos-report-summary,
@@ -3891,6 +3964,10 @@ dialog::backdrop {
     flex-direction: column;
   }
 
+  .task-flow-strip {
+    grid-template-columns: 1fr;
+  }
+
   .role-dashboard-actions {
     justify-content: flex-start;
   }
@@ -3948,6 +4025,7 @@ dialog::backdrop {
   .metric-grid,
   .dashboard-alert-strip,
   .dashboard-quick-actions .module-grid,
+  .task-flow-list,
   .panel-card-grid,
   .report-command-grid,
   .pos-report-summary,
