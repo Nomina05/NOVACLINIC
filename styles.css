@@ -10,6 +10,18 @@
   --blue: #0b4f8a;
   --amber: #a56a00;
   --red: #b43b3b;
+  --success-bg: #e7f8f4;
+  --success-border: #8ed8ca;
+  --success-ink: #075c61;
+  --warning-bg: #fff5d8;
+  --warning-border: #f0c86a;
+  --warning-ink: #6b5200;
+  --danger-bg: #ffe8e5;
+  --danger-border: #ee9f98;
+  --danger-ink: #84322e;
+  --info-bg: #e8f6fb;
+  --info-border: #9edce4;
+  --info-ink: #0b4f8a;
   --shadow: 0 14px 34px rgba(11, 37, 69, .08);
   --turquoise: #18b6b8;
   --navy: #0b2545;
@@ -446,6 +458,24 @@ h2 {
   font-size: 20px;
 }
 
+.panel-header h2,
+.section-toolbar h2 {
+  position: relative;
+  padding-left: 12px;
+}
+
+.panel-header h2::before,
+.section-toolbar h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .18em;
+  bottom: .18em;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--turquoise);
+}
+
 p {
   color: var(--muted);
 }
@@ -506,23 +536,23 @@ p {
 }
 
 .top-notification.ok {
-  border-color: #cdece4;
-  background: #f4fbf8;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .top-notification.info {
-  border-color: #cde8f2;
-  background: #f3f9fd;
+  border-color: var(--info-border);
+  background: var(--info-bg);
 }
 
 .top-notification.warning {
-  border-color: #f1dfad;
-  background: #fff9e8;
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }
 
 .top-notification.danger {
-  border-color: #f2c9c9;
-  background: #fff4f4;
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
 }
 
 .compact-field {
@@ -1724,6 +1754,7 @@ p {
 }
 
 .dashboard-alert-card {
+  position: relative;
   width: 100%;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1736,6 +1767,43 @@ p {
   box-shadow: var(--shadow);
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
+}
+
+.dashboard-alert-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--success-border);
+}
+
+.dashboard-alert-card:has(.status-pill.pendiente),
+.dashboard-alert-card:has(.status-pill.lista-de-espera),
+.dashboard-alert-card:has(.status-pill.registrado) {
+  border-color: var(--warning-border);
+  background: linear-gradient(90deg, var(--warning-bg), #fff);
+}
+
+.dashboard-alert-card:has(.status-pill.pendiente)::before,
+.dashboard-alert-card:has(.status-pill.lista-de-espera)::before,
+.dashboard-alert-card:has(.status-pill.registrado)::before {
+  background: var(--warning-border);
+}
+
+.dashboard-alert-card:has(.status-pill.cancelada),
+.dashboard-alert-card:has(.status-pill.no-asistio),
+.dashboard-alert-card:has(.status-pill.ausente),
+.dashboard-alert-card:has(.status-pill.caries) {
+  border-color: var(--danger-border);
+  background: linear-gradient(90deg, var(--danger-bg), #fff);
+}
+
+.dashboard-alert-card:has(.status-pill.cancelada)::before,
+.dashboard-alert-card:has(.status-pill.no-asistio)::before,
+.dashboard-alert-card:has(.status-pill.ausente)::before,
+.dashboard-alert-card:has(.status-pill.caries)::before {
+  background: var(--danger-border);
 }
 
 .dashboard-alert-card strong {
@@ -1804,6 +1872,54 @@ p {
   display: grid;
   align-content: space-between;
   gap: 12px;
+  overflow: hidden;
+}
+
+.executive-metric::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: var(--info-border);
+}
+
+.executive-metric:has(.status-pill.confirmada),
+.executive-metric:has(.status-pill.pagado),
+.executive-metric:has(.status-pill.atendida) {
+  border-color: var(--success-border);
+  background: linear-gradient(180deg, #fff, var(--success-bg));
+}
+
+.executive-metric:has(.status-pill.confirmada)::before,
+.executive-metric:has(.status-pill.pagado)::before,
+.executive-metric:has(.status-pill.atendida)::before {
+  background: var(--success-border);
+}
+
+.executive-metric:has(.status-pill.pendiente),
+.executive-metric:has(.status-pill.registrado),
+.executive-metric:has(.status-pill.lista-de-espera) {
+  border-color: var(--warning-border);
+  background: linear-gradient(180deg, #fff, var(--warning-bg));
+}
+
+.executive-metric:has(.status-pill.pendiente)::before,
+.executive-metric:has(.status-pill.registrado)::before,
+.executive-metric:has(.status-pill.lista-de-espera)::before {
+  background: var(--warning-border);
+}
+
+.executive-metric:has(.status-pill.cancelada),
+.executive-metric:has(.status-pill.no-asistio),
+.executive-metric:has(.status-pill.ausente) {
+  border-color: var(--danger-border);
+  background: linear-gradient(180deg, #fff, var(--danger-bg));
+}
+
+.executive-metric:has(.status-pill.cancelada)::before,
+.executive-metric:has(.status-pill.no-asistio)::before,
+.executive-metric:has(.status-pill.ausente)::before {
+  background: var(--danger-border);
 }
 
 .metric-card span {
@@ -1871,6 +1987,7 @@ p {
 .schedule-item,
 .ledger-item,
 .clinical-item {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
@@ -1879,6 +1996,67 @@ p {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fbfdff;
+}
+
+.alert-item {
+  overflow: hidden;
+}
+
+.alert-item::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--info-border);
+}
+
+.alert-item:has(.status-pill.confirmada),
+.alert-item:has(.status-pill.pagado),
+.alert-item:has(.status-pill.atendida),
+.alert-item:has(.status-pill.sano),
+.alert-item:has(.status-pill.ok) {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.alert-item:has(.status-pill.confirmada)::before,
+.alert-item:has(.status-pill.pagado)::before,
+.alert-item:has(.status-pill.atendida)::before,
+.alert-item:has(.status-pill.sano)::before,
+.alert-item:has(.status-pill.ok)::before {
+  background: var(--success-border);
+}
+
+.alert-item:has(.status-pill.pendiente),
+.alert-item:has(.status-pill.lista-de-espera),
+.alert-item:has(.status-pill.registrado),
+.alert-item:has(.status-pill.restaurado),
+.alert-item:has(.status-pill.corona) {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.alert-item:has(.status-pill.pendiente)::before,
+.alert-item:has(.status-pill.lista-de-espera)::before,
+.alert-item:has(.status-pill.registrado)::before,
+.alert-item:has(.status-pill.restaurado)::before,
+.alert-item:has(.status-pill.corona)::before {
+  background: var(--warning-border);
+}
+
+.alert-item:has(.status-pill.cancelada),
+.alert-item:has(.status-pill.no-asistio),
+.alert-item:has(.status-pill.ausente),
+.alert-item:has(.status-pill.caries) {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.alert-item:has(.status-pill.cancelada)::before,
+.alert-item:has(.status-pill.no-asistio)::before,
+.alert-item:has(.status-pill.ausente)::before,
+.alert-item:has(.status-pill.caries)::before {
+  background: var(--danger-border);
 }
 
 .lab-request-item {
@@ -2015,9 +2193,18 @@ p {
 .status-pill.pagado,
 .status-pill.sano,
 .status-pill.llego,
-.status-pill.atendida {
-  color: #075c61;
-  background: #e1f7f8;
+.status-pill.atendida,
+.status-pill.acceso-completo,
+.status-pill.clinico,
+.status-pill.front-desk,
+.status-pill.rrhh,
+.status-pill.laboratorio,
+.status-pill.caja,
+.status-pill.activo,
+.status-pill.abierta {
+  color: var(--success-ink);
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
 }
 
 .status-pill.pendiente,
@@ -2025,17 +2212,31 @@ p {
 .status-pill.endodoncia,
 .status-pill.lista-de-espera,
 .status-pill.corona,
-.status-pill.registrado {
-  color: #6b5200;
-  background: #fff6d8;
+.status-pill.registrado,
+.status-pill.procesada,
+.status-pill.solicitado,
+.status-pill.en-proceso,
+.status-pill.emitida,
+.status-pill.parcialmente-pagada,
+.status-pill.abono,
+.status-pill.sin-abrir {
+  color: var(--warning-ink);
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
 }
 
 .status-pill.cancelada,
 .status-pill.no-asistio,
 .status-pill.caries,
-.status-pill.ausente {
-  color: #84322e;
-  background: #ffe8e5;
+.status-pill.ausente,
+.status-pill.cerrada,
+.status-pill.anulada,
+.status-pill.rechazada,
+.status-pill.vencido,
+.status-pill.stock-bajo {
+  color: var(--danger-ink);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
 }
 
 .agenda-tools {
