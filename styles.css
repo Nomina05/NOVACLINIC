@@ -1583,6 +1583,36 @@ tbody tr:hover {
   gap: 8px;
 }
 
+.medical-alert-mini,
+.medical-alert-text,
+.medical-alert-banner {
+  display: block;
+  color: #8a1f11;
+  font-weight: 850;
+}
+
+.medical-alert-mini {
+  width: fit-content;
+  margin-top: 5px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #fff0ec;
+  font-size: 11px;
+}
+
+.medical-alert-text {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.medical-alert-banner {
+  padding: 10px 12px;
+  border: 1px solid #f2b6a8;
+  border-radius: 8px;
+  background: #fff6f3;
+}
+
 .patient-record-modal {
   max-height: min(86vh, 900px);
   overflow: auto;
@@ -1635,6 +1665,14 @@ tbody tr:hover {
 
 .plate-form {
   margin: 4px 0 8px;
+}
+
+.patient-file-form {
+  margin: 4px 0 10px;
+}
+
+.timeline-item .status-pill {
+  align-self: start;
 }
 
 .plate-history {

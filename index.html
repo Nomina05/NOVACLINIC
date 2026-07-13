@@ -655,17 +655,30 @@
                 <option value="24 horas antes">24 horas antes</option>
                 <option value="48 horas antes">48 horas antes</option>
               </select>
+              <label class="checkbox-field compact-check">
+                <input id="appointmentWaitlist" type="checkbox">
+                <span>Lista de espera</span>
+              </label>
               <button class="primary-button" id="saveAppointmentButton" type="submit">Agendar</button>
             </form>
           </div>
           <div class="agenda-tools">
             <label>Fecha<input id="agendaDateFilter" type="date"></label>
+            <label>Vista
+              <select id="agendaViewFilter">
+                <option value="day">Diaria</option>
+                <option value="week">Semanal</option>
+                <option value="month">Mensual</option>
+              </select>
+            </label>
             <label>Estado
               <select id="agendaStatusFilter">
                 <option value="Todas">Todas</option>
                 <option>Pendiente</option>
                 <option>Confirmada</option>
                 <option>Atendida</option>
+                <option>No asistió</option>
+                <option>Lista de espera</option>
                 <option>Cancelada</option>
               </select>
             </label>

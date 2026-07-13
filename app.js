@@ -226,6 +226,8 @@ const seedState = {
   evolutions: [],
   clinicalDocuments: [],
   patientPlates: [],
+  patientAttachments: [],
+  patientConsents: [],
   selfServiceRequests: [],
   inventory: [],
   settings: {},
@@ -537,6 +539,8 @@ function normalizeState(loadedState) {
   next.hrShifts = Array.isArray(next.hrShifts) && next.hrShifts.length ? next.hrShifts : cloneSeed().hrShifts;
   next.hrEvaluations ||= [];
   next.patientPlates ||= [];
+  next.patientAttachments ||= [];
+  next.patientConsents ||= [];
   next.selfServiceRequests ||= [];
   return next;
 }
@@ -645,6 +649,7 @@ function bindNavigation() {
   document.getElementById("userSearch").addEventListener("input", renderUsersPanel);
   document.getElementById("userRoleFilter").addEventListener("change", renderUsersPanel);
   document.getElementById("agendaDateFilter").addEventListener("change", renderAgenda);
+  document.getElementById("agendaViewFilter").addEventListener("change", renderAgenda);
   document.getElementById("agendaStatusFilter").addEventListener("change", renderAgenda);
   document.getElementById("todayAgendaButton").addEventListener("click", () => {
     document.getElementById("agendaDateFilter").value = todayIso;
@@ -970,6 +975,42 @@ function patientDocumentLabel(patient) {
   return patient?.document || "No registrado";
 }
 
+function patientSearchHaystack(patient) {
+  return normalizeText([
+    patient.name,
+    patient.code,
+    patient.phone,
+    patient.email,
+    patient.documentType,
+    patient.nationality,
+    patient.document,
+    patientDocumentLabel(patient),
+    patient.emergencyName,
+    patient.emergencyPhone,
+    patient.emergencyRelation,
+    patient.insurance,
+    patient.bloodType,
+    patient.allergies,
+    patient.conditions,
+    patient.medications,
+    patient.clinicalHistory,
+    patient.notes
+  ].join(" "));
+}
+
+function hasMedicalAlert(patient) {
+  const values = [patient?.allergies, patient?.conditions, patient?.medications].map((item) => normalizeText(item));
+  return values.some((item) => item && !["ninguna", "ninguno", "sin registro", "sin condiciones registradas", "sin condiciones sistemicas reportadas"].includes(item));
+}
+
+function patientMedicalAlertText(patient) {
+  const parts = [];
+  if (normalizeText(patient?.allergies) && normalizeText(patient?.allergies) !== "ninguna") parts.push(`Alergias: ${patient.allergies}`);
+  if (normalizeText(patient?.conditions) && !["sin registro", "sin condiciones registradas", "sin condiciones sistemicas reportadas"].includes(normalizeText(patient.conditions))) parts.push(`Condiciones: ${patient.conditions}`);
+  if (normalizeText(patient?.medications) && !["ninguno", "sin registro"].includes(normalizeText(patient.medications))) parts.push(`Medicamentos: ${patient.medications}`);
+  return parts.join(" | ") || "Sin alertas";
+}
+
 function normalizeDocumentType(documentType) {
   if (documentType === "Licencia médica") return "Licencia de conducir";
   return documentType || "Cédula";
@@ -1013,6 +1054,7 @@ function openAppointmentForm(appointmentId) {
   document.getElementById("appointmentDuration").value = appointment.duration || 30;
   document.getElementById("appointmentType").value = appointment.type;
   document.getElementById("appointmentReminder").value = appointment.reminder || "Sin recordatorio";
+  document.getElementById("appointmentWaitlist").checked = appointment.status === "Lista de espera";
   document.getElementById("saveAppointmentButton").textContent = "Guardar cita";
 }
 
@@ -1020,7 +1062,7 @@ function saveAppointmentFromForm() {
   const appointment = state.appointments.find((item) => item.id === editingAppointmentId) || {
     id: makeId(),
     createdBy: currentUser?.id || "sin-usuario",
-    status: "Pendiente"
+    status: document.getElementById("appointmentWaitlist").checked ? "Lista de espera" : "Pendiente"
   };
   appointment.patientId = value("appointmentPatient");
   appointment.doctorId = value("appointmentDoctor");
@@ -1029,6 +1071,11 @@ function saveAppointmentFromForm() {
   appointment.duration = Number(value("appointmentDuration")) || 30;
   appointment.type = value("appointmentType");
   appointment.reminder = value("appointmentReminder");
+  if (document.getElementById("appointmentWaitlist").checked) {
+    appointment.status = "Lista de espera";
+  } else if (appointment.status === "Lista de espera") {
+    appointment.status = "Pendiente";
+  }
   if (!state.appointments.some((item) => item.id === appointment.id)) {
     state.appointments.push(appointment);
   }
@@ -1177,6 +1224,7 @@ function bindForms() {
     const savedAppointment = saveAppointmentFromForm();
     event.target.reset();
     document.getElementById("appointmentDate").value = todayIso;
+    document.getElementById("appointmentWaitlist").checked = false;
     document.getElementById("agendaDateFilter").value = savedAppointment.date || todayIso;
     persistAndRender();
   });
@@ -1464,6 +1512,7 @@ function bindForms() {
       title: value("clinicalDocumentTitle"),
       note: value("clinicalDocumentNote"),
       date: todayIso,
+      createdAt: new Date().toISOString(),
       createdBy: currentUser?.id || "sin-usuario"
     });
     event.target.reset();
@@ -2636,26 +2685,9 @@ function moduleButtonTemplate(viewName) {
 
 function renderPatients() {
   ensurePatientCodes();
-  const term = document.getElementById("globalSearch").value.trim().toLowerCase();
+  const term = normalizeText(document.getElementById("globalSearch").value);
   const patients = state.patients.filter((patient) => {
-    const haystack = [
-      patient.name,
-      patient.code,
-      patient.phone,
-      patient.email,
-      patient.documentType,
-      patient.nationality,
-      patient.document,
-      patient.emergencyName,
-      patient.emergencyPhone,
-      patient.emergencyRelation,
-      patient.insurance,
-      patient.allergies,
-      patient.conditions,
-      patient.medications,
-      patient.clinicalHistory,
-      patient.notes
-    ].join(" ").toLowerCase();
+    const haystack = patientSearchHaystack(patient);
     return haystack.includes(term);
   });
 
@@ -2668,6 +2700,7 @@ function renderPatients() {
             <div class="patient-name">
               <strong>${escapeHtml(patient.name)}</strong>
               <small>${escapeHtml(patient.code || "")} · ${escapeHtml(patient.documentType || "Documento")}: ${escapeHtml(patientDocumentLabel(patient))}</small>
+              ${hasMedicalAlert(patient) ? `<span class="medical-alert-mini">Alerta médica</span>` : ""}
             </div>
           </div>
         </td>
@@ -2680,7 +2713,10 @@ function renderPatients() {
           </div>
         </td>
         <td>${escapeHtml(patient.insurance)}</td>
-        <td><span class="status-pill ${patient.allergies && patient.allergies !== "Ninguna" ? "caries" : "sano"}">${escapeHtml(patient.allergies || "Ninguna")}</span></td>
+        <td>
+          <span class="status-pill ${hasMedicalAlert(patient) ? "caries" : "sano"}">${escapeHtml(patient.allergies || "Ninguna")}</span>
+          ${hasMedicalAlert(patient) ? `<small class="medical-alert-text">${escapeHtml(patientMedicalAlertText(patient))}</small>` : ""}
+        </td>
         <td>
           <div class="patient-detail">
             <span>${escapeHtml(patient.clinicalHistory || patient.notes || "Sin historial registrado")}</span>
@@ -2917,6 +2953,12 @@ function openPatientRecord(patientId) {
     .filter((payment) => payment.patientId === patientId);
   const patientDocuments = (state.clinicalDocuments || [])
     .filter((documentItem) => documentItem.patientId === patientId);
+  const patientAttachments = (state.patientAttachments || [])
+    .filter((attachment) => attachment.patientId === patientId)
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const patientConsents = (state.patientConsents || [])
+    .filter((consent) => consent.patientId === patientId)
+    .sort((a, b) => String(b.signedAt || b.createdAt).localeCompare(String(a.signedAt || a.createdAt)));
   const patientPlates = (state.patientPlates || [])
     .filter((plate) => plate.patientId === patientId)
     .sort((a, b) => String(b.takenAt).localeCompare(String(a.takenAt)));
@@ -2926,6 +2968,15 @@ function openPatientRecord(patientId) {
   const paidTotal = patientPayments.reduce((sum, payment) => sum + payment.amount, 0);
   const treatmentTotal = patientTreatments.reduce((sum, treatment) => sum + treatment.cost, 0);
   const emergency = splitEmergencyContact(patient);
+  const patientTimeline = patientTimelineItems({
+    appointments: patientAppointments,
+    treatments: patientTreatments,
+    payments: patientPayments,
+    plates: patientPlates,
+    documents: patientDocuments,
+    attachments: patientAttachments,
+    consents: patientConsents
+  });
 
   document.getElementById("patientRecordTitle").textContent = `${patient.name} · ${patient.code || ""}`;
   document.getElementById("patientRecordMeta").textContent = `${patient.documentType || "Documento"}: ${patientDocumentLabel(patient)} · ${patientAge(patient.birthdate)} · ${patient.phone}`;
@@ -2946,6 +2997,7 @@ function openPatientRecord(patientId) {
       </section>
       <section class="record-block">
         <h3>Alertas clínicas</h3>
+        ${hasMedicalAlert(patient) ? `<div class="medical-alert-banner">${escapeHtml(patientMedicalAlertText(patient))}</div>` : `<p>Sin alertas médicas activas.</p>`}
         <p>Alergias: <strong>${escapeHtml(patient.allergies || "Ninguna")}</strong></p>
         <p>Condiciones: ${escapeHtml(patient.conditions || "Sin registro")}</p>
         <p>Medicamentos: ${escapeHtml(patient.medications || "Sin registro")}</p>
@@ -2962,15 +3014,20 @@ function openPatientRecord(patientId) {
         <p>Balance: <strong>${currency.format(patient.balance)}</strong></p>
       </section>
     </div>
+    ${patientRecordSection("Histórico completo del paciente", patientTimeline, patientTimelineTemplate)}
     ${upcomingAppointmentsByDoctorSection(upcomingAppointments)}
     ${patientRecordSection("Citas", patientAppointments, appointmentRecordTemplate)}
     ${patientRecordSection("Tratamientos", patientTreatments, treatmentRecordTemplate)}
     ${patientRecordSection("Pagos y facturas", patientPayments, paymentRecordTemplate)}
     ${patientPlatesSection(patient.id, patientPlates)}
+    ${patientConsentsSection(patient.id, patientConsents)}
+    ${patientAttachmentsSection(patient.id, patientAttachments)}
     ${patientRecordSection("Documentos clínicos", patientDocuments, documentRecordTemplate)}
     ${patientRecordSection("Historial odontograma", patientDentalHistory, dentalHistoryRecordTemplate)}
   `;
   bindPatientPlateForm(patient.id);
+  bindPatientConsentForm(patient.id);
+  bindPatientAttachmentForm(patient.id);
   document.getElementById("patientRecordDialog").showModal();
 }
 
@@ -2986,6 +3043,68 @@ function patientRecordSection(title, items, template) {
         ${items.length ? items.map(template).join("") : emptyState("Sin registros.")}
       </div>
     </section>
+  `;
+}
+
+function patientTimelineItems({ appointments, treatments, payments, plates, documents, attachments, consents }) {
+  return [
+    ...appointments.map((item) => ({
+      date: `${item.date || todayIso}T${item.time || "12:00"}`,
+      type: "Cita",
+      title: item.type,
+      detail: `${doctorById(item.doctorId).name} · ${item.status}`
+    })),
+    ...treatments.map((item) => ({
+      date: `${item.start || todayIso}T12:00`,
+      type: "Tratamiento",
+      title: item.name,
+      detail: `${item.status} · ${item.progress || 0}% · ${currency.format(item.cost || 0)}`
+    })),
+    ...payments.map((item) => ({
+      date: item.createdAt || `${item.date || todayIso}T12:00`,
+      type: "Factura",
+      title: item.invoiceNumber || item.receiptNumber || "Movimiento",
+      detail: `${item.concept} · ${currency.format(item.amount || 0)} · ${item.invoiceStatus || "Pagada"}`
+    })),
+    ...plates.map((item) => ({
+      date: item.takenAt || item.createdAt,
+      type: "Placa",
+      title: item.type,
+      detail: item.note || "Sin nota"
+    })),
+    ...documents.map((item) => ({
+      date: item.createdAt || `${item.date || todayIso}T12:00`,
+      type: item.type || "Documento",
+      title: item.title,
+      detail: item.note || "Sin nota"
+    })),
+    ...attachments.map((item) => ({
+      date: item.createdAt,
+      type: "Adjunto",
+      title: item.type,
+      detail: item.note || item.fileName || "Archivo"
+    })),
+    ...consents.map((item) => ({
+      date: item.signedAt || item.createdAt,
+      type: "Consentimiento",
+      title: item.title,
+      detail: item.fileName || "Archivo firmado"
+    }))
+  ]
+    .filter((item) => item.date)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+    .slice(0, 12);
+}
+
+function patientTimelineTemplate(item) {
+  return `
+    <article class="clinical-item timeline-item">
+      <span class="status-pill confirmada">${escapeHtml(item.type)}</span>
+      <div>
+        <strong>${escapeHtml(item.title || "Registro")}</strong>
+        <p>${formatDateTime(item.date)} · ${escapeHtml(item.detail || "")}</p>
+      </div>
+    </article>
   `;
 }
 
@@ -3016,6 +3135,46 @@ function upcomingAppointmentsByDoctorSection(appointments) {
             </div>
           </article>
         `).join("") : emptyState("No hay próximas citas registradas.")}
+      </div>
+    </section>
+  `;
+}
+
+function patientConsentsSection(patientId, consents) {
+  return `
+    <section class="record-block full">
+      <h3>Consentimientos firmados</h3>
+      <form class="inline-form patient-file-form ${can("clinical-documents:create") ? "" : "permission-hidden"}" id="patientConsentForm" data-patient-id="${patientId}">
+        <input id="patientConsentTitle" placeholder="Consentimiento informado" required>
+        <input id="patientConsentSignedAt" type="datetime-local" required>
+        <input id="patientConsentFile" type="file" accept="image/*,.pdf" required>
+        <button class="primary-button" type="submit">Guardar consentimiento</button>
+      </form>
+      <div class="clinical-list">
+        ${consents.length ? consents.map(patientConsentTemplate).join("") : emptyState("Sin consentimientos firmados.")}
+      </div>
+    </section>
+  `;
+}
+
+function patientAttachmentsSection(patientId, attachments) {
+  return `
+    <section class="record-block full">
+      <h3>Adjuntos del paciente</h3>
+      <form class="inline-form patient-file-form ${can("clinical-documents:create") ? "" : "permission-hidden"}" id="patientAttachmentForm" data-patient-id="${patientId}">
+        <select id="patientAttachmentType">
+          <option>Cédula</option>
+          <option>Seguro</option>
+          <option>Receta</option>
+          <option>Documento clínico</option>
+          <option>Otro</option>
+        </select>
+        <input id="patientAttachmentNote" placeholder="Descripción del archivo">
+        <input id="patientAttachmentFile" type="file" accept="image/*,.pdf,.doc,.docx" required>
+        <button class="primary-button" type="submit">Cargar adjunto</button>
+      </form>
+      <div class="clinical-list">
+        ${attachments.length ? attachments.map(patientAttachmentTemplate).join("") : emptyState("Sin adjuntos registrados.")}
       </div>
     </section>
   `;
@@ -3060,6 +3219,84 @@ function plateRecordTemplate(plate) {
       </div>
     </article>
   `;
+}
+
+function patientConsentTemplate(consent) {
+  return `
+    <article class="clinical-item">
+      <span class="time-chip">${formatDateTime(consent.signedAt || consent.createdAt)}</span>
+      <div>
+        <strong>${escapeHtml(consent.title)}</strong>
+        <p>Firmado y cargado por ${escapeHtml(userById(consent.createdBy).name)} · ${escapeHtml(consent.fileName || "Archivo")}</p>
+        <a class="ghost-link" href="${consent.file}" target="_blank" rel="noopener">Ver consentimiento</a>
+      </div>
+    </article>
+  `;
+}
+
+function patientAttachmentTemplate(attachment) {
+  return `
+    <article class="clinical-item">
+      <span class="time-chip">${formatDateTime(attachment.createdAt)}</span>
+      <div>
+        <strong>${escapeHtml(attachment.type)}</strong>
+        <p>${escapeHtml(attachment.note || "Sin descripción")} · ${escapeHtml(attachment.fileName || "Archivo")}</p>
+        <small>Cargado por ${escapeHtml(userById(attachment.createdBy).name)}</small>
+        <a class="ghost-link" href="${attachment.file}" target="_blank" rel="noopener">Ver adjunto</a>
+      </div>
+    </article>
+  `;
+}
+
+function bindPatientConsentForm(patientId) {
+  const form = document.getElementById("patientConsentForm");
+  if (!form) return;
+  document.getElementById("patientConsentSignedAt").value = localDateTimeValue();
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!can("clinical-documents:create")) return;
+    const fileInput = document.getElementById("patientConsentFile");
+    const file = fileInput.files[0];
+    if (!file) return;
+    state.patientConsents ||= [];
+    state.patientConsents.unshift({
+      id: makeId(),
+      patientId,
+      title: value("patientConsentTitle"),
+      signedAt: value("patientConsentSignedAt") || localDateTimeValue(),
+      fileName: file.name,
+      file: await readFileAsDataUrl(file),
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser?.id || "sin-usuario"
+    });
+    saveState();
+    openPatientRecord(patientId);
+  });
+}
+
+function bindPatientAttachmentForm(patientId) {
+  const form = document.getElementById("patientAttachmentForm");
+  if (!form) return;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!can("clinical-documents:create")) return;
+    const fileInput = document.getElementById("patientAttachmentFile");
+    const file = fileInput.files[0];
+    if (!file) return;
+    state.patientAttachments ||= [];
+    state.patientAttachments.unshift({
+      id: makeId(),
+      patientId,
+      type: value("patientAttachmentType"),
+      note: value("patientAttachmentNote"),
+      fileName: file.name,
+      file: await readFileAsDataUrl(file),
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser?.id || "sin-usuario"
+    });
+    saveState();
+    openPatientRecord(patientId);
+  });
 }
 
 function bindPatientPlateForm(patientId) {
@@ -3150,16 +3387,18 @@ function dentalHistoryRecordTemplate(item) {
 
 function renderAgenda() {
   const dateFilter = value("agendaDateFilter") || todayIso;
+  const viewMode = value("agendaViewFilter") || "day";
   const statusFilter = value("agendaStatusFilter");
+  const range = agendaRange(dateFilter, viewMode);
   const appointments = state.appointments
     .slice()
     .filter((appointment) => appointmentBelongsToCurrentDoctor(appointment))
-    .filter((appointment) => appointment.date === dateFilter)
+    .filter((appointment) => appointment.date >= range.start && appointment.date <= range.end)
     .filter((appointment) => statusFilter === "Todas" || appointment.status === statusFilter)
     .sort(sortByDateTime)
-  document.getElementById("calendarCaption").textContent = formatDate(dateFilter);
+  document.getElementById("calendarCaption").textContent = agendaCaption(range, viewMode);
   document.getElementById("monthCalendar").innerHTML = renderMonthCalendar(dateFilter);
-  document.getElementById("calendarDay").innerHTML = renderCalendarDay(appointments, dateFilter);
+  document.getElementById("calendarDay").innerHTML = renderAgendaCalendar(appointments, dateFilter, viewMode, range);
 
   document.getElementById("scheduleBoard").innerHTML = appointments.length
     ? appointments.map((appointment) => `
@@ -3168,7 +3407,8 @@ function renderAgenda() {
         <div>
           <strong>${escapeHtml(patientById(appointment.patientId).name)}</strong>
           <p>${escapeHtml(appointment.type)} · ${escapeHtml(doctorById(appointment.doctorId).name)}</p>
-          <p>Recordatorio: ${escapeHtml(appointment.reminder || "Sin recordatorio")}</p>
+          <p>Fecha: ${formatDate(appointment.date)} · Recordatorio: ${escapeHtml(appointment.reminder || "Sin recordatorio")}</p>
+          ${doctorAbsenceForDate(appointment.doctorId, appointment.date) ? `<p class="agenda-warning">Doctor con ausencia marcada este día.</p>` : ""}
         </div>
         <div class="appointment-actions ${can("appointments:confirm") ? "" : "permission-hidden"}">
           <span class="status-pill ${className(appointment.status)}">${escapeHtml(appointment.status)}</span>
@@ -3187,6 +3427,8 @@ function renderAgenda() {
       if (!can("appointments:confirm")) return;
       const appointment = state.appointments.find((item) => item.id === select.dataset.statusAppointment);
       appointment.status = select.value;
+      appointment.updatedAt = new Date().toISOString();
+      appointment.updatedBy = currentUser?.id || "sin-usuario";
       persistAndRender();
     });
   });
@@ -3197,6 +3439,74 @@ function renderAgenda() {
       openAppointmentForm(button.dataset.editAppointment);
     });
   });
+}
+
+function agendaRange(dateText, viewMode) {
+  const selected = new Date(`${dateText}T12:00:00`);
+  if (viewMode === "month") {
+    const start = new Date(selected.getFullYear(), selected.getMonth(), 1);
+    const end = new Date(selected.getFullYear(), selected.getMonth() + 1, 0);
+    return { start: toDateInputValue(start), end: toDateInputValue(end) };
+  }
+  if (viewMode === "week") {
+    const start = new Date(selected);
+    start.setDate(selected.getDate() - selected.getDay());
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { start: toDateInputValue(start), end: toDateInputValue(end) };
+  }
+  return { start: dateText, end: dateText };
+}
+
+function agendaCaption(range, viewMode) {
+  if (viewMode === "day") return formatDate(range.start);
+  if (viewMode === "week") return `Semana: ${formatDate(range.start)} - ${formatDate(range.end)}`;
+  return `Mes: ${formatDate(range.start)} - ${formatDate(range.end)}`;
+}
+
+function renderAgendaCalendar(appointments, dateFilter, viewMode, range) {
+  if (viewMode === "week") return renderWeekCalendar(appointments, range);
+  if (viewMode === "month") return renderMonthAgendaSummary(appointments, range);
+  return renderCalendarDay(appointments, dateFilter);
+}
+
+function renderWeekCalendar(appointments, range) {
+  const start = new Date(`${range.start}T12:00:00`);
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const iso = toDateInputValue(date);
+    const items = appointments.filter((appointment) => appointment.date === iso);
+    const absences = doctors.filter((doctor) => appointmentBelongsToCurrentDoctor({ doctorId: doctor.id }) && doctorAbsenceForDate(doctor.id, iso));
+    return `
+      <article class="agenda-week-day ${iso === todayIso ? "today" : ""}">
+        <strong>${formatDate(iso)}</strong>
+        ${absences.length ? `<small class="agenda-warning">${absences.length} ausencia(s) de doctor</small>` : ""}
+        <div class="clinical-list">
+          ${items.length ? items.map(calendarAppointmentTemplate).join("") : `<small>Sin citas.</small>`}
+        </div>
+      </article>
+    `;
+  }).join("");
+  return `<div class="agenda-week-grid">${days}</div>`;
+}
+
+function renderMonthAgendaSummary(appointments, range) {
+  const start = new Date(`${range.start}T12:00:00`);
+  const days = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+  const items = Array.from({ length: days }, (_, index) => {
+    const iso = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(index + 1).padStart(2, "0")}`;
+    const dayAppointments = appointments.filter((appointment) => appointment.date === iso);
+    const waitlist = dayAppointments.filter((appointment) => appointment.status === "Lista de espera").length;
+    return `
+      <article class="agenda-month-summary ${dayAppointments.length ? "has-items" : ""}">
+        <strong>${index + 1}</strong>
+        <span>${dayAppointments.length} cita(s)</span>
+        ${waitlist ? `<small>${waitlist} en espera</small>` : ""}
+      </article>
+    `;
+  }).join("");
+  return `<div class="agenda-month-summary-grid">${items}</div>`;
 }
 
 function renderMonthCalendar(dateFilter) {
@@ -4108,113 +4418,4 @@ function makeUserId(name) {
     .replace(/^-|-$/g, "")
     .slice(0, 24) || "usuario";
   let candidate = base;
-  let index = 2;
-  while (users.some((user) => user.id === candidate)) {
-    candidate = `${base}-${index}`;
-    index += 1;
-  }
-  return candidate;
-}
-
-function patientAge(birthdate) {
-  if (!birthdate) return "Edad no registrada";
-  const birth = new Date(`${birthdate}T12:00:00`);
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  const monthDelta = now.getMonth() - birth.getMonth();
-  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return `${age} años`;
-}
-
-function patientAgeNumber(birthdate) {
-  if (!birthdate) return null;
-  const birth = new Date(`${birthdate}T12:00:00`);
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  const monthDelta = now.getMonth() - birth.getMonth();
-  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return age;
-}
-
-function doctorById(id) {
-  return doctors.find((doctor) => doctor.id === id) || { name: "Sin doctor", specialty: "No asignado" };
-}
-
-function userById(id) {
-  return users.find((user) => user.id === id) || doctorById(id) || { name: "Sin usuario", role: "No asignado" };
-}
-
-function appointmentsForCurrentDoctor() {
-  return state.appointments.filter((appointment) => appointmentBelongsToCurrentDoctor(appointment));
-}
-
-function treatmentsForCurrentDoctor() {
-  return state.treatments.filter((treatment) => treatmentBelongsToCurrentDoctor(treatment));
-}
-
-function appointmentBelongsToCurrentDoctor(appointment) {
-  return permissions().scope === "all" || !appointment.doctorId || appointment.doctorId === currentUser?.id;
-}
-
-function treatmentBelongsToCurrentDoctor(treatment) {
-  return permissions().scope === "all" || !treatment.doctorId || treatment.doctorId === currentUser?.id;
-}
-
-function value(id) {
-  return document.getElementById(id).value;
-}
-
-function formatDate(dateText) {
-  if (!dateText) return "Sin fecha";
-  return new Intl.DateTimeFormat("es-DO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  }).format(new Date(`${dateText}T12:00:00`));
-}
-
-function formatDateTime(dateTimeText) {
-  if (!dateTimeText) return "Sin fecha y hora";
-  return new Intl.DateTimeFormat("es-DO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(dateTimeText));
-}
-
-function localDateTimeValue() {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 16);
-}
-
-function sortByDateTime(a, b) {
-  return `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
-}
-
-function labelStatus(status) {
-  return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function className(text) {
-  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-function emptyState(message) {
-  return `<article class="alert-item"><div><strong>${message}</strong><p>Agrega información para verla aquí.</p></div></article>`;
-}
-
-function escapeHtml(valueText) {
-  return String(valueText)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+  let index
