@@ -587,6 +587,10 @@ function normalizeState(loadedState) {
     approvedAt: "",
     ...item
   }));
+  next.hrEvaluations = (next.hrEvaluations || []).map((item) => ({
+    credentialExpiresAt: "",
+    ...item
+  }));
   next.hrShifts = Array.isArray(next.hrShifts) && next.hrShifts.length ? next.hrShifts : cloneSeed().hrShifts;
   next.hrEvaluations ||= [];
   next.payrollRuns ||= [];
@@ -1818,6 +1822,8 @@ function bindForms() {
     document.getElementById("payrollNoveltyPeriod").value = selectedPayrollPeriod();
     renderHrPanel();
   });
+  document.getElementById("employeeRecordUser").addEventListener("change", renderHrPanel);
+  document.getElementById("attendanceMonthFilter").addEventListener("change", renderHrControls);
   document.getElementById("payrollNoveltyForm").addEventListener("submit", (event) => {
     event.preventDefault();
     if (!can("payroll:manage")) return;
@@ -2057,12 +2063,30 @@ function bindForms() {
       score: Number(value("evaluationScore")) || 0,
       status: value("evaluationStatus"),
       credential: value("evaluationCredential"),
+      credentialExpiresAt: value("evaluationCredentialExpiry"),
       note: value("evaluationNote"),
       createdBy: currentUser?.id || "sin-usuario"
     });
     event.target.reset();
     document.getElementById("evaluationDate").value = todayIso;
     persistAndRender();
+  });
+
+  document.addEventListener("click", (event) => {
+    const approveVacation = event.target.closest("[data-approve-vacation]");
+    if (approveVacation) {
+      updateVacationStatus(approveVacation.dataset.approveVacation, "Aprobada");
+      return;
+    }
+    const rejectVacation = event.target.closest("[data-reject-vacation]");
+    if (rejectVacation) {
+      updateVacationStatus(rejectVacation.dataset.rejectVacation, "Rechazada");
+      return;
+    }
+    const payrollReceipt = event.target.closest("[data-payroll-receipt]");
+    if (payrollReceipt) {
+      printPayrollReceipt(payrollReceipt.dataset.payrollReceipt);
+    }
   });
 
   document.querySelectorAll("[data-hr-tab]").forEach((button) => {
@@ -2396,6 +2420,17 @@ function populateSelects() {
     }
   }
 
+  const employeeRecordUser = document.getElementById("employeeRecordUser");
+  if (employeeRecordUser) {
+    const current = employeeRecordUser.value;
+    employeeRecordUser.innerHTML = userOptions;
+    if (current && users.some((user) => user.id === current)) {
+      employeeRecordUser.value = current;
+    } else if (currentUser?.id) {
+      employeeRecordUser.value = currentUser.id;
+    }
+  }
+
   ["attendanceUser", "vacationUser", "shiftUser", "evaluationUser"].forEach((id) => {
     const select = document.getElementById(id);
     if (!select) return;
@@ -2410,6 +2445,7 @@ function populateSelects() {
   document.getElementById("agendaDateFilter").value ||= todayIso;
   document.getElementById("evolutionDate").value ||= todayIso;
   document.getElementById("attendanceDate").value ||= todayIso;
+  document.getElementById("attendanceMonthFilter").value ||= currentPayrollPeriod();
   document.getElementById("evaluationDate").value ||= todayIso;
   const evolutionSignature = document.getElementById("evolutionSignature");
   if (evolutionSignature) evolutionSignature.value = currentUser?.name || userById(currentUser?.id).name;
@@ -2618,7 +2654,8 @@ function renderHrPanel() {
     ["Asistencia", `${state.hrAttendance.filter((item) => item.date === todayIso).length} registros hoy.`],
     ["Vacaciones", `${state.hrVacations.filter((item) => item.status === "Solicitada").length} solicitudes pendientes.`],
     ["Turnos", `${state.hrShifts.length || shiftCount} turnos registrados para el personal.`],
-    ["Evaluaciones", `${state.hrEvaluations.length} evaluaciones registradas.`]
+    ["Evaluaciones", `${state.hrEvaluations.length} evaluaciones registradas.`],
+    ["Credenciales", `${state.hrEvaluations.filter((item) => ["Vencida"].includes(credentialExpiryStatus(item).label) || credentialExpiryStatus(item).label.startsWith("Vence")).length} por vencer o vencidas.`]
   ].map(([label, detail]) => `
     <article class="alert-item">
       <span class="status-pill pendiente">${label}</span>
@@ -2626,9 +2663,64 @@ function renderHrPanel() {
     </article>
   `).join("");
 
+  renderEmployeeRecordPanel();
   renderHrControls();
   renderPayroll(payrollItems);
   activateHrTab(activeHrTab);
+}
+
+function renderEmployeeRecordPanel() {
+  const selectedId = value("employeeRecordUser") || users[0]?.id;
+  const user = userById(selectedId);
+  const payrollItem = normalizedPayroll().map(payrollDisplayItem).find((item) => item.userId === selectedId);
+  const attendance = (state.hrAttendance || []).filter((item) => item.userId === selectedId).sort((a, b) => `${b.date}`.localeCompare(`${a.date}`));
+  const vacations = (state.hrVacations || []).filter((item) => item.userId === selectedId).sort((a, b) => `${b.start}`.localeCompare(`${a.start}`));
+  const evaluations = (state.hrEvaluations || []).filter((item) => item.userId === selectedId).sort((a, b) => `${b.date}`.localeCompare(`${a.date}`));
+  const shifts = (state.hrShifts || []).filter((item) => item.userId === selectedId);
+  const latestEvaluation = evaluations[0];
+  const credential = latestEvaluation ? credentialExpiryStatus(latestEvaluation) : { label: "Sin credencial", className: "pendiente" };
+
+  document.getElementById("employeeRecordSummary").innerHTML = [
+    ["Empleado", user.name],
+    ["Rol", user.role || "Sin rol"],
+    ["Turno", shifts[0] ? `${shifts[0].start}-${shifts[0].end}` : user.shift || "Sin turno"],
+    ["NÃ³mina", payrollItem ? currency.format(payrollNet(payrollItem)) : "Sin nÃ³mina"],
+    ["Asistencia", `${attendance.length} registros`],
+    ["Credencial", credential.label]
+  ].map(panelCardTemplate).join("");
+
+  const timeline = [
+    ...attendance.slice(0, 4).map((item) => ({
+      badge: item.status,
+      status: hrStatusClass(item.status),
+      title: `Asistencia ${formatDate(item.date)}`,
+      detail: `${item.timeIn || "Sin entrada"} - ${item.timeOut || "Sin salida"} Â· ${attendanceHours(item)}`
+    })),
+    ...vacations.slice(0, 4).map((item) => ({
+      badge: item.status,
+      status: hrStatusClass(item.status),
+      title: `${item.type || "Vacaciones"} ${formatDate(item.start)} - ${formatDate(item.end)}`,
+      detail: item.approvedBy ? `Aprobado por ${userById(item.approvedBy).name}` : item.note || "Pendiente de aprobaciÃ³n"
+    })),
+    ...evaluations.slice(0, 4).map((item) => ({
+      badge: item.status,
+      status: credentialExpiryStatus(item).className,
+      title: `EvaluaciÃ³n ${Number(item.score) || 0}/100`,
+      detail: `${item.credential || "Sin credencial"} Â· ${credentialExpiryStatus(item).label}`
+    }))
+  ];
+
+  document.getElementById("employeeRecordTimeline").innerHTML = timeline.length
+    ? timeline.map((item) => `
+      <article class="clinical-item">
+        <span class="status-pill ${item.status}">${escapeHtml(item.badge)}</span>
+        <div>
+          <strong>${escapeHtml(item.title)}</strong>
+          <p>${escapeHtml(item.detail)}</p>
+        </div>
+      </article>
+    `).join("")
+    : emptyState("No hay historial para este empleado.");
 }
 
 function renderLaboratoryPanel() {
@@ -2891,8 +2983,17 @@ function createLaboratoryInvoice(requestId) {
 }
 
 function renderHrControls() {
-  document.getElementById("attendanceTable").innerHTML = state.hrAttendance.length
-    ? state.hrAttendance.slice(0, 10).map((item) => `
+  const attendanceMonth = document.getElementById("attendanceMonthFilter")?.value || currentPayrollPeriod();
+  const monthlyAttendance = (state.hrAttendance || []).filter((item) => item.date?.startsWith(attendanceMonth));
+  document.getElementById("attendanceMonthlySummary").innerHTML = [
+    ["Registros", monthlyAttendance.length],
+    ["Presentes", monthlyAttendance.filter((item) => item.status === "Presente").length],
+    ["Tardanzas", monthlyAttendance.filter((item) => item.status === "Tarde").length],
+    ["Ausencias", monthlyAttendance.filter((item) => item.status === "Ausente").length]
+  ].map(panelCardTemplate).join("");
+
+  document.getElementById("attendanceTable").innerHTML = monthlyAttendance.length
+    ? monthlyAttendance.slice(0, 31).map((item) => `
       <tr>
         <td>${escapeHtml(userById(item.userId).name)}</td>
         <td>${formatDate(item.date)}</td>
@@ -2915,9 +3016,15 @@ function renderHrControls() {
         <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
         <td>${item.approvedBy ? `${escapeHtml(userById(item.approvedBy).name)} Â· ${formatDateTime(item.approvedAt)}` : "Pendiente"}</td>
         <td>${escapeHtml(item.note || "Sin comentario")}</td>
+        <td>
+          <div class="table-actions">
+            <button class="ghost-button" data-approve-vacation="${item.id}" ${item.status === "Aprobada" ? "disabled" : ""} type="button">Aprobar</button>
+            <button class="ghost-button danger" data-reject-vacation="${item.id}" ${item.status === "Rechazada" ? "disabled" : ""} type="button">Rechazar</button>
+          </div>
+        </td>
       </tr>
     `).join("")
-    : `<tr><td colspan="7">${emptyState("Sin solicitudes de vacaciones.")}</td></tr>`;
+    : `<tr><td colspan="8">${emptyState("Sin solicitudes de vacaciones.")}</td></tr>`;
 
   document.getElementById("shiftTable").innerHTML = state.hrShifts.length
     ? state.hrShifts.slice(0, 10).map((item) => `
@@ -2939,10 +3046,11 @@ function renderHrControls() {
         <td><strong>${Number(item.score) || 0}/100</strong></td>
         <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
         <td>${escapeHtml(item.credential || "Sin credencial")}</td>
+        <td><span class="status-pill ${credentialExpiryStatus(item).className}">${escapeHtml(credentialExpiryStatus(item).label)}</span></td>
         <td>${escapeHtml(item.note || "Sin observaciÃ³n")}</td>
       </tr>
     `).join("")
-    : `<tr><td colspan="6">${emptyState("Sin evaluaciones registradas.")}</td></tr>`;
+    : `<tr><td colspan="7">${emptyState("Sin evaluaciones registradas.")}</td></tr>`;
 }
 
 function hrStatusClass(status) {
@@ -2965,6 +3073,73 @@ function hrStatusClass(status) {
     "Requiere mejora": "cancelada",
     "Credencial vencida": "cancelada"
   }[status] || "pendiente";
+}
+
+function credentialExpiryStatus(item) {
+  if (!item?.credentialExpiresAt) return { label: "Sin vencimiento", className: hrStatusClass(item?.status) };
+  const days = Math.ceil((new Date(`${item.credentialExpiresAt}T12:00:00`) - new Date(`${todayIso}T12:00:00`)) / 86400000);
+  if (days < 0) return { label: "Vencida", className: "cancelada" };
+  if (days <= 30) return { label: `Vence en ${days} dÃ­as`, className: "pendiente" };
+  return { label: `Vigente hasta ${formatDate(item.credentialExpiresAt)}`, className: "confirmada" };
+}
+
+function updateVacationStatus(vacationId, status) {
+  if (!can("payroll:manage")) return;
+  const vacation = state.hrVacations.find((item) => item.id === vacationId);
+  if (!vacation) return;
+  vacation.status = status;
+  vacation.approvedBy = currentUser?.id || "sin-usuario";
+  vacation.approvedAt = new Date().toISOString();
+  vacation.updatedAt = new Date().toISOString();
+  persistAndRender();
+}
+
+function printPayrollReceipt(userId) {
+  const item = normalizedPayroll().map(payrollDisplayItem).find((payroll) => payroll.userId === userId);
+  if (!item) return;
+  const user = userById(userId);
+  const net = payrollNet(item);
+  const receipt = `
+    <section class="payroll-receipt">
+      <h2>Comprobante individual de nÃ³mina</h2>
+      <p><strong>${escapeHtml(user.name)}</strong> Â· ${escapeHtml(user.role || "Sin rol")}</p>
+      <p>PerÃ­odo: ${escapeHtml(formatPayrollPeriod(item.period))}</p>
+      <hr>
+      <p>Salario base: ${currency.format(item.base || 0)}</p>
+      <p>Bonos/comisiones: ${currency.format(item.bonus || 0)}</p>
+      <p>Deducciones: ${currency.format(item.deductions || 0)}</p>
+      <p>Novedades: ${item.novelty?.count || 0}</p>
+      ${user.role === "Doctor" ? `<p>Puntos: ${item.commission?.points || 0} Â· Procedimientos: ${item.commission?.procedures || 0}</p>` : ""}
+      <h3>Neto a pagar: ${currency.format(net)}</h3>
+      <p>Estado: ${escapeHtml(item.status || "Pendiente")}</p>
+      <p>Generado por ${escapeHtml(currentUser?.name || userById(currentUser?.id).name)} Â· ${formatDateTime(new Date().toISOString())}</p>
+    </section>
+  `;
+  const printWindow = window.open("", "_blank", "width=420,height=700");
+  if (!printWindow) {
+    alert("Permita ventanas emergentes para imprimir el comprobante.");
+    return;
+  }
+  printWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>Comprobante de nÃ³mina</title>
+        <link rel="stylesheet" href="styles.css">
+        <style>
+          body { margin: 0; padding: 24px; background: #fff; color: #13261f; font-family: Inter, Segoe UI, Arial, sans-serif; }
+          .payroll-receipt { max-width: 360px; margin: auto; }
+          .payroll-receipt h2 { margin: 0 0 12px; }
+          .payroll-receipt p { margin: 6px 0; }
+          .payroll-receipt h3 { margin-top: 18px; font-size: 20px; }
+        </style>
+      </head>
+      <body>${receipt}</body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => printWindow.print(), 300);
 }
 
 function renderPayrollLegacy(payrollItems) {
@@ -3021,6 +3196,7 @@ function renderPayrollLegacy(payrollItems) {
         <td>${currency.format(item.deductions)}</td>
         <td><strong>${currency.format(payrollNet(item))}</strong></td>
         <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
+        <td><button class="ghost-button" data-payroll-receipt="${item.userId}" type="button">Comprobante</button></td>
       </tr>
     `;
   }).join("");
@@ -3118,6 +3294,7 @@ function renderPayroll(payrollItems) {
         <td>${item.commission?.procedures || 0}</td>
         <td><strong>${currency.format(item.bonus)}</strong></td>
         <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
+        <td><button class="ghost-button" data-payroll-receipt="${item.userId}" type="button">Comprobante</button></td>
       </tr>
     `;
   }).join("");

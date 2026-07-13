@@ -189,12 +189,24 @@
             </section>
           </div>
           <div class="hr-tab-bar" id="hrTabBar" role="tablist" aria-label="MÃ³dulos de Recursos Humanos">
+            <button class="hr-tab" data-hr-tab="employeeRecord" type="button">Expediente</button>
             <button class="hr-tab active" data-hr-tab="payroll" type="button">NÃ³mina</button>
             <button class="hr-tab" data-hr-tab="attendance" type="button">Asistencia</button>
             <button class="hr-tab" data-hr-tab="vacations" type="button">Vacaciones</button>
             <button class="hr-tab" data-hr-tab="shifts" type="button">Turnos</button>
             <button class="hr-tab" data-hr-tab="evaluations" type="button">Evaluaciones</button>
           </div>
+          <section class="panel payroll-section hr-tab-panel" data-hr-panel="employeeRecord">
+            <div class="panel-header">
+              <div>
+                <h2>Expediente del empleado</h2>
+                <p>Ficha laboral con asistencia, vacaciones, nÃ³mina y credenciales.</p>
+              </div>
+              <select id="employeeRecordUser"></select>
+            </div>
+            <div class="panel-card-grid" id="employeeRecordSummary"></div>
+            <div class="clinical-list" id="employeeRecordTimeline"></div>
+          </section>
           <section class="panel payroll-panel hr-tab-panel active" data-hr-panel="payroll">
             <div class="panel-header">
               <div>
@@ -276,6 +288,7 @@
                       <th>Procedimientos</th>
                       <th>ComisiÃƒÂ³n</th>
                       <th>Estado</th>
+                      <th>Comprobante</th>
                     </tr>
                   </thead>
                   <tbody id="doctorPayrollTable"></tbody>
@@ -301,6 +314,7 @@
                     <th>Deducciones</th>
                     <th>Neto</th>
                     <th>Estado</th>
+                    <th>Comprobante</th>
                   </tr>
                 </thead>
                 <tbody id="adminPayrollTable"></tbody>
@@ -338,6 +352,10 @@
                 <h2>Asistencia</h2>
                 <p>Registro diario de entrada, salida y estado del personal.</p>
               </div>
+              <label class="compact-field">
+                Mes
+                <input id="attendanceMonthFilter" type="month">
+              </label>
             </div>
             <form class="inline-form" id="attendanceForm">
               <select id="attendanceUser" required></select>
@@ -353,6 +371,7 @@
               <input id="attendanceNote" placeholder="Nota">
               <button class="primary-button" type="submit">Registrar asistencia</button>
             </form>
+            <div class="panel-card-grid compact-payroll-summary" id="attendanceMonthlySummary"></div>
             <div class="table-panel">
               <table>
                 <thead>
@@ -407,6 +426,7 @@
                     <th>Estado</th>
                     <th>AprobaciÃ³n</th>
                     <th>Comentario</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="vacationTable"></tbody>
@@ -471,6 +491,7 @@
                 <option>Credencial vencida</option>
               </select>
               <input id="evaluationCredential" placeholder="Credencial o documento">
+              <input id="evaluationCredentialExpiry" type="date" aria-label="Vencimiento de credencial">
               <input id="evaluationNote" placeholder="ObservaciÃ³n">
               <button class="primary-button" type="submit">Registrar evaluaciÃ³n</button>
             </form>
@@ -483,6 +504,7 @@
                     <th>PuntuaciÃ³n</th>
                     <th>Estado</th>
                     <th>Credencial</th>
+                    <th>Vence</th>
                     <th>ObservaciÃ³n</th>
                   </tr>
                 </thead>
