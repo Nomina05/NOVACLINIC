@@ -208,11 +208,6 @@ button {
   gap: 6px;
 }
 
-.nav-group-modules {
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, .12);
-}
-
 .nav-section {
   color: #8fa79b;
   font-size: 11px;
@@ -367,6 +362,62 @@ button {
   position: relative;
   margin-bottom: 26px;
   align-items: flex-start;
+}
+
+.context-module-bar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -10px 0 22px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 14px 34px rgba(15, 42, 64, .08);
+  backdrop-filter: blur(8px);
+}
+
+.context-module-bar.is-empty {
+  display: none;
+}
+
+.context-module-label {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.context-module-list {
+  min-width: 0;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.context-module-button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  border: 1px solid #c9edf0;
+  border-radius: 8px;
+  padding: 0 13px;
+  color: var(--green-dark);
+  background: #eef9f8;
+  font-size: 13px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.context-module-button:hover,
+.context-module-button.active {
+  color: #fff;
+  background: var(--green);
+  border-color: var(--green);
 }
 
 .eyebrow {
@@ -1864,7 +1915,12 @@ p {
 }
 
 .compact-mode .topbar {
+  margin-bottom: 14px;
+}
+
+.compact-mode .context-module-bar {
   margin-bottom: 16px;
+  padding: 8px;
 }
 
 .compact-mode h1 {
@@ -3611,6 +3667,17 @@ dialog::backdrop {
   .topbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .context-module-bar {
+    position: static;
+    align-items: stretch;
+    flex-direction: column;
+    margin-top: 0;
+  }
+
+  .context-module-list {
+    width: 100%;
   }
 
   .top-notifications {
