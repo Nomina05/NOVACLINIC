@@ -441,6 +441,7 @@ let capturedPatientPhoto = "";
 let selectedSelfServicePatientId = null;
 let sessionExpiryTimer = null;
 let compactMode = localStorage.getItem("novaclinic-compact-mode") === "true";
+let currentPanelView = "dashboard";
 
 const securityConfig = {
   maxLoginAttempts: 3,
@@ -540,8 +541,9 @@ const legacyActionAliases = {
 const panelModules = {
   dashboard: ["selfService", "patients", "agenda", "odontogram", "treatments", "inventory"],
   receptionPanel: ["patients", "selfService", "agenda", "billing", "inventory", "reports"],
+  usersPanel: [],
   hrPanel: ["selfService"],
-  laboratoryPanel: [],
+  laboratoryPanel: ["selfService"],
   accountingPanel: ["selfService", "billing", "inventory", "reports", "adminPanel"]
 };
 
@@ -798,6 +800,9 @@ function bindNavigation() {
     renderPatients();
   });
   document.getElementById("compactModeToggle").addEventListener("click", toggleCompactMode);
+  document.querySelectorAll("[data-dashboard-tab]").forEach((button) => {
+    button.addEventListener("click", () => activateDashboardTab(button.dataset.dashboardTab));
+  });
   document.addEventListener("click", (event) => {
     if (event.target.closest(".search-box") || event.target.closest("#globalSearchResults")) return;
     hideGlobalSearchResults();
@@ -2252,13 +2257,47 @@ function setView(viewName) {
     return;
   }
 
+  currentPanelView = panelViewFor(viewName);
   document.querySelectorAll(".nav-item").forEach((button) => {
-    button.classList.toggle("active", button.dataset.view === viewName);
+    button.classList.toggle("active", button.dataset.view === currentPanelView);
   });
   document.querySelectorAll(".view").forEach((view) => {
     view.classList.toggle("active", view.id === viewName);
   });
   document.getElementById("pageTitle").textContent = views[viewName];
+  renderContextModuleBar(viewName);
+}
+
+function panelViewFor(viewName) {
+  if (panelViews.includes(viewName)) return viewName;
+  if (panelModules[currentPanelView]?.includes(viewName) && canView(currentPanelView)) return currentPanelView;
+  const allowedPanel = panelViews.find((panelView) => canView(panelView) && (panelModules[panelView] || []).includes(viewName));
+  return allowedPanel || firstAllowedView();
+}
+
+function renderContextModuleBar(activeView = document.querySelector(".view.active")?.id || firstAllowedView()) {
+  const container = document.getElementById("contextModuleBar");
+  if (!container) return;
+  const panelView = panelViewFor(activeView);
+  const modules = (panelModules[panelView] || []).filter((viewName) => canView(viewName));
+
+  if (!modules.length) {
+    container.classList.add("is-empty");
+    container.innerHTML = "";
+    return;
+  }
+
+  container.classList.remove("is-empty");
+  container.innerHTML = `
+    <span class="context-module-label">${escapeHtml(views[panelView] || "Panel")}</span>
+    <div class="context-module-list">
+      ${modules.map((viewName) => `
+        <button class="context-module-button ${viewName === activeView ? "active" : ""}" data-view-jump="${viewName}" type="button">
+          ${escapeHtml(views[viewName] || viewName)}
+        </button>
+      `).join("")}
+    </div>
+  `;
 }
 
 function applyPermissions() {
@@ -2306,6 +2345,8 @@ function applyPermissions() {
   const activeView = document.querySelector(".view.active")?.id;
   if (!activeView || !canView(activeView)) {
     setView(firstAllowedView());
+  } else {
+    renderContextModuleBar(activeView);
   }
 }
 
@@ -2377,6 +2418,7 @@ function render() {
   populateSelects();
   renderTopNotifications();
   renderGlobalSearch();
+  renderContextModuleBar();
   renderDashboard();
   renderRoleDashboard();
   renderReceptionPanel();
@@ -2583,6 +2625,15 @@ function applyCompactMode() {
   toggle.classList.toggle("active", compactMode);
   toggle.setAttribute("aria-pressed", String(compactMode));
   toggle.title = compactMode ? "Modo compacto activo" : "Modo compacto";
+}
+
+function activateDashboardTab(tabName = "agenda") {
+  document.querySelectorAll("[data-dashboard-tab]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.dashboardTab === tabName);
+  });
+  document.querySelectorAll("[data-dashboard-panel]").forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.dashboardPanel === tabName);
+  });
 }
 
 function renderTopNotifications() {
@@ -2875,11 +2926,13 @@ function renderDashboard() {
     }
   ].map(dashboardAlertTemplate).join("");
 
-  renderPanelModules("doctorPanelModules", "dashboard");
+  renderDashboardQuickActions();
+  renderPanelModules("dashboardModuleDetails", "dashboard");
 
   document.getElementById("todayAppointments").innerHTML = todayAppointments.length
     ? todayAppointments
         .sort(sortByDateTime)
+        .slice(0, 4)
         .map((appointment) => appointmentTemplate(appointment))
         .join("")
     : emptyState("No hay citas registradas para hoy.");
@@ -2931,6 +2984,17 @@ function dashboardAlertTemplate(alert) {
       </div>
     </button>
   `;
+}
+
+function renderDashboardQuickActions() {
+  const container = document.getElementById("doctorPanelModules");
+  if (!container) return;
+  const quickViews = roleDashboardConfig(currentUser?.role || "Recepción").modules
+    .filter((viewName) => canView(viewName))
+    .slice(0, 5);
+  container.innerHTML = quickViews.length
+    ? quickViews.map(moduleButtonTemplate).join("")
+    : emptyState("No hay accesos rápidos habilitados.");
 }
 
 function renderReceptionPanel() {

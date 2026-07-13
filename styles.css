@@ -1614,6 +1614,57 @@ p {
   margin: 14px 0;
 }
 
+.dashboard-quick-actions {
+  margin-bottom: 16px;
+}
+
+.dashboard-quick-actions .module-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.dashboard-details-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0 14px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .86);
+  box-shadow: 0 10px 26px rgba(22, 38, 31, .06);
+}
+
+.dashboard-detail-tab {
+  min-height: 36px;
+  border: 1px solid #c9edf0;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: var(--green-dark);
+  background: #eef9f8;
+  font-weight: 850;
+}
+
+.dashboard-detail-tab.active {
+  color: #fff;
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.dashboard-detail-panel {
+  display: none;
+}
+
+.dashboard-detail-panel.active {
+  display: grid;
+  gap: 14px;
+}
+
+.dashboard-compact-list {
+  max-height: 330px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
 .dashboard-alert-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3522,6 +3573,7 @@ dialog::backdrop {
 
   .metric-grid,
   .dashboard-alert-strip,
+  .dashboard-quick-actions .module-grid,
   .panel-card-grid,
   .report-command-grid,
   .pos-report-summary,
@@ -3627,6 +3679,7 @@ dialog::backdrop {
 
   .metric-grid,
   .dashboard-alert-strip,
+  .dashboard-quick-actions .module-grid,
   .panel-card-grid,
   .report-command-grid,
   .pos-report-summary,
