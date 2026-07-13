@@ -733,6 +733,42 @@ p {
   margin-top: 18px;
 }
 
+.permission-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.permission-toolbar select,
+.permission-scope select {
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 11px;
+  background: #fff;
+  color: var(--text);
+}
+
+.permission-scope {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.permission-scope label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.permission-scope small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 .users-workspace {
   display: grid;
   grid-template-columns: minmax(280px, .55fr) minmax(0, 1.45fr);

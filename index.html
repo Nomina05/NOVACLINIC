@@ -513,6 +513,19 @@
                   <h2 id="selectedUserTitle">Permisos</h2>
                   <p id="selectedUserMeta">El Administrador define qué paneles y módulos puede ver cada usuario.</p>
                 </div>
+                <div class="permission-toolbar">
+                  <select id="userPermissionProfile" aria-label="Perfil de permisos">
+                    <option value="">Perfil rápido</option>
+                    <option>Administrador</option>
+                    <option>Doctor</option>
+                    <option>Recepción</option>
+                    <option>Recursos Humanos</option>
+                    <option>Laboratorio</option>
+                    <option>Contabilidad</option>
+                  </select>
+                  <button class="ghost-button" id="applyPermissionProfile" type="button">Aplicar perfil</button>
+                  <button class="ghost-button" id="resetPermissionProfile" type="button">Restablecer rol</button>
+                </div>
                 <button class="ghost-button" id="editSelectedUser" type="button">Editar usuario</button>
               </div>
               <div class="permission-matrix compact" id="permissionMatrix"></div>
@@ -931,9 +944,30 @@
               <h2>Reportes ejecutivos</h2>
               <p>Indicadores financieros, operativos y de productividad para la toma de decisiones.</p>
             </div>
+            <form class="report-filter-bar" id="reportFilterForm">
+              <label>
+                Desde
+                <input id="reportStartDate" type="date">
+              </label>
+              <label>
+                Hasta
+                <input id="reportEndDate" type="date">
+              </label>
+              <label>
+                Tipo
+                <select id="reportTypeFilter">
+                  <option value="general">General</option>
+                  <option value="facturacion">Facturación</option>
+                  <option value="caja">Caja</option>
+                  <option value="doctores">Doctores</option>
+                  <option value="laboratorio">Laboratorio</option>
+                </select>
+              </label>
+            </form>
             <button class="ghost-button" id="printReports" type="button">Imprimir reportes</button>
           </div>
           <div class="report-command-grid" id="reportCards"></div>
+          <div class="report-command-grid report-command-grid-secondary" id="reportSecondaryCards"></div>
           <div class="report-layout">
             <section class="panel report-panel wide">
               <div class="panel-header">
@@ -952,6 +986,26 @@
                 </div>
               </div>
               <div class="alert-list" id="reportAlerts"></div>
+            </section>
+          </div>
+          <div class="report-layout">
+            <section class="panel report-panel wide">
+              <div class="panel-header">
+                <div>
+                  <h2>Facturación y caja</h2>
+                  <p>Ingresos por método de pago, cajero y estado de caja.</p>
+                </div>
+              </div>
+              <div class="clinical-list" id="billingReportList"></div>
+            </section>
+            <section class="panel report-panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Laboratorio y almacén</h2>
+                  <p>Trabajos facturables, productos y existencias críticas.</p>
+                </div>
+              </div>
+              <div class="alert-list" id="operationsReportList"></div>
             </section>
           </div>
           <section class="panel payroll-section pos-report-panel">

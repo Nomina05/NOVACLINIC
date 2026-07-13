@@ -474,6 +474,26 @@ const permissionCatalog = [
   { view: "adminPanel", label: "Administración", panel: "Paneles", actions: ["settings:manage"] }
 ];
 
+const actionPermissionCatalog = [
+  { action: "patients:create", label: "Crear y editar pacientes", group: "Pacientes" },
+  { action: "appointments:create", label: "Crear citas", group: "Agenda" },
+  { action: "appointments:confirm", label: "Confirmar citas y llegada", group: "Agenda" },
+  { action: "odontogram:edit", label: "Actualizar odontograma", group: "Doctores" },
+  { action: "clinical-documents:create", label: "Crear documentos clinicos", group: "Doctores" },
+  { action: "treatments:create", label: "Crear tratamientos", group: "Doctores" },
+  { action: "treatments:progress", label: "Actualizar evolucion de tratamientos", group: "Doctores" },
+  { action: "payments:create", label: "Crear facturas y recibos", group: "Facturacion" },
+  { action: "cash:reopen", label: "Reabrir caja cerrada", group: "Caja" },
+  { action: "inventory:manage", label: "Gestionar almacen", group: "Almacen" },
+  { action: "payroll:manage", label: "Procesar nomina y RRHH", group: "Recursos Humanos" },
+  { action: "laboratory:manage", label: "Gestionar laboratorio", group: "Laboratorio" },
+  { action: "selfservice:clinical", label: "Autoservicio clinico", group: "Autoservicio" },
+  { action: "selfservice:employee", label: "Autoservicio empleado", group: "Autoservicio" },
+  { action: "selfservice:manage", label: "Gestionar solicitudes internas", group: "Autoservicio" },
+  { action: "users:create", label: "Crear y editar usuarios", group: "Administracion" },
+  { action: "settings:manage", label: "Configurar clinica y comprobantes", group: "Administracion" }
+];
+
 const panelModules = {
   dashboard: ["selfService", "patients", "agenda", "odontogram", "treatments", "inventory"],
   receptionPanel: ["patients", "selfService", "agenda", "billing", "inventory", "reports"],
@@ -625,7 +645,8 @@ function normalizeUserPermissionOverrides(overrides) {
 
       const next = {
         views: [...new Set(viewsList)],
-        actions: [...actionList]
+        actions: [...actionList],
+        scope: ["all", "own"].includes(override.scope) ? override.scope : undefined
       };
 
       if (next.views.length !== viewsList.length || next.actions.length !== (override.actions || []).length) {
@@ -788,14 +809,16 @@ function saveUserFromForm() {
     const defaults = rolePermissions[user.role] || rolePermissions["Recepción"];
     userPermissionOverrides[user.id] = {
       views: [...defaults.views],
-      actions: [...defaults.actions]
+      actions: [...defaults.actions],
+      scope: defaults.scope
     };
     saveUserPermissionOverrides();
   } else if (previousRole !== user.role) {
     const defaults = rolePermissions[user.role] || rolePermissions["Recepción"];
     userPermissionOverrides[user.id] = {
       views: [...defaults.views],
-      actions: [...defaults.actions]
+      actions: [...defaults.actions],
+      scope: defaults.scope
     };
     saveUserPermissionOverrides();
   }
@@ -1171,6 +1194,14 @@ function bindForms() {
   });
   document.getElementById("editSelectedUser").addEventListener("click", () => {
     if (currentUser?.role === "Administrador") openUserForm(selectedUserId);
+  });
+  document.getElementById("applyPermissionProfile").addEventListener("click", () => {
+    if (currentUser?.role !== "Administrador") return;
+    applyPermissionProfile(selectedUserId, value("userPermissionProfile"));
+  });
+  document.getElementById("resetPermissionProfile").addEventListener("click", () => {
+    if (currentUser?.role !== "Administrador") return;
+    resetPermissionProfile(selectedUserId);
   });
   document.getElementById("cancelUser").addEventListener("click", () => closeUserForm());
   userDialog.addEventListener("close", () => {
@@ -1660,6 +1691,7 @@ function bindForms() {
 
   document.getElementById("printClinicalRecord").addEventListener("click", () => window.print());
   document.getElementById("printReports").addEventListener("click", () => window.print());
+  document.getElementById("reportFilterForm").addEventListener("change", renderReports);
 
   document.getElementById("clinicSettingsForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1806,7 +1838,7 @@ function permissionsForUser(userId) {
   return {
     views: [...override.views],
     actions: sanitizeSelfServiceActions([...override.actions], user?.role),
-    scope: defaults.scope
+    scope: override.scope || defaults.scope
   };
 }
 
@@ -1938,6 +1970,8 @@ function populateSelects() {
   document.getElementById("evaluationDate").value ||= todayIso;
   document.getElementById("payrollPeriod").value ||= currentPayrollPeriod();
   document.getElementById("payrollNoveltyPeriod").value ||= selectedPayrollPeriod();
+  document.getElementById("reportStartDate").value ||= `${todayIso.slice(0, 8)}01`;
+  document.getElementById("reportEndDate").value ||= todayIso;
 }
 
 function renderDashboard() {
@@ -2751,7 +2785,7 @@ function renderPermissionMatrix(targetUserId = selectedUserId) {
   const canEditPermissions = currentUser?.role === "Administrador";
   const user = users.find((item) => item.id === targetUserId) || users[0];
   const userPermissions = permissionsForUser(user.id);
-  const grouped = ["Paneles", "Doctores", "Recepción", "Laboratorio", "Contabilidad"]
+  const grouped = [...new Set(permissionCatalog.map((item) => item.panel))]
       .map((group) => {
         const items = permissionCatalog.filter((item) => item.panel === group);
         return `
@@ -2772,9 +2806,47 @@ function renderPermissionMatrix(targetUserId = selectedUserId) {
           </div>
         `;
       }).join("");
+  const actionsGrouped = [...new Set(actionPermissionCatalog.map((item) => item.group))].map((group) => {
+    const items = actionPermissionCatalog.filter((item) => item.group === group);
+    return `
+      <div class="permission-group">
+        <strong>${group}</strong>
+        ${items.map((item) => {
+          const unavailable = item.action.startsWith("selfservice:") && !allowedSelfServiceActionsForRole(user.role).includes(item.action);
+          return `
+            <label class="permission-toggle ${unavailable ? "permission-disabled" : ""}">
+              <input
+                type="checkbox"
+                data-permission-action-user="${user.id}"
+                data-permission-action="${item.action}"
+                ${userPermissions.actions.includes(item.action) ? "checked" : ""}
+                ${!canEditPermissions || user.id === "admin" || unavailable ? "disabled" : ""}
+              >
+              <span>${escapeHtml(item.label)}</span>
+            </label>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }).join("");
+  const scopeControl = `
+    <div class="permission-scope">
+      <label>
+        Alcance de datos
+        <select id="permissionScope" ${!canEditPermissions || user.id === "admin" ? "disabled" : ""}>
+          <option value="all" ${userPermissions.scope === "all" ? "selected" : ""}>Todos los registros</option>
+          <option value="own" ${userPermissions.scope === "own" ? "selected" : ""}>Solo registros propios</option>
+        </select>
+      </label>
+      <small>${userPermissions.scope === "all" ? "Puede ver informacion global segun sus modulos." : "Solo ve informacion vinculada a su usuario cuando aplica."}</small>
+    </div>
+  `;
   const helpText = canEditPermissions
     ? user.id === "admin" ? "El Administrador conserva acceso completo." : "Activa solo los paneles y módulos que correspondan."
     : "Solo el Administrador puede modificar permisos.";
+
+  const profileSelect = document.getElementById("userPermissionProfile");
+  if (profileSelect) profileSelect.value = "";
 
   document.getElementById("permissionMatrix").innerHTML = `
     ${selectedUserSummary(user)}
@@ -2783,13 +2855,28 @@ function renderPermissionMatrix(targetUserId = selectedUserId) {
         <span class="status-pill ${user.role === "Administrador" ? "confirmada" : "pendiente"}">${escapeHtml(user.role)}</span>
         <h2>Accesos</h2>
         <p>${helpText}</p>
+        ${scopeControl}
       </div>
       <div class="permission-groups">${grouped}</div>
+    </article>
+    <article class="permission-user compact">
+      <div>
+        <span class="status-pill pendiente">Acciones</span>
+        <h2>Permisos especiales</h2>
+        <p>Controla funciones internas aunque el modulo este visible.</p>
+      </div>
+      <div class="permission-groups">${actionsGrouped}</div>
     </article>
   `;
 
   document.querySelectorAll("[data-permission-user]").forEach((input) => {
     input.addEventListener("change", () => updateUserPermission(input));
+  });
+  document.querySelectorAll("[data-permission-action-user]").forEach((input) => {
+    input.addEventListener("change", () => updateUserActionPermission(input));
+  });
+  document.getElementById("permissionScope")?.addEventListener("change", (event) => {
+    updateUserPermissionScope(user.id, event.target.value);
   });
 }
 
@@ -2815,10 +2902,70 @@ function updateUserPermission(input) {
 
   userPermissionOverrides[userId] = {
     views: nextPermissions.views,
-    actions: nextPermissions.actions
+    actions: nextPermissions.actions,
+    scope: nextPermissions.scope
   };
   saveUserPermissionOverrides();
   renderHrPanel();
+  applyPermissions();
+  render();
+}
+
+function updateUserActionPermission(input) {
+  if (currentUser?.role !== "Administrador") return;
+  const userId = input.dataset.permissionActionUser;
+  if (userId === "admin") return;
+  const user = users.find((item) => item.id === userId);
+  const action = input.dataset.permissionAction;
+  if (!user || !actionPermissionCatalog.some((item) => item.action === action)) return;
+  if (action.startsWith("selfservice:") && !allowedSelfServiceActionsForRole(user.role).includes(action)) return;
+
+  const nextPermissions = permissionsForUser(userId);
+  nextPermissions.actions = input.checked
+    ? [...new Set([...nextPermissions.actions, action])]
+    : nextPermissions.actions.filter((item) => item !== action);
+
+  userPermissionOverrides[userId] = {
+    views: nextPermissions.views,
+    actions: nextPermissions.actions,
+    scope: nextPermissions.scope
+  };
+  saveUserPermissionOverrides();
+  applyPermissions();
+  render();
+}
+
+function updateUserPermissionScope(userId, scope) {
+  if (currentUser?.role !== "Administrador" || userId === "admin") return;
+  const nextPermissions = permissionsForUser(userId);
+  userPermissionOverrides[userId] = {
+    views: nextPermissions.views,
+    actions: nextPermissions.actions,
+    scope: scope === "own" ? "own" : "all"
+  };
+  saveUserPermissionOverrides();
+  applyPermissions();
+  render();
+}
+
+function applyPermissionProfile(userId, profileRole) {
+  if (!profileRole || userId === "admin") return;
+  const defaults = rolePermissions[profileRole];
+  if (!defaults) return;
+  userPermissionOverrides[userId] = {
+    views: [...defaults.views],
+    actions: sanitizeSelfServiceActions([...defaults.actions], users.find((item) => item.id === userId)?.role),
+    scope: defaults.scope
+  };
+  saveUserPermissionOverrides();
+  applyPermissions();
+  render();
+}
+
+function resetPermissionProfile(userId) {
+  if (userId === "admin") return;
+  delete userPermissionOverrides[userId];
+  saveUserPermissionOverrides();
   applyPermissions();
   render();
 }
@@ -4314,37 +4461,65 @@ function renderInventory() {
 }
 
 function renderReports() {
-  const billablePayments = activeBillingPayments();
-  const income = billablePayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const cancelled = state.appointments.filter((appointment) => appointment.status === "Cancelada").length;
+  const filters = reportFilters();
+  const billablePayments = activeBillingPayments().filter((payment) => inReportRange(payment.date, filters));
+  const appointmentsInRange = state.appointments.filter((appointment) => inReportRange(appointment.date, filters));
+  const cashClosingsInRange = (state.cashClosings || []).filter((closing) => inReportRange(closing.date, filters));
+  const income = billablePayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const discounts = billablePayments.reduce((sum, payment) => sum + Number(payment.discount || 0), 0);
+  const cancelled = appointmentsInRange.filter((appointment) => appointment.status === "Cancelada").length;
   const completedTreatments = state.treatments.filter((treatment) => treatment.progress >= 100).length;
   const receivable = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
+  const averageTicket = billablePayments.length ? income / billablePayments.length : 0;
+  const productIncome = billablePayments.filter((payment) => payment.type === "Producto").reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const labIncome = billablePayments.filter((payment) => payment.type === "Laboratorio").reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const expectedCash = cashClosingsInRange.reduce((sum, closing) => sum + Number(closing.expectedCash || closing.expectedTotal || closing.total || 0), 0);
+  const countedCash = cashClosingsInRange.reduce((sum, closing) => sum + Number(closing.countedAmount || 0), 0);
+  const cashDifference = cashClosingsInRange.reduce((sum, closing) => sum + Number(closing.difference || 0), 0);
 
   document.getElementById("reportCards").innerHTML = [
-    ["Ingresos acumulados", currency.format(income), "Cobros y facturación registrada", "confirmada"],
+    ["Ingresos del período", currency.format(income), `${billablePayments.length} documentos facturados`, "confirmada"],
+    ["Ticket promedio", currency.format(averageTicket), "Promedio por factura o recibo", averageTicket ? "confirmada" : "pendiente"],
     ["Cuentas por cobrar", currency.format(receivable), "Balance pendiente de pacientes", receivable > 0 ? "pendiente" : "confirmada"],
-    ["Citas canceladas", cancelled, "Impacto operativo de agenda", cancelled ? "cancelada" : "confirmada"],
-    ["Tratamientos completados", completedTreatments, "Procedimientos cerrados", "confirmada"]
+    ["Citas canceladas", cancelled, "Impacto operativo de agenda", cancelled ? "cancelada" : "confirmada"]
+  ].map(reportMetricTemplate).join("");
+
+  document.getElementById("reportSecondaryCards").innerHTML = [
+    ["Descuentos", currency.format(discounts), "Ajustes aplicados en facturación", discounts ? "pendiente" : "confirmada"],
+    ["Productos", currency.format(productIncome), "Ventas desde almacén", productIncome ? "confirmada" : "pendiente"],
+    ["Laboratorio", currency.format(labIncome), "Trabajos facturados a doctores", labIncome ? "confirmada" : "pendiente"],
+    ["Diferencia caja", currency.format(cashDifference), `${cashClosingsInRange.length} cierres revisados`, Math.abs(cashDifference) > 0 ? "pendiente" : "confirmada"]
   ].map(reportMetricTemplate).join("");
 
   document.getElementById("doctorProductivity").innerHTML = doctors.map((doctor) => {
-    const appointments = state.appointments.filter((appointment) => appointment.doctorId === doctor.id).length;
+    const appointments = appointmentsInRange.filter((appointment) => appointment.doctorId === doctor.id).length;
+    const attended = appointmentsInRange.filter((appointment) => appointment.doctorId === doctor.id && ["Atendida", "Confirmada"].includes(appointment.status)).length;
+    const doctorPayments = billablePayments.filter((payment) => payment.attendedDoctorId === doctor.id || payment.doctorId === doctor.id);
+    const doctorIncome = doctorPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     const treatments = state.treatments.filter((treatment) => treatment.doctorId === doctor.id && treatment.progress < 100).length;
+    const commission = doctorCommission(doctor.id);
     return `
       <article class="clinical-item report-list-item">
         <span class="report-rank">${appointments}</span>
         <div>
           <strong>${escapeHtml(doctor.name)}</strong>
-          <p>${appointments} citas · ${treatments} tratamientos activos · ${escapeHtml(doctor.specialty)}</p>
+          <p>${attended} atendidas · ${treatments} tratamientos activos · ${currency.format(doctorIncome)}</p>
+          <small>${commission.points} puntos · ${commission.procedures} procedimientos completados · ${escapeHtml(doctor.specialty)}</small>
         </div>
       </article>
     `;
   }).join("");
 
+  renderBillingReportList(billablePayments, cashClosingsInRange, expectedCash, countedCash);
+  renderOperationsReportList(billablePayments, filters);
+
   document.getElementById("reportAlerts").innerHTML = [
     ["Stock bajo", `${state.inventory.filter((item) => item.stock <= item.min).length} materiales requieren compra.`],
     ["Balances", `${state.patients.filter((patient) => patient.balance > 0).length} pacientes con deuda.`],
-    ["Seguimiento", `${state.treatments.filter((treatment) => treatment.progress > 0 && treatment.progress < 100).length} tratamientos en curso.`]
+    ["Seguimiento", `${state.treatments.filter((treatment) => treatment.progress > 0 && treatment.progress < 100).length} tratamientos en curso.`],
+    ["Tratamientos", `${completedTreatments} tratamientos completados.`],
+    ["Caja", `${cashClosingsInRange.filter((closing) => Number(closing.difference || 0) !== 0).length} cierres con diferencia.`],
+    ["POST/POS", `${billablePayments.filter(isPosInvoice).length} transacciones con referencia POS/POST.`]
   ].map(([label, detail]) => `
     <article class="alert-item report-alert">
       <span class="status-pill pendiente">${label}</span>
@@ -4352,11 +4527,11 @@ function renderReports() {
     </article>
   `).join("");
 
-  renderPosInvoiceReport();
+  renderPosInvoiceReport(billablePayments);
 }
 
-function renderPosInvoiceReport() {
-  const posInvoices = activeBillingPayments().filter(isPosInvoice);
+function renderPosInvoiceReport(payments = activeBillingPayments()) {
+  const posInvoices = payments.filter(isPosInvoice);
   const total = posInvoices.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
   const discounts = posInvoices.reduce((sum, payment) => sum + Number(payment.discount || 0), 0);
   const emitted = posInvoices.filter((payment) => payment.invoiceStatus === "Emitida").length;
