@@ -2105,20 +2105,74 @@ function renderDashboard() {
   const doctorAppointments = appointmentsForCurrentDoctor();
   const doctorTreatments = treatmentsForCurrentDoctor();
   const todayAppointments = doctorAppointments.filter((appointment) => appointment.date === todayIso);
+  const allTodayAppointments = state.appointments.filter((appointment) => appointment.date === todayIso);
+  const todayIncome = activeBillingPayments()
+    .filter((payment) => payment.date === todayIso)
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
   const pendingBalance = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
+  const patientsWithBalance = state.patients.filter((patient) => patient.balance > 0).length;
   const activePlans = doctorTreatments.filter((treatment) => treatment.progress < 100).length;
   const confirmed = todayAppointments.filter((appointment) => appointment.status === "Confirmada").length;
+  const cashOpening = currentCashOpening();
+  const cashClosedToday = (state.cashClosings || []).find((closing) => closing.date === todayIso && closing.status !== "Reabierta");
+  const cashStatus = cashOpening ? "Abierta" : cashClosedToday ? "Cerrada" : "Sin abrir";
+  const lowStock = state.inventory.filter((item) => item.stock <= item.min);
+  const upcomingAppointments = state.appointments
+    .filter((appointment) => appointment.date >= todayIso && appointment.status !== "Cancelada")
+    .sort(sortByDateTime)
+    .slice(0, 3);
 
   const metrics = [
-    ["Pacientes", state.patients.length],
-    ["Mis citas hoy", todayAppointments.length],
-    ["Confirmadas", confirmed],
-    ["Balance pendiente", currency.format(pendingBalance)]
+    {
+      label: "Citas hoy",
+      value: allTodayAppointments.length,
+      detail: `${confirmed} confirmadas para mi usuario`,
+      status: allTodayAppointments.length ? "confirmada" : "pendiente"
+    },
+    {
+      label: "Ingresos hoy",
+      value: currency.format(todayIncome),
+      detail: `${activeBillingPayments().filter((payment) => payment.date === todayIso).length} cobros registrados`,
+      status: todayIncome > 0 ? "confirmada" : "pendiente"
+    },
+    {
+      label: "Pacientes pendientes",
+      value: patientsWithBalance,
+      detail: `${currency.format(pendingBalance)} por cobrar`,
+      status: patientsWithBalance ? "pendiente" : "confirmada"
+    },
+    {
+      label: "Caja",
+      value: cashStatus,
+      detail: cashOpening ? `Inicial ${currency.format(cashOpening.openingAmount || 0)}` : cashClosedToday ? "Cierre registrado hoy" : "Debe abrirse para cobrar",
+      status: cashOpening ? "confirmada" : cashClosedToday ? "pagado" : "cancelada"
+    }
   ];
 
   document.getElementById("metricGrid").innerHTML = metrics
-    .map(([label, valueText]) => `<article class="metric-card"><span>${label}</span><strong>${valueText}</strong></article>`)
+    .map(dashboardMetricTemplate)
     .join("");
+
+  document.getElementById("dashboardAlertStrip").innerHTML = [
+    {
+      label: "Stock bajo",
+      detail: lowStock.length ? `${lowStock.length} productos requieren reposición` : "Inventario sin alertas críticas",
+      status: lowStock.length ? "Pendiente" : "Confirmada",
+      view: "inventory"
+    },
+    {
+      label: "Pacientes con deuda",
+      detail: patientsWithBalance ? `${patientsWithBalance} pacientes con balance pendiente` : "No hay balances pendientes",
+      status: patientsWithBalance ? "Pendiente" : "Confirmada",
+      view: "patients"
+    },
+    {
+      label: "Próximas citas",
+      detail: upcomingAppointments.length ? upcomingAppointments.map((appointment) => `${appointment.time} ${patientById(appointment.patientId).name}`).join(" | ") : "No hay próximas citas activas",
+      status: upcomingAppointments.length ? "Confirmada" : "Pendiente",
+      view: "agenda"
+    }
+  ].map(dashboardAlertTemplate).join("");
 
   renderPanelModules("doctorPanelModules", "dashboard");
 
@@ -2150,6 +2204,31 @@ function renderDashboard() {
       </article>
     `)
     .join("");
+}
+
+function dashboardMetricTemplate(metric) {
+  return `
+    <article class="metric-card executive-metric">
+      <div>
+        <span>${escapeHtml(metric.label)}</span>
+        <strong>${escapeHtml(String(metric.value))}</strong>
+      </div>
+      <p>${escapeHtml(metric.detail)}</p>
+      <small class="status-pill ${className(metric.status)}">${escapeHtml(metric.status)}</small>
+    </article>
+  `;
+}
+
+function dashboardAlertTemplate(alert) {
+  return `
+    <button class="dashboard-alert-card" data-view-jump="${alert.view}" type="button">
+      <span class="status-pill ${className(alert.status)}">${escapeHtml(alert.status)}</span>
+      <div>
+        <strong>${escapeHtml(alert.label)}</strong>
+        <p>${escapeHtml(alert.detail)}</p>
+      </div>
+    </button>
+  `;
 }
 
 function renderReceptionPanel() {
@@ -2915,47 +2994,45 @@ function renderPermissionMatrix(targetUserId = selectedUserId) {
   const grouped = [...new Set(permissionCatalog.map((item) => item.panel))]
       .map((group) => {
         const items = permissionCatalog.filter((item) => item.panel === group);
+        const activeCount = items.filter((item) => userPermissions.views.includes(item.view)).length;
+        const status = permissionGroupStatus(activeCount, items.length);
         return `
-          <div class="permission-group">
-            <strong>${group}</strong>
-            ${items.map((item) => `
-              <label class="permission-toggle">
-                  <input
-                  type="checkbox"
-                  data-permission-user="${user.id}"
-                  data-permission-view="${item.view}"
-                  ${userPermissions.views.includes(item.view) ? "checked" : ""}
-                  ${!canEditPermissions || user.id === "admin" ? "disabled" : ""}
-                >
-                <span>${escapeHtml(item.label)}</span>
-              </label>
-            `).join("")}
+          <div class="permission-panel-card">
+            <div class="permission-card-head">
+              <div>
+                <strong>${escapeHtml(group)}</strong>
+                <small>${activeCount}/${items.length} accesos activos</small>
+              </div>
+              <span class="permission-chip ${status.className}">${status.label}</span>
+            </div>
+            <div class="permission-card-body">
+              ${items.map((item) => permissionViewToggleTemplate(item, user, userPermissions, canEditPermissions)).join("")}
+            </div>
           </div>
         `;
       }).join("");
   const actionsGrouped = [...new Set(actionPermissionCatalog.map((item) => item.group))].map((group) => {
     const items = actionPermissionCatalog.filter((item) => item.group === group);
+    const activeCount = items.filter((item) => userPermissions.actions.includes(item.action)).length;
+    const status = permissionGroupStatus(activeCount, items.length);
     return `
-      <div class="permission-group">
-        <strong>${group}</strong>
-        ${items.map((item) => {
-          const unavailable = item.action.startsWith("selfservice:") && !allowedSelfServiceActionsForRole(user.role).includes(item.action);
-          return `
-            <label class="permission-toggle ${unavailable ? "permission-disabled" : ""}">
-              <input
-                type="checkbox"
-                data-permission-action-user="${user.id}"
-                data-permission-action="${item.action}"
-                ${userPermissions.actions.includes(item.action) ? "checked" : ""}
-                ${!canEditPermissions || user.id === "admin" || unavailable ? "disabled" : ""}
-              >
-              <span>${escapeHtml(item.label)}</span>
-            </label>
-          `;
-        }).join("")}
+      <div class="permission-panel-card permission-action-card">
+        <div class="permission-card-head">
+          <div>
+            <strong>${escapeHtml(group)}</strong>
+            <small>${activeCount}/${items.length} acciones permitidas</small>
+          </div>
+          <span class="permission-chip ${status.className}">${status.label}</span>
+        </div>
+        <div class="permission-card-body">
+          ${items.map((item) => permissionActionToggleTemplate(item, user, userPermissions, canEditPermissions)).join("")}
+        </div>
       </div>
     `;
   }).join("");
+  const accessChip = userPermissions.scope === "all"
+    ? `<span class="permission-chip full">Acceso completo</span>`
+    : `<span class="permission-chip own">Solo propios</span>`;
   const scopeControl = `
     <div class="permission-scope">
       <label>
@@ -2982,6 +3059,7 @@ function renderPermissionMatrix(targetUserId = selectedUserId) {
         <span class="status-pill ${user.role === "Administrador" ? "confirmada" : "pendiente"}">${escapeHtml(user.role)}</span>
         <h2>Accesos</h2>
         <p>${helpText}</p>
+        <div class="permission-chip-row">${accessChip}</div>
         ${scopeControl}
       </div>
       <div class="permission-groups">${grouped}</div>
@@ -3005,6 +3083,47 @@ function renderPermissionMatrix(targetUserId = selectedUserId) {
   document.getElementById("permissionScope")?.addEventListener("change", (event) => {
     updateUserPermissionScope(user.id, event.target.value);
   });
+}
+
+function permissionGroupStatus(activeCount, totalCount) {
+  if (activeCount === 0) return { label: "Sin acceso", className: "none" };
+  if (activeCount === totalCount) return { label: "Activo", className: "active" };
+  return { label: "Parcial", className: "partial" };
+}
+
+function permissionViewToggleTemplate(item, user, userPermissions, canEditPermissions) {
+  const enabled = userPermissions.views.includes(item.view);
+  return `
+    <label class="permission-toggle permission-card-toggle ${enabled ? "is-active" : ""}">
+      <input
+        type="checkbox"
+        data-permission-user="${user.id}"
+        data-permission-view="${item.view}"
+        ${enabled ? "checked" : ""}
+        ${!canEditPermissions || user.id === "admin" ? "disabled" : ""}
+      >
+      <span>${escapeHtml(item.label)}</span>
+      <small class="permission-chip ${enabled ? "active" : "none"}">${enabled ? "Activo" : "Sin acceso"}</small>
+    </label>
+  `;
+}
+
+function permissionActionToggleTemplate(item, user, userPermissions, canEditPermissions) {
+  const enabled = userPermissions.actions.includes(item.action);
+  const unavailable = item.action.startsWith("selfservice:") && !allowedSelfServiceActionsForRole(user.role).includes(item.action);
+  return `
+    <label class="permission-toggle permission-card-toggle ${enabled ? "is-active" : ""} ${unavailable ? "permission-disabled" : ""}">
+      <input
+        type="checkbox"
+        data-permission-action-user="${user.id}"
+        data-permission-action="${item.action}"
+        ${enabled ? "checked" : ""}
+        ${!canEditPermissions || user.id === "admin" || unavailable ? "disabled" : ""}
+      >
+      <span>${escapeHtml(item.label)}</span>
+      <small class="permission-chip ${enabled ? "active" : "none"}">${enabled ? "Activo" : "Sin acceso"}</small>
+    </label>
+  `;
 }
 
 function updateUserPermission(input) {
@@ -3465,51 +3584,23 @@ function openPatientRecord(patientId) {
 
   document.getElementById("patientRecordTitle").textContent = `${patient.name} · ${patient.code || ""}`;
   document.getElementById("patientRecordMeta").textContent = `${patient.documentType || "Documento"}: ${patientDocumentLabel(patient)} · ${patientAge(patient.birthdate)} · ${patient.phone}`;
-  document.getElementById("patientRecordContent").innerHTML = `
-    <div class="patient-record-grid">
-      <section class="record-block">
-        <h3>Datos personales</h3>
-        <div class="record-patient-card">
-          ${patientPhotoTemplate(patient)}
-          <div>
-            <strong>${escapeHtml(patient.name)}</strong>
-            <span>${escapeHtml(patient.email || "Sin correo")}</span>
-            <span>${escapeHtml(patient.nationality || "Dominicano")} · ${escapeHtml(patient.gender || "No especificado")}</span>
-            <span>${escapeHtml(patient.address || "Sin dirección")}</span>
-            <span>Emergencia: ${escapeHtml(emergency.name || "No registrada")} · ${escapeHtml(emergency.phone || "Sin teléfono")} · ${escapeHtml(emergency.relation || "Sin parentesco")}</span>
-          </div>
-        </div>
-      </section>
-      <section class="record-block">
-        <h3>Alertas clínicas</h3>
-        ${hasMedicalAlert(patient) ? `<div class="medical-alert-banner">${escapeHtml(patientMedicalAlertText(patient))}</div>` : `<p>Sin alertas médicas activas.</p>`}
-        <p>Alergias: <strong>${escapeHtml(patient.allergies || "Ninguna")}</strong></p>
-        <p>Condiciones: ${escapeHtml(patient.conditions || "Sin registro")}</p>
-        <p>Medicamentos: ${escapeHtml(patient.medications || "Sin registro")}</p>
-      </section>
-      <section class="record-block">
-        <h3>Historial clínico</h3>
-        <p>${escapeHtml(patient.clinicalHistory || patient.notes || "Sin historial registrado")}</p>
-        <p>Última visita: ${formatDate(patient.lastVisit)}</p>
-      </section>
-      <section class="record-block">
-        <h3>Resumen financiero</h3>
-        <p>Tratamientos: <strong>${currency.format(treatmentTotal)}</strong></p>
-        <p>Pagado: <strong>${currency.format(paidTotal)}</strong></p>
-        <p>Balance: <strong>${currency.format(patient.balance)}</strong></p>
-      </section>
-    </div>
-    ${patientRecordSection("Histórico completo del paciente", patientTimeline, patientTimelineTemplate)}
-    ${upcomingAppointmentsByDoctorSection(upcomingAppointments)}
-    ${patientRecordSection("Citas", patientAppointments, appointmentRecordTemplate)}
-    ${patientRecordSection("Tratamientos", patientTreatments, treatmentRecordTemplate)}
-    ${patientRecordSection("Pagos y facturas", patientPayments, paymentRecordTemplate)}
-    ${patientPlatesSection(patient.id, patientPlates)}
-    ${patientConsentsSection(patient.id, patientConsents)}
-    ${patientAttachmentsSection(patient.id, patientAttachments)}
-    ${patientRecordSection("Documentos clínicos", patientDocuments, documentRecordTemplate)}
-    ${patientRecordSection("Historial odontograma", patientDentalHistory, dentalHistoryRecordTemplate)}
-  `;
+  document.getElementById("patientRecordContent").innerHTML = patientRecordContent({
+    patient,
+    emergency,
+    paidTotal,
+    treatmentTotal,
+    patientTimeline,
+    upcomingAppointments,
+    patientAppointments,
+    patientTreatments,
+    patientPayments,
+    patientPlates,
+    patientConsents,
+    patientAttachments,
+    patientDocuments,
+    patientDentalHistory
+  });
+  bindPatientRecordTabs();
   bindPatientPlateForm(patient.id);
   bindPatientConsentForm(patient.id);
   bindPatientAttachmentForm(patient.id);
@@ -3518,6 +3609,107 @@ function openPatientRecord(patientId) {
 
 function closePatientRecord() {
   document.getElementById("patientRecordDialog").close();
+}
+
+function patientRecordContent({
+  patient,
+  emergency,
+  paidTotal,
+  treatmentTotal,
+  patientTimeline,
+  upcomingAppointments,
+  patientAppointments,
+  patientTreatments,
+  patientPayments,
+  patientPlates,
+  patientConsents,
+  patientAttachments,
+  patientDocuments,
+  patientDentalHistory
+}) {
+  return `
+    <section class="patient-record-hero">
+      <div class="patient-record-photo">${patientPhotoTemplate(patient)}</div>
+      <div class="patient-record-identity">
+        <div>
+          <span class="status-pill confirmada">${escapeHtml(patient.code || "Paciente")}</span>
+          <h2>${escapeHtml(patient.name)}</h2>
+          <p>${escapeHtml(patientAge(patient.birthdate))} · ${escapeHtml(patient.gender || "No especificado")} · ${escapeHtml(patient.nationality || "Dominicano")}</p>
+        </div>
+        <div class="patient-record-badges">${patientRecordBadges(patient).join("")}</div>
+      </div>
+      <div class="patient-record-balance">
+        <span>Balance pendiente</span>
+        <strong>${currency.format(patient.balance || 0)}</strong>
+        <small>Pagado ${currency.format(paidTotal)} de ${currency.format(treatmentTotal)}</small>
+      </div>
+    </section>
+    <div class="patient-record-tabs" role="tablist">
+      <button class="record-tab active" data-record-tab="personal" type="button">Datos personales</button>
+      <button class="record-tab" data-record-tab="insurance" type="button">Seguro</button>
+      <button class="record-tab" data-record-tab="emergency" type="button">Emergencia</button>
+      <button class="record-tab" data-record-tab="alerts" type="button">Alertas médicas</button>
+      <button class="record-tab" data-record-tab="history" type="button">Historial</button>
+    </div>
+    <div class="patient-record-tab-panels">
+      <section class="record-tab-panel active" data-record-panel="personal">
+        <div class="patient-record-grid">
+          <section class="record-block"><h3>Datos personales</h3><p>Documento: <strong>${escapeHtml(patientDocumentLabel(patient))}</strong></p><p>Tipo: ${escapeHtml(patient.documentType || "No registrado")}</p><p>Teléfono: ${escapeHtml(patient.phone || "No registrado")}</p><p>Correo: ${escapeHtml(patient.email || "Sin correo")}</p><p>Dirección: ${escapeHtml(patient.address || "Sin dirección")}</p></section>
+          <section class="record-block"><h3>Resumen financiero</h3><p>Tratamientos: <strong>${currency.format(treatmentTotal)}</strong></p><p>Pagado: <strong>${currency.format(paidTotal)}</strong></p><p>Balance: <strong>${currency.format(patient.balance)}</strong></p><p>Última visita: ${formatDate(patient.lastVisit)}</p></section>
+        </div>
+      </section>
+      <section class="record-tab-panel" data-record-panel="insurance">
+        <div class="patient-record-grid">
+          <section class="record-block"><h3>Seguro del paciente</h3><p>Aseguradora: <strong>${escapeHtml(patient.insurance || "Sin seguro")}</strong></p><p>Tipo de sangre: ${escapeHtml(patient.bloodType || "No registrado")}</p><p>Estado: ${escapeHtml(patient.status || "Activo")}</p></section>
+          <section class="record-block"><h3>Identificación</h3><p>${patientIsMinor(patient) ? "Paciente menor de edad: documento no requerido." : `Documento registrado: ${escapeHtml(patient.document || "Sin documento")}`}</p><p>Nacionalidad: ${escapeHtml(patient.nationality || "Dominicano")}</p></section>
+        </div>
+      </section>
+      <section class="record-tab-panel" data-record-panel="emergency">
+        <div class="patient-record-grid">
+          <section class="record-block"><h3>Contacto de emergencia</h3><p>Nombre: <strong>${escapeHtml(emergency.name || "No registrado")}</strong></p><p>Teléfono: ${escapeHtml(emergency.phone || "Sin teléfono")}</p><p>Parentesco: ${escapeHtml(emergency.relation || "Sin parentesco")}</p></section>
+          <section class="record-block"><h3>Contacto del paciente</h3><p>Teléfono principal: ${escapeHtml(patient.phone || "No registrado")}</p><p>Correo: ${escapeHtml(patient.email || "Sin correo")}</p><p>Dirección: ${escapeHtml(patient.address || "Sin dirección")}</p></section>
+        </div>
+      </section>
+      <section class="record-tab-panel" data-record-panel="alerts">
+        <div class="patient-record-grid">
+          <section class="record-block"><h3>Alertas médicas</h3>${hasMedicalAlert(patient) ? `<div class="medical-alert-banner">${escapeHtml(patientMedicalAlertText(patient))}</div>` : `<p>Sin alertas médicas activas.</p>`}<p>Alergias: <strong>${escapeHtml(patient.allergies || "Ninguna")}</strong></p></section>
+          <section class="record-block"><h3>Condiciones y medicamentos</h3><p>Condiciones: ${escapeHtml(patient.conditions || "Sin registro")}</p><p>Medicamentos: ${escapeHtml(patient.medications || "Sin registro")}</p><p>Historial clínico: ${escapeHtml(patient.clinicalHistory || patient.notes || "Sin historial registrado")}</p></section>
+        </div>
+      </section>
+      <section class="record-tab-panel" data-record-panel="history">
+        ${patientRecordSection("Histórico completo del paciente", patientTimeline, patientTimelineTemplate)}
+        ${upcomingAppointmentsByDoctorSection(upcomingAppointments)}
+        ${patientRecordSection("Citas", patientAppointments, appointmentRecordTemplate)}
+        ${patientRecordSection("Tratamientos", patientTreatments, treatmentRecordTemplate)}
+        ${patientRecordSection("Pagos y facturas", patientPayments, paymentRecordTemplate)}
+        ${patientPlatesSection(patient.id, patientPlates)}
+        ${patientConsentsSection(patient.id, patientConsents)}
+        ${patientAttachmentsSection(patient.id, patientAttachments)}
+        ${patientRecordSection("Documentos clínicos", patientDocuments, documentRecordTemplate)}
+        ${patientRecordSection("Historial odontograma", patientDentalHistory, dentalHistoryRecordTemplate)}
+      </section>
+    </div>
+  `;
+}
+
+function patientRecordBadges(patient) {
+  return [
+    `<span class="record-badge ${hasMedicalAlert(patient) ? "alert" : "ok"}">Alergias: ${escapeHtml(patient.allergies || "Ninguna")}</span>`,
+    `<span class="record-badge ${patientIsMinor(patient) ? "minor" : "ok"}">${patientIsMinor(patient) ? "Menor de edad" : "Adulto"}</span>`,
+    `<span class="record-badge ${normalizeText(patient.insurance) === "sin seguro" || normalizeText(patient.insurance) === "privado" ? "neutral" : "ok"}">${escapeHtml(patient.insurance || "Sin seguro")}</span>`,
+    `<span class="record-badge ${Number(patient.balance || 0) > 0 ? "debt" : "ok"}">${Number(patient.balance || 0) > 0 ? "Balance pendiente" : "Sin balance"}</span>`
+  ];
+}
+
+function bindPatientRecordTabs() {
+  document.querySelectorAll("[data-record-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll("[data-record-tab]").forEach((tab) => tab.classList.toggle("active", tab === button));
+      document.querySelectorAll("[data-record-panel]").forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.recordPanel === button.dataset.recordTab);
+      });
+    });
+  });
 }
 
 function patientRecordSection(title, items, template) {

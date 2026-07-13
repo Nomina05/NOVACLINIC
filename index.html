@@ -47,13 +47,27 @@
           </div>
         </div>
         <nav class="nav-list">
-          <span class="nav-section">Paneles</span>
-          <button class="nav-item active" data-view="dashboard">Doctores</button>
-          <button class="nav-item" data-view="receptionPanel">Recepción</button>
-          <button class="nav-item" data-view="usersPanel">Usuarios</button>
-          <button class="nav-item" data-view="hrPanel">Recursos Humanos</button>
-          <button class="nav-item" data-view="laboratoryPanel">Laboratorio</button>
-          <button class="nav-item" data-view="accountingPanel">Contabilidad</button>
+          <div class="nav-group">
+            <span class="nav-section">Paneles</span>
+            <button class="nav-item active" data-view="dashboard"><span class="nav-icon nav-icon-doctor" aria-hidden="true"></span><span>Doctores</span></button>
+            <button class="nav-item" data-view="receptionPanel"><span class="nav-icon nav-icon-reception" aria-hidden="true"></span><span>Recepción</span></button>
+            <button class="nav-item" data-view="usersPanel"><span class="nav-icon nav-icon-users" aria-hidden="true"></span><span>Usuarios</span></button>
+            <button class="nav-item" data-view="hrPanel"><span class="nav-icon nav-icon-hr" aria-hidden="true"></span><span>Recursos Humanos</span></button>
+            <button class="nav-item" data-view="laboratoryPanel"><span class="nav-icon nav-icon-lab" aria-hidden="true"></span><span>Laboratorio</span></button>
+            <button class="nav-item" data-view="accountingPanel"><span class="nav-icon nav-icon-accounting" aria-hidden="true"></span><span>Contabilidad</span></button>
+          </div>
+          <div class="nav-group nav-group-modules">
+            <span class="nav-section">Módulos</span>
+            <button class="nav-item nav-item-module" data-view="patients"><span class="nav-icon nav-icon-patient" aria-hidden="true"></span><span>Pacientes</span></button>
+            <button class="nav-item nav-item-module" data-view="selfService"><span class="nav-icon nav-icon-self" aria-hidden="true"></span><span>Autoservicio</span></button>
+            <button class="nav-item nav-item-module" data-view="agenda"><span class="nav-icon nav-icon-agenda" aria-hidden="true"></span><span>Agenda</span></button>
+            <button class="nav-item nav-item-module" data-view="odontogram"><span class="nav-icon nav-icon-tooth" aria-hidden="true"></span><span>Odontograma</span></button>
+            <button class="nav-item nav-item-module" data-view="treatments"><span class="nav-icon nav-icon-treatment" aria-hidden="true"></span><span>Tratamientos</span></button>
+            <button class="nav-item nav-item-module" data-view="billing"><span class="nav-icon nav-icon-billing" aria-hidden="true"></span><span>Facturación</span></button>
+            <button class="nav-item nav-item-module" data-view="inventory"><span class="nav-icon nav-icon-inventory" aria-hidden="true"></span><span>Almacén</span></button>
+            <button class="nav-item nav-item-module" data-view="reports"><span class="nav-icon nav-icon-reports" aria-hidden="true"></span><span>Reportes</span></button>
+            <button class="nav-item nav-item-module" data-view="adminPanel"><span class="nav-icon nav-icon-admin" aria-hidden="true"></span><span>Administración</span></button>
+          </div>
         </nav>
         <div class="clinic-card">
           <span>Usuario conectado</span>
@@ -79,6 +93,7 @@
         </header>
 
         <section class="view active" id="dashboard">
+          <div class="dashboard-alert-strip" id="dashboardAlertStrip"></div>
           <div class="metric-grid" id="metricGrid"></div>
           <section class="panel panel-modules">
             <div class="panel-header">
@@ -514,16 +529,19 @@
                   <p id="selectedUserMeta">El Administrador define qué paneles y módulos puede ver cada usuario.</p>
                 </div>
                 <div class="permission-toolbar">
-                  <select id="userPermissionProfile" aria-label="Perfil de permisos">
-                    <option value="">Perfil rápido</option>
-                    <option>Administrador</option>
-                    <option>Doctor</option>
-                    <option>Recepción</option>
-                    <option>Recursos Humanos</option>
-                    <option>Laboratorio</option>
-                    <option>Contabilidad</option>
-                  </select>
-                  <button class="ghost-button" id="applyPermissionProfile" type="button">Aplicar perfil</button>
+                  <label class="permission-profile-select">
+                    Perfil rápido
+                    <select id="userPermissionProfile" aria-label="Perfil de permisos">
+                      <option value="">Seleccionar perfil</option>
+                      <option>Administrador</option>
+                      <option>Doctor</option>
+                      <option>Recepción</option>
+                      <option>Recursos Humanos</option>
+                      <option>Laboratorio</option>
+                      <option>Contabilidad</option>
+                    </select>
+                  </label>
+                  <button class="primary-button" id="applyPermissionProfile" type="button">Aplicar perfil</button>
                   <button class="ghost-button" id="resetPermissionProfile" type="button">Restablecer rol</button>
                 </div>
                 <button class="ghost-button" id="editSelectedUser" type="button">Editar usuario</button>
