@@ -1001,6 +1001,7 @@
               <input id="paymentQuantity" type="number" min="1" step="1" value="1" placeholder="Cantidad" disabled>
               <input id="paymentConcept" placeholder="Concepto del cobro" required>
               <input id="paymentAmount" type="number" min="0" step="100" placeholder="Monto" required>
+              <input id="paymentReceived" type="number" min="0" step="100" placeholder="Monto recibido">
               <input id="paymentDiscount" type="number" min="0" step="100" placeholder="Descuento">
               <input id="paymentDiscountReason" placeholder="Motivo descuento">
               <select id="paymentMethod">
@@ -1009,6 +1010,13 @@
                 <option>Transferencia</option>
                 <option>Seguro</option>
                 <option>Cheque</option>
+              </select>
+              <select id="paymentInvoiceType">
+                <option>Consumidor Final</option>
+                <option>Gubernamental</option>
+                <option>Comprobante Fiscal</option>
+                <option>Crédito Fiscal</option>
+                <option>Régimen Especial</option>
               </select>
               <select id="paymentInvoiceStatus">
                 <option>Pagada</option>

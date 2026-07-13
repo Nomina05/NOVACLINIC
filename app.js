@@ -1205,12 +1205,14 @@ function bindForms() {
       billedToPatientId: billTo === "patient" ? patient.id : "",
       createdBy: cashierId,
       amount,
+      amountReceived: Number(value("paymentReceived")) || amount,
       discount,
       discountReason: value("paymentDiscountReason"),
       method: value("paymentMethod"),
       reference: value("paymentReference"),
       receiptNumber,
       invoiceNumber,
+      invoiceType: value("paymentInvoiceType"),
       invoiceStatus: value("paymentInvoiceStatus"),
       date: todayIso,
       createdAt: new Date().toISOString(),
@@ -1968,12 +1970,14 @@ function createLaboratoryInvoice(requestId) {
     billedToPatientId: patient?.id || "",
     createdBy: currentUser?.id || "laboratorio",
     amount,
+    amountReceived: amount,
     discount: 0,
     discountReason: "",
     method: "Laboratorio",
     reference: request.id,
     receiptNumber,
     invoiceNumber,
+    invoiceType: "Comprobante Fiscal",
     invoiceStatus: "Emitida",
     date: todayIso,
     createdAt: new Date().toISOString(),
@@ -3611,24 +3615,30 @@ function renderPosInvoiceReport() {
   ].map(posSummaryTemplate).join("");
 
   document.getElementById("posInvoiceTickets").innerHTML = posInvoices.length
-    ? posInvoices.map(posInvoiceTicketTemplate).join("")
+    ? posInvoices.map((payment) => posInvoiceTicketTemplate(payment, "FACTURA POS")).join("")
     : emptyState("No hay facturas POS/POST registradas.");
 }
 
-function posInvoiceTicketTemplate(payment) {
+function posInvoiceTicketTemplate(payment, documentTitle = "RECIBO DE PAGO") {
   const patient = patientById(payment.patientId);
   const total = Number(payment.amount || 0);
+  const discount = Number(payment.discount || 0);
+  const invoiceGross = total + discount;
   const taxRate = 0.18;
-  const subtotal = total / (1 + taxRate);
-  const tax = total - subtotal;
+  const subtotal = invoiceGross / (1 + taxRate);
+  const tax = invoiceGross - subtotal;
   const quantity = Number(payment.quantity || 1) || 1;
-  const unit = total / quantity;
+  const unit = invoiceGross / quantity;
+  const received = Number(payment.amountReceived || payment.received || total);
+  const change = Math.max(0, received - total);
   const seller = paymentCashierLabel(payment);
+  const doctor = paymentDoctorLabel(payment);
+  const isReceipt = normalizeText(documentTitle).includes("recibo");
   const settings = state.settings || {};
   return `
     <article class="pos-ticket">
       <div class="pos-ticket-brand">
-        <div class="ticket-logo-mark">N</div>
+        <img class="ticket-logo" src="NOVACLINIC LOGO.png" alt="NovaClinic">
         <h3>${escapeHtml(settings.clinicName || "NovaClinic")}</h3>
         <p>${escapeHtml(settings.clinicTaxId || "RNC-000000")}</p>
         <p>${escapeHtml(settings.clinicAddress || "Santo Domingo, República Dominicana")}</p>
@@ -3636,41 +3646,46 @@ function posInvoiceTicketTemplate(payment) {
       </div>
       <div class="ticket-separator"></div>
       <div class="ticket-client">
-        <strong>Cliente: ${escapeHtml(patient.name)}</strong>
+        <strong>${escapeHtml(documentTitle)}</strong>
+        <p>Código cliente: ${escapeHtml(patient.code || patient.id || "Sin código")}</p>
+        <p>Cliente: ${escapeHtml(patient.name)}</p>
+        <p>Seguro: ${escapeHtml(patient.insurance || "Sin seguro")}</p>
         <p>${escapeHtml(patient.address || "Dirección no registrada")}</p>
         <p>Teléfono: ${escapeHtml(patient.phone || "No registrado")}</p>
         <p>Identificación: ${escapeHtml(patientDocumentLabel(patient))}</p>
       </div>
       <div class="ticket-separator"></div>
       <div class="ticket-invoice-meta">
-        <strong>Factura</strong>
+        <strong>No. Factura</strong>
         <span>${escapeHtml(payment.invoiceNumber || "FAC-S/N")}</span>
+        <p>Tipo de factura: ${escapeHtml(payment.invoiceType || "Consumidor Final")}</p>
         <p>Fecha: ${paymentIssuedAtLabel(payment)}</p>
         <p>Referencia: ${escapeHtml(payment.reference || "Sin referencia")}</p>
+        <p>Doctor que atendió: ${escapeHtml(doctor)}</p>
         <p>Método de pago: ${escapeHtml(payment.method || "Tarjeta")}</p>
         <p>Vendedor: ${escapeHtml(seller)}</p>
       </div>
       <div class="ticket-items">
         <div class="ticket-items-head">
-          <span>Producto</span><span>Cant.</span><span>Unit.</span><span>Total</span>
+          <span>Producto/Proc.</span><span>Cant.</span><span>Precio</span><span>Total</span>
         </div>
         <div class="ticket-item-row">
           <span>${escapeHtml(payment.concept || "Servicio odontológico")}</span>
           <span>${quantity}</span>
           <span>${currency.format(unit)}</span>
-          <span>${currency.format(total)}</span>
+          <span>${currency.format(invoiceGross)}</span>
         </div>
       </div>
       <div class="ticket-totals">
         <div><span>Subtotal:</span><strong>${currency.format(subtotal)}</strong></div>
         <div><span>ITBIS (18.00%):</span><strong>${currency.format(tax)}</strong></div>
-        <div class="ticket-grand-total"><span>Total:</span><strong>${currency.format(total)}</strong></div>
+        <div><span>Descuento:</span><strong>${currency.format(discount)}</strong></div>
+        <div class="ticket-grand-total"><span>Total general:</span><strong>${currency.format(total)}</strong></div>
       </div>
-      <div class="ticket-payments">
-        <p>Total recibido: ${currency.format(total)}</p>
-        <p>Total de líneas: 1</p>
-        <p>Total de productos: ${quantity}</p>
-      </div>
+      ${isReceipt ? `<div class="ticket-payments">
+        <p>Total recibido: ${currency.format(received)}</p>
+        <p>Devolver: ${currency.format(change)}</p>
+      </div>` : ""}
       <div class="ticket-signature">
         <span>Elaborado por:</span>
         <strong>${escapeHtml(seller)}</strong>

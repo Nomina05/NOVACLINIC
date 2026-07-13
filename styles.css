@@ -536,6 +536,14 @@ p {
   font-weight: 900;
 }
 
+.ticket-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 8px;
+}
+
 .pos-ticket h3,
 .pos-ticket p {
   margin: 0 0 3px;
@@ -605,9 +613,9 @@ p {
 
 .ticket-signature {
   display: grid;
-  gap: 5px;
-  margin-top: 16px;
-  padding-top: 10px;
+  gap: 7px;
+  margin-top: 28px;
+  padding-top: 28px;
   border-top: 1px solid #222;
   text-align: center;
 }
