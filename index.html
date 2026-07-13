@@ -931,6 +931,14 @@
                 <label class="full">Dirección<input id="clinicAddress"></label>
                 <label>RNC<input id="clinicTaxId"></label>
                 <label>Moneda<input id="clinicCurrency" value="DOP"></label>
+                <label>NCF consumidor final<input id="ncfFinalPrefix" placeholder="B02"></label>
+                <label>Próximo consumidor final<input id="ncfFinalNext" type="number" min="1"></label>
+                <label>NCF crédito fiscal<input id="ncfFiscalPrefix" placeholder="B01"></label>
+                <label>Próximo crédito fiscal<input id="ncfFiscalNext" type="number" min="1"></label>
+                <label>NCF gubernamental<input id="ncfGovPrefix" placeholder="B15"></label>
+                <label>Próximo gubernamental<input id="ncfGovNext" type="number" min="1"></label>
+                <label>NCF régimen especial<input id="ncfSpecialPrefix" placeholder="B14"></label>
+                <label>Próximo régimen especial<input id="ncfSpecialNext" type="number" min="1"></label>
                 <div class="modal-actions full">
                   <button class="primary-button" type="submit">Guardar configuración</button>
                 </div>
@@ -1017,11 +1025,14 @@
                 <option>Comprobante Fiscal</option>
                 <option>Crédito Fiscal</option>
                 <option>Régimen Especial</option>
+                <option>Cotización</option>
               </select>
               <select id="paymentInvoiceStatus">
                 <option>Pagada</option>
                 <option>Abono</option>
                 <option>Emitida</option>
+                <option>Pendiente</option>
+                <option>Parcialmente pagada</option>
               </select>
               <input id="paymentReference" placeholder="Referencia opcional">
               <button class="primary-button" type="submit">Registrar pago</button>

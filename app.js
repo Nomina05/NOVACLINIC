@@ -374,7 +374,13 @@ seedState.settings = {
   clinicPhone: "809-555-0100",
   clinicAddress: "Santo Domingo, República Dominicana",
   clinicTaxId: "RNC-000000",
-  clinicCurrency: "DOP"
+  clinicCurrency: "DOP",
+  ncfSequences: {
+    final: { prefix: "B02", next: 1 },
+    fiscal: { prefix: "B01", next: 1 },
+    gov: { prefix: "B15", next: 1 },
+    special: { prefix: "B14", next: 1 }
+  }
 };
 
 seedState.payroll = users.map((user) => ({
@@ -503,12 +509,18 @@ function loadState() {
 
 function normalizeState(loadedState) {
   const next = { ...cloneSeed(), ...loadedState };
+  next.settings = normalizeSettings(next.settings);
   next.inventory = (next.inventory || []).map((item) => ({ price: 0, ...item }));
   next.payments = (next.payments || []).map((payment) => ({
     type: "Servicio",
     billTo: "patient",
     cashierId: payment.createdBy || "",
     attendedDoctorId: payment.doctorId || "",
+    invoiceType: "Consumidor Final",
+    invoiceStatus: "Pagada",
+    ncf: "",
+    reprintCount: 0,
+    reprints: [],
     ...payment
   }));
   next.cashOpenings ||= [];
@@ -520,6 +532,18 @@ function normalizeState(loadedState) {
   next.patientPlates ||= [];
   next.selfServiceRequests ||= [];
   return next;
+}
+
+function normalizeSettings(settings = {}) {
+  const defaults = cloneSeed().settings;
+  const ncfSequences = { ...defaults.ncfSequences, ...(settings.ncfSequences || {}) };
+  Object.entries(defaults.ncfSequences).forEach(([key, sequence]) => {
+    ncfSequences[key] = {
+      prefix: ncfSequences[key]?.prefix || sequence.prefix,
+      next: Math.max(1, Number(ncfSequences[key]?.next) || sequence.next)
+    };
+  });
+  return { ...defaults, ...settings, ncfSequences };
 }
 
 function saveState() {
@@ -1192,8 +1216,11 @@ function bindForms() {
     }
     const amount = Number(value("paymentAmount"));
     const discount = Number(value("paymentDiscount")) || 0;
+    const invoiceType = value("paymentInvoiceType");
+    const isQuote = invoiceType === "Cotización";
     const receiptNumber = nextReceiptNumber();
     const invoiceNumber = nextInvoiceNumber();
+    const ncf = isQuote ? "" : nextNcf(invoiceType);
     state.payments.unshift({
       id: makeId(),
       patientId: patient.id,
@@ -1212,8 +1239,10 @@ function bindForms() {
       reference: value("paymentReference"),
       receiptNumber,
       invoiceNumber,
-      invoiceType: value("paymentInvoiceType"),
-      invoiceStatus: value("paymentInvoiceStatus"),
+      ncf,
+      invoiceType,
+      documentKind: isQuote ? "Cotización" : "Factura",
+      invoiceStatus: isQuote ? "Cotización" : value("paymentInvoiceStatus"),
       date: todayIso,
       createdAt: new Date().toISOString(),
       concept: value("paymentConcept"),
@@ -1222,10 +1251,12 @@ function bindForms() {
       productName: product?.name || "",
       quantity: product ? quantity : 0
     });
-    if (product) {
+    if (product && !isQuote) {
       product.stock = Math.max(0, product.stock - quantity);
     }
-    patient.balance = Math.max(0, patient.balance - amount - discount);
+    if (!isQuote) {
+      patient.balance = Math.max(0, patient.balance - amount - discount);
+    }
     event.target.reset();
     document.getElementById("paymentCashier").value = currentUser?.id || "";
     syncPaymentProductFields();
@@ -1481,7 +1512,8 @@ function bindForms() {
       clinicPhone: value("clinicPhone"),
       clinicAddress: value("clinicAddress"),
       clinicTaxId: value("clinicTaxId"),
-      clinicCurrency: value("clinicCurrency")
+      clinicCurrency: value("clinicCurrency"),
+      ncfSequences: readNcfSettingsFromForm()
     };
     persistAndRender();
   });
@@ -1959,6 +1991,7 @@ function createLaboratoryInvoice(requestId) {
   const doctorId = request.createdBy;
   const invoiceNumber = nextInvoiceNumber();
   const receiptNumber = nextReceiptNumber();
+  const invoiceType = "Comprobante Fiscal";
   const payment = {
     id: makeId(),
     patientId: patient?.id || "",
@@ -1977,7 +2010,9 @@ function createLaboratoryInvoice(requestId) {
     reference: request.id,
     receiptNumber,
     invoiceNumber,
-    invoiceType: "Comprobante Fiscal",
+    ncf: nextNcf(invoiceType),
+    invoiceType,
+    documentKind: "Factura",
     invoiceStatus: "Emitida",
     date: todayIso,
     createdAt: new Date().toISOString(),
@@ -2474,11 +2509,12 @@ function updateUserPermission(input) {
 }
 
 function renderAccountingPanel() {
-  const collectedToday = state.payments
+  const billablePayments = activeBillingPayments();
+  const collectedToday = billablePayments
     .filter((payment) => payment.date === todayIso)
     .reduce((sum, payment) => sum + payment.amount, 0);
   const pendingTotal = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
-  const methodTotals = state.payments.reduce((summary, payment) => {
+  const methodTotals = billablePayments.reduce((summary, payment) => {
     summary[payment.method] = (summary[payment.method] || 0) + payment.amount;
     return summary;
   }, {});
@@ -2486,14 +2522,14 @@ function renderAccountingPanel() {
   document.getElementById("accountingPanelCards").innerHTML = [
     ["Ingresos hoy", currency.format(collectedToday)],
     ["Cuentas por cobrar", currency.format(pendingTotal)],
-    ["Recibos", state.payments.length],
+    ["Recibos", billablePayments.length],
     ["Método principal", topPaymentMethod(methodTotals)]
   ].map(panelCardTemplate).join("");
 
   renderPanelModules("accountingPanelModules", "accountingPanel");
 
-  document.getElementById("accountingLedger").innerHTML = state.payments.length
-    ? state.payments.slice(0, 5).map((payment) => `
+  document.getElementById("accountingLedger").innerHTML = billablePayments.length
+    ? billablePayments.slice(0, 5).map((payment) => `
       <article class="ledger-item">
         <span class="amount-pill">${currency.format(payment.amount)}</span>
         <div>
@@ -3433,17 +3469,18 @@ function renderTreatments() {
 }
 
 function renderBilling() {
-  const collectedToday = state.payments
+  const billablePayments = activeBillingPayments();
+  const collectedToday = billablePayments
     .filter((payment) => payment.date === todayIso)
     .reduce((sum, payment) => sum + payment.amount, 0);
-  const discountsToday = state.payments
+  const discountsToday = billablePayments
     .filter((payment) => payment.date === todayIso)
     .reduce((sum, payment) => sum + (Number(payment.discount) || 0), 0);
-  const productsToday = state.payments
+  const productsToday = billablePayments
     .filter((payment) => payment.date === todayIso && payment.type === "Producto")
     .reduce((sum, payment) => sum + (Number(payment.quantity) || 1), 0);
   const pendingTotal = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
-  const methodTotals = state.payments.reduce((summary, payment) => {
+  const methodTotals = billablePayments.reduce((summary, payment) => {
     summary[payment.method] = (summary[payment.method] || 0) + payment.amount;
     return summary;
   }, {});
@@ -3453,7 +3490,7 @@ function renderBilling() {
     ["Descuentos hoy", currency.format(discountsToday)],
     ["Productos facturados", productsToday],
     ["Balance pendiente", currency.format(pendingTotal)],
-    ["Facturas/recibos", state.payments.length],
+    ["Facturas/recibos", billablePayments.length],
     ["Método principal", topPaymentMethod(methodTotals)]
   ].map(([label, valueText]) => `
     <article class="billing-card">
@@ -3470,9 +3507,16 @@ function renderBilling() {
             <div>
               <strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} · ${escapeHtml(payment.receiptNumber || "REC-S/N")} · ${escapeHtml(patientById(payment.patientId).name)}</strong>
               <p>${escapeHtml(payment.concept)}${payment.type === "Producto" ? ` · Cant. ${payment.quantity || 1}` : ""} · ${escapeHtml(payment.method)} · ${escapeHtml(payment.invoiceStatus || "Pagada")}${payment.reference ? ` · Ref. ${escapeHtml(payment.reference)}` : ""} · ${escapeHtml(paymentBillToLabel(payment))} · Doctor ${escapeHtml(paymentDoctorLabel(payment))} · Cajero ${escapeHtml(paymentCashierLabel(payment))} · ${formatDate(payment.date)}</p>
+              <p>Tipo: ${escapeHtml(payment.invoiceType || "Consumidor Final")}${payment.ncf ? ` · NCF ${escapeHtml(payment.ncf)}` : ""}${payment.documentKind ? ` · ${escapeHtml(payment.documentKind)}` : ""}</p>
               ${(payment.discount || 0) > 0 ? `<p>Descuento: ${currency.format(payment.discount)} · ${escapeHtml(payment.discountReason || "Sin motivo")}</p>` : ""}
+              ${payment.voidReason ? `<p>Anulada por ${escapeHtml(userById(payment.voidedBy).name)} · ${escapeHtml(payment.voidReason)}</p>` : ""}
+              ${(payment.reprintCount || 0) > 0 ? `<p>Reimpresiones: ${payment.reprintCount}</p>` : ""}
             </div>
-            <button class="ghost-button" data-receipt="${payment.id}">Recibo</button>
+            <div class="table-actions">
+              <button class="ghost-button" data-receipt="${payment.id}">Recibo</button>
+              <button class="ghost-button" data-reprint="${payment.id}">Reimprimir</button>
+              <button class="ghost-button" data-annul="${payment.id}" ${payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Anular</button>
+            </div>
           </article>
         `)
         .join("")
@@ -3480,6 +3524,12 @@ function renderBilling() {
 
   document.querySelectorAll("[data-receipt]").forEach((button) => {
     button.addEventListener("click", () => openReceipt(button.dataset.receipt));
+  });
+  document.querySelectorAll("[data-reprint]").forEach((button) => {
+    button.addEventListener("click", () => reprintInvoice(button.dataset.reprint));
+  });
+  document.querySelectorAll("[data-annul]").forEach((button) => {
+    button.addEventListener("click", () => annulInvoice(button.dataset.annul));
   });
 
   const balances = state.patients.filter((patient) => patient.balance > 0);
@@ -3561,7 +3611,8 @@ function renderInventory() {
 }
 
 function renderReports() {
-  const income = state.payments.reduce((sum, payment) => sum + payment.amount, 0);
+  const billablePayments = activeBillingPayments();
+  const income = billablePayments.reduce((sum, payment) => sum + payment.amount, 0);
   const cancelled = state.appointments.filter((appointment) => appointment.status === "Cancelada").length;
   const completedTreatments = state.treatments.filter((treatment) => treatment.progress >= 100).length;
   const receivable = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
@@ -3602,7 +3653,7 @@ function renderReports() {
 }
 
 function renderPosInvoiceReport() {
-  const posInvoices = state.payments.filter(isPosInvoice);
+  const posInvoices = activeBillingPayments().filter(isPosInvoice);
   const total = posInvoices.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
   const discounts = posInvoices.reduce((sum, payment) => sum + Number(payment.discount || 0), 0);
   const emitted = posInvoices.filter((payment) => payment.invoiceStatus === "Emitida").length;
@@ -3658,7 +3709,9 @@ function posInvoiceTicketTemplate(payment, documentTitle = "RECIBO DE PAGO") {
       <div class="ticket-invoice-meta">
         <strong>No. Factura</strong>
         <span>${escapeHtml(payment.invoiceNumber || "FAC-S/N")}</span>
+        ${payment.ncf ? `<p>NCF: ${escapeHtml(payment.ncf)}</p>` : ""}
         <p>Tipo de factura: ${escapeHtml(payment.invoiceType || "Consumidor Final")}</p>
+        <p>Estado: ${escapeHtml(payment.invoiceStatus || "Pagada")}</p>
         <p>Fecha: ${paymentIssuedAtLabel(payment)}</p>
         <p>Referencia: ${escapeHtml(payment.reference || "Sin referencia")}</p>
         <p>Doctor que atendió: ${escapeHtml(doctor)}</p>
@@ -3732,12 +3785,20 @@ function paymentIssuedAtLabel(payment) {
 }
 
 function renderAdmin() {
-  state.settings ||= cloneSeed().settings;
+  state.settings = normalizeSettings(state.settings);
   document.getElementById("clinicName").value = state.settings.clinicName || "NovaClinic";
   document.getElementById("clinicPhone").value = state.settings.clinicPhone || "";
   document.getElementById("clinicAddress").value = state.settings.clinicAddress || "";
   document.getElementById("clinicTaxId").value = state.settings.clinicTaxId || "";
   document.getElementById("clinicCurrency").value = state.settings.clinicCurrency || "DOP";
+  document.getElementById("ncfFinalPrefix").value = state.settings.ncfSequences.final.prefix;
+  document.getElementById("ncfFinalNext").value = state.settings.ncfSequences.final.next;
+  document.getElementById("ncfFiscalPrefix").value = state.settings.ncfSequences.fiscal.prefix;
+  document.getElementById("ncfFiscalNext").value = state.settings.ncfSequences.fiscal.next;
+  document.getElementById("ncfGovPrefix").value = state.settings.ncfSequences.gov.prefix;
+  document.getElementById("ncfGovNext").value = state.settings.ncfSequences.gov.next;
+  document.getElementById("ncfSpecialPrefix").value = state.settings.ncfSequences.special.prefix;
+  document.getElementById("ncfSpecialNext").value = state.settings.ncfSequences.special.next;
 }
 
 function nextReceiptNumber() {
@@ -3748,6 +3809,36 @@ function nextReceiptNumber() {
 function nextInvoiceNumber() {
   const next = String(state.payments.length + 1).padStart(4, "0");
   return `FAC-${todayIso.replaceAll("-", "")}-${next}`;
+}
+
+function readNcfSettingsFromForm() {
+  return {
+    final: { prefix: value("ncfFinalPrefix") || "B02", next: Number(value("ncfFinalNext")) || 1 },
+    fiscal: { prefix: value("ncfFiscalPrefix") || "B01", next: Number(value("ncfFiscalNext")) || 1 },
+    gov: { prefix: value("ncfGovPrefix") || "B15", next: Number(value("ncfGovNext")) || 1 },
+    special: { prefix: value("ncfSpecialPrefix") || "B14", next: Number(value("ncfSpecialNext")) || 1 }
+  };
+}
+
+function ncfKeyForInvoiceType(invoiceType) {
+  const normalized = normalizeText(invoiceType);
+  if (normalized.includes("gubernamental")) return "gov";
+  if (normalized.includes("credito") || normalized.includes("comprobante")) return "fiscal";
+  if (normalized.includes("regimen")) return "special";
+  return "final";
+}
+
+function nextNcf(invoiceType) {
+  state.settings = normalizeSettings(state.settings);
+  const key = ncfKeyForInvoiceType(invoiceType);
+  const sequence = state.settings.ncfSequences[key];
+  const ncf = `${sequence.prefix}${String(sequence.next).padStart(8, "0")}`;
+  sequence.next += 1;
+  return ncf;
+}
+
+function activeBillingPayments(payments = state.payments) {
+  return payments.filter((payment) => payment.invoiceStatus !== "Anulada" && payment.documentKind !== "Cotización");
 }
 
 function syncPaymentProductFields() {
@@ -3795,7 +3886,7 @@ function paymentCashierLabel(payment) {
 }
 
 function paymentMethodTotals(date = null) {
-  return state.payments
+  return activeBillingPayments()
     .filter((payment) => !date || payment.date === date)
     .reduce((summary, payment) => {
       summary[payment.method] = (summary[payment.method] || 0) + Number(payment.amount || 0);
@@ -3820,8 +3911,45 @@ function topPaymentMethod(methodTotals) {
 function openReceipt(paymentId) {
   const payment = state.payments.find((item) => item.id === paymentId);
   if (!payment) return;
-  document.getElementById("receiptContent").innerHTML = posInvoiceTicketTemplate(payment);
+  const title = payment.documentKind === "Cotización" ? "COTIZACIÓN" : "RECIBO DE PAGO";
+  document.getElementById("receiptContent").innerHTML = posInvoiceTicketTemplate(payment, title);
   document.getElementById("receiptDialog").showModal();
+}
+
+function reprintInvoice(paymentId) {
+  const payment = state.payments.find((item) => item.id === paymentId);
+  if (!payment) return;
+  payment.reprintCount = (Number(payment.reprintCount) || 0) + 1;
+  payment.reprints ||= [];
+  payment.reprints.unshift({
+    at: new Date().toISOString(),
+    by: currentUser?.id || "sin-usuario"
+  });
+  saveState();
+  openReceipt(paymentId);
+  renderBilling();
+}
+
+function annulInvoice(paymentId) {
+  const payment = state.payments.find((item) => item.id === paymentId);
+  if (!payment || payment.invoiceStatus === "Anulada") return;
+  const reason = prompt("Motivo de anulación de la factura");
+  if (!reason) return;
+  if (payment.documentKind !== "Cotización") {
+    const patient = patientById(payment.patientId);
+    patient.balance += Number(payment.amount || 0) + Number(payment.discount || 0);
+    if (payment.type === "Producto" && payment.productId) {
+      const product = state.inventory.find((item) => item.id === payment.productId);
+      if (product) product.stock += Number(payment.quantity || 1);
+    }
+  }
+  payment.previousInvoiceStatus = payment.invoiceStatus;
+  payment.invoiceStatus = "Anulada";
+  payment.voidReason = reason;
+  payment.voidedAt = new Date().toISOString();
+  payment.voidedBy = currentUser?.id || "sin-usuario";
+  saveState();
+  renderBilling();
 }
 
 function closeReceipt() {
