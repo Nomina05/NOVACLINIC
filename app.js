@@ -606,8 +606,13 @@ function normalizeState(loadedState) {
     promisedAt: "",
     deliveredAt: "",
     labNote: "",
+    labInstructions: "",
+    labProvider: "",
+    labCost: 0,
     ...request
-  }));
+  })).map((request) => request.type === "Laboratorio - pieza dental"
+    ? { ...request, status: normalizeLaboratoryStatus(request.status) }
+    : request);
   return next;
 }
 
@@ -1495,7 +1500,7 @@ function bindForms() {
       start: value("selfRequestStart"),
       end: value("selfRequestEnd") || value("selfRequestStart"),
       detail: value("selfRequestDetail"),
-      status: type === "Ausencia doctor" ? "Activa" : "Pendiente",
+      status: type === "Ausencia doctor" ? "Activa" : type === "Laboratorio - pieza dental" ? "Solicitado" : "Pendiente",
       createdBy: currentUser?.id || "sin-usuario",
       createdAt: new Date().toISOString()
     });
@@ -1913,7 +1918,9 @@ function bindForms() {
       reason: "Inventario inicial",
       reference: "Alta de producto",
       provider: item.provider,
-      expiry: item.expiry
+      expiry: item.expiry,
+      previousStock: 0,
+      newStock: item.stock
     });
     event.target.reset();
     persistAndRender();
@@ -6361,6 +6368,13 @@ function convertQuoteToInvoice(paymentId) {
   if (!payment || payment.documentKind !== "CotizaciÃ³n") return;
   const invoiceType = prompt("Tipo de factura para convertir la cotizaciÃ³n", "Consumidor Final");
   if (!invoiceType) return;
+  if (payment.type === "Producto" && payment.productId) {
+    const product = state.inventory.find((item) => item.id === payment.productId);
+    if (!product || product.stock < Number(payment.quantity || 1)) {
+      alert(`Stock insuficiente para convertir la cotizaciÃ³n. Disponible: ${product?.stock || 0}.`);
+      return;
+    }
+  }
   payment.convertedFromQuoteId = payment.id;
   payment.documentKind = "Factura";
   payment.invoiceType = invoiceType;
@@ -6372,14 +6386,13 @@ function convertQuoteToInvoice(paymentId) {
   payment.convertedAt = new Date().toISOString();
   payment.convertedBy = currentUser?.id || "sin-usuario";
   if (payment.type === "Producto" && payment.productId) {
-    const moved = applyInventoryMovement({
+    applyInventoryMovement({
       productId: payment.productId,
       type: "Salida",
       quantity: Number(payment.quantity || 1),
       reason: "Cotizacion convertida en factura",
       reference: payment.invoiceNumber || payment.id
     });
-    if (!moved) return;
   }
   saveState();
   renderBilling();
