@@ -1427,6 +1427,17 @@ p {
   color: var(--muted);
 }
 
+.compact-user-meta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compact-user-meta .status-pill {
+  color: var(--success-ink);
+}
+
 .permission-matrix,
 .permission-groups {
   display: grid;
@@ -2711,16 +2722,64 @@ p {
   margin-bottom: 24px;
 }
 
+.compact-list-filters {
+  position: sticky;
+  top: 54px;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(160px, .28fr);
+  gap: 10px;
+  margin: -8px 0 14px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .95);
+  box-shadow: 0 10px 26px rgba(22, 38, 31, .06);
+  backdrop-filter: blur(8px);
+}
+
+.compact-list-filters label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.compact-list-filters input,
+.compact-list-filters select {
+  height: 36px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #fff;
+  color: var(--ink);
+}
+
 .table-panel {
   max-height: 520px;
   overflow: auto;
   scrollbar-gutter: stable;
 }
 
+.compact-table-panel {
+  max-height: 620px;
+}
+
+.embedded-table {
+  max-height: 520px;
+  box-shadow: none;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   min-width: 760px;
+}
+
+.compact-data-table {
+  min-width: 980px;
 }
 
 th,
@@ -2730,6 +2789,28 @@ td {
   text-align: left;
   vertical-align: middle;
   font-size: 13px;
+}
+
+.compact-data-table th,
+.compact-data-table td {
+  padding: 7px 9px;
+  font-size: 12px;
+}
+
+.compact-data-table td strong,
+.compact-data-table td span,
+.compact-data-table td small {
+  display: block;
+}
+
+.compact-data-table td small {
+  margin-top: 2px;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.billing-table {
+  min-width: 1080px;
 }
 
 th {
@@ -3430,6 +3511,49 @@ tbody tr:hover {
   background: #eef4f0;
 }
 
+.table-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.icon-actions {
+  flex-wrap: nowrap;
+}
+
+.icon-action {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--green-dark);
+  background: #f3faf7;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.icon-action:hover:not(:disabled) {
+  color: #fff;
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.icon-action.danger {
+  color: var(--danger-ink);
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+}
+
+.icon-action:disabled {
+  opacity: .38;
+  cursor: not-allowed;
+}
+
 #posReceiptPreview .pos-ticket {
   transform-origin: top center;
 }
@@ -3495,6 +3619,11 @@ tbody tr:hover {
   gap: 8px;
 }
 
+.table-actions.icon-actions {
+  flex-wrap: nowrap;
+  gap: 5px;
+}
+
 .medical-alert-mini,
 .medical-alert-text,
 .medical-alert-banner {
@@ -3526,27 +3655,40 @@ tbody tr:hover {
 }
 
 .patient-record-modal {
-  max-height: min(86vh, 900px);
+  width: min(1120px, calc(100vw - 30px));
+  max-height: min(88vh, 940px);
   overflow: auto;
   background: #fff;
+  padding: 0;
+}
+
+.patient-record-modal > .modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  margin: 0;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, .98);
+  backdrop-filter: blur(8px);
 }
 
 .patient-record-hero {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(180px, auto);
+  grid-template-columns: 180px minmax(0, 1fr) minmax(190px, auto);
   gap: 18px;
   align-items: center;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f7fbfd;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, #f7fbfd, #ffffff);
 }
 
 .patient-record-photo .patient-photo {
-  width: 128px;
-  height: 128px;
+  width: 172px;
+  height: 172px;
   border-radius: 8px;
-  font-size: 34px;
+  font-size: 42px;
+  box-shadow: 0 16px 34px rgba(11, 37, 69, .12);
 }
 
 .patient-record-identity {
@@ -3615,18 +3757,67 @@ tbody tr:hover {
   font-size: 26px;
 }
 
+.patient-record-alert-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 22px 8px;
+  background: #fff;
+}
+
+.patient-record-alert-card {
+  min-height: 76px;
+  display: grid;
+  align-content: space-between;
+  gap: 7px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.patient-record-alert-card.confirmada {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.patient-record-alert-card.pendiente {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.patient-record-alert-card.cancelada {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.patient-record-alert-card strong {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
 .patient-record-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 4;
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  margin: 16px 0 12px;
-  padding-bottom: 4px;
+  margin: 0;
+  padding: 12px 22px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, .96);
+  backdrop-filter: blur(8px);
 }
 
 .record-tab {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: #f8fcfd;
   color: var(--muted);
   padding: 9px 12px;
   font-weight: 850;
@@ -3647,6 +3838,10 @@ tbody tr:hover {
   display: block;
 }
 
+.patient-record-tab-panels {
+  padding: 0 22px 78px;
+}
+
 .patient-record-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3661,6 +3856,18 @@ tbody tr:hover {
   border-radius: 8px;
   background: #fbfdff;
   margin-top: 12px;
+}
+
+.patient-record-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 0;
+  padding: 12px 22px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 -12px 28px rgba(11, 37, 69, .08);
+  backdrop-filter: blur(8px);
 }
 
 .record-block.full {
@@ -3964,6 +4171,10 @@ dialog::backdrop {
     flex-direction: column;
   }
 
+  .compact-list-filters {
+    position: static;
+  }
+
   .task-flow-strip {
     grid-template-columns: 1fr;
   }
@@ -4022,6 +4233,31 @@ dialog::backdrop {
     grid-template-columns: 1fr;
   }
 
+  .patient-record-hero,
+  .patient-record-alert-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-record-photo .patient-photo {
+    width: 132px;
+    height: 132px;
+  }
+
+  .patient-record-balance {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .patient-record-modal > .modal-header,
+  .patient-record-hero,
+  .patient-record-alert-strip,
+  .patient-record-tabs,
+  .patient-record-tab-panels,
+  .patient-record-actions {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
   .metric-grid,
   .dashboard-alert-strip,
   .dashboard-quick-actions .module-grid,
@@ -4041,6 +4277,10 @@ dialog::backdrop {
   }
 
   .report-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .compact-list-filters {
     grid-template-columns: 1fr;
   }
 

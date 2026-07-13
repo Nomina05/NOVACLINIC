@@ -809,6 +809,10 @@ function bindNavigation() {
   });
   document.getElementById("userSearch").addEventListener("input", renderUsersPanel);
   document.getElementById("userRoleFilter").addEventListener("change", renderUsersPanel);
+  document.getElementById("patientLocalSearch")?.addEventListener("input", renderPatients);
+  document.getElementById("patientStatusFilter")?.addEventListener("change", renderPatients);
+  document.getElementById("billingSearch")?.addEventListener("input", renderBilling);
+  document.getElementById("billingStatusFilter")?.addEventListener("change", renderBilling);
   document.getElementById("agendaDateFilter").addEventListener("change", renderAgenda);
   document.getElementById("agendaDoctorFilter").addEventListener("change", renderAgenda);
   document.getElementById("agendaViewFilter").addEventListener("change", renderAgenda);
@@ -3990,9 +3994,12 @@ function renderUsersPanel() {
       <button class="compact-user ${user.id === selectedUserId ? "active" : ""}" data-select-user="${user.id}" type="button">
         <div>
           <strong>${escapeHtml(user.name)}</strong>
-          <span>${escapeHtml(user.role)} · ${escapeHtml(user.specialty)}</span>
+          <span>${escapeHtml(user.specialty)} · ${escapeHtml(user.room)}</span>
         </div>
-        <small>${permissionsForUser(user.id).views.filter((view) => panelViews.includes(view)).length} paneles</small>
+        <span class="compact-user-meta">
+          <small class="status-pill ${user.role === "Doctor" ? "clinico" : "confirmada"}">${escapeHtml(user.role)}</small>
+          <small>${permissionsForUser(user.id).views.filter((view) => panelViews.includes(view)).length} paneles</small>
+        </span>
       </button>
     `).join("")
     : emptyState("No hay usuarios con ese criterio.");
@@ -4402,10 +4409,15 @@ function moduleButtonTemplate(viewName) {
 
 function renderPatients() {
   ensurePatientCodes();
-  const term = normalizeText(document.getElementById("globalSearch").value);
+  const term = normalizeText([document.getElementById("globalSearch").value, value("patientLocalSearch")].join(" "));
+  const statusFilter = value("patientStatusFilter") || "all";
   const patients = state.patients.filter((patient) => {
     const haystack = patientSearchHaystack(patient);
-    return haystack.includes(term);
+    const matchesStatus = statusFilter === "all"
+      || (statusFilter === "debt" && patient.balance > 0)
+      || (statusFilter === "alert" && hasMedicalAlert(patient))
+      || (statusFilter === "minor" && patientIsMinor(patient));
+    return haystack.includes(term) && matchesStatus;
   });
 
   document.getElementById("patientTable").innerHTML = patients
@@ -4446,8 +4458,8 @@ function renderPatients() {
         <td><span class="status-pill ${patient.balance > 0 ? "pendiente" : "confirmada"}">${escapeHtml(patient.status)}</span></td>
         <td>
           <div class="table-actions">
-            <button class="ghost-button" data-record-patient="${patient.id}" type="button">Ficha</button>
-            <button class="ghost-button" data-edit-patient="${patient.id}" type="button">Editar</button>
+            <button class="icon-action" data-record-patient="${patient.id}" type="button" title="Abrir ficha" aria-label="Abrir ficha">▣</button>
+            <button class="icon-action" data-edit-patient="${patient.id}" type="button" title="Editar paciente" aria-label="Editar paciente">✎</button>
           </div>
         </td>
       </tr>
@@ -4757,6 +4769,9 @@ function patientRecordContent({
         <small>Pagado ${currency.format(paidTotal)} de ${currency.format(treatmentTotal)}</small>
       </div>
     </section>
+    <section class="patient-record-alert-strip">
+      ${patientRecordAlertCards(patient, upcomingAppointments, patientPayments, patientTreatments).join("")}
+    </section>
     <div class="patient-record-tabs" role="tablist">
       <button class="record-tab active" data-record-tab="personal" type="button">Datos personales</button>
       <button class="record-tab" data-record-tab="insurance" type="button">Seguro</button>
@@ -4803,6 +4818,39 @@ function patientRecordContent({
       </section>
     </div>
   `;
+}
+
+function patientRecordAlertCards(patient, upcomingAppointments, patientPayments, patientTreatments) {
+  const activeAlerts = clinicalAlertBadges(patient);
+  const openBalance = patientPayments.reduce((sum, payment) => sum + invoiceBalance(payment), 0);
+  const activeTreatments = patientTreatments.filter((treatment) => Number(treatment.progress || 0) < 100).length;
+  return [
+    {
+      label: "Alertas médicas",
+      detail: activeAlerts.length ? activeAlerts.join(" · ") : "Sin alertas activas",
+      status: activeAlerts.length ? "Cancelada" : "Confirmada"
+    },
+    {
+      label: "Próxima cita",
+      detail: upcomingAppointments[0] ? `${formatDate(upcomingAppointments[0].date)} ${upcomingAppointments[0].time}` : "Sin cita próxima",
+      status: upcomingAppointments.length ? "Pendiente" : "Confirmada"
+    },
+    {
+      label: "Balance",
+      detail: currency.format(openBalance || patient.balance || 0),
+      status: (openBalance || patient.balance) > 0 ? "Pendiente" : "Confirmada"
+    },
+    {
+      label: "Tratamientos",
+      detail: `${activeTreatments} activos`,
+      status: activeTreatments ? "Pendiente" : "Confirmada"
+    }
+  ].map((item) => `
+    <article class="patient-record-alert-card ${className(item.status)}">
+      <span class="status-pill ${className(item.status)}">${escapeHtml(item.label)}</span>
+      <strong>${escapeHtml(item.detail)}</strong>
+    </article>
+  `);
 }
 
 function patientRecordBadges(patient) {
@@ -6021,6 +6069,45 @@ function renderTreatments() {
   });
 }
 
+function billingTableRowTemplate(payment) {
+  const balance = invoiceBalance(payment);
+  const statusClass = payment.invoiceStatus === "Anulada"
+    ? "cancelada"
+    : payment.documentKind === "Cotización" || balance > 0
+      ? "pendiente"
+      : "confirmada";
+  return `
+    <tr>
+      <td>
+        <strong>${escapeHtml(payment.invoiceNumber || payment.receiptNumber || "FAC-S/N")}</strong>
+        <small>${escapeHtml(payment.ncf || payment.receiptNumber || "Sin NCF")} · ${formatDate(payment.date)}</small>
+      </td>
+      <td>
+        <strong>${escapeHtml(patientById(payment.patientId).name)}</strong>
+        <small>${escapeHtml(paymentBillToLabel(payment))}</small>
+      </td>
+      <td>
+        <span>${escapeHtml(payment.concept)}</span>
+        <small>${escapeHtml(payment.type || "Servicio")}${payment.type === "Producto" ? ` · Cant. ${payment.quantity || 1}` : ""} · Dr. ${escapeHtml(paymentDoctorLabel(payment))}</small>
+      </td>
+      <td>${escapeHtml(payment.method || "Sin método")}</td>
+      <td>${currency.format(invoiceNetAmount(payment))}</td>
+      <td><strong>${currency.format(balance)}</strong></td>
+      <td><span class="status-pill ${statusClass}">${escapeHtml(payment.documentKind || payment.invoiceStatus || "Pagada")}</span></td>
+      <td>
+        <div class="table-actions icon-actions">
+          <button class="icon-action ${can("payments:print") ? "" : "permission-hidden"}" data-receipt="${payment.id}" type="button" title="Imprimir" aria-label="Imprimir">⎙</button>
+          <button class="icon-action ${can("payments:print") ? "" : "permission-hidden"}" data-reprint="${payment.id}" type="button" title="Reimprimir" aria-label="Reimprimir">↻</button>
+          <button class="icon-action ${can("payments:edit") ? "" : "permission-hidden"}" data-convert-quote="${payment.id}" type="button" title="Convertir cotización" aria-label="Convertir cotización" ${payment.documentKind === "Cotización" ? "" : "disabled"}>⇄</button>
+          <button class="icon-action ${can("payments:edit") ? "" : "permission-hidden"}" data-add-payment="${payment.id}" type="button" title="Registrar abono" aria-label="Registrar abono" ${balance > 0 ? "" : "disabled"}>＋</button>
+          <button class="icon-action ${can("payments:void") ? "" : "permission-hidden"}" data-credit-note="${payment.id}" type="button" title="Nota de crédito" aria-label="Nota de crédito" ${payment.documentKind === "Cotización" || payment.invoiceStatus === "Anulada" ? "disabled" : ""}>−</button>
+          <button class="icon-action danger ${can("payments:void") ? "" : "permission-hidden"}" data-annul="${payment.id}" type="button" title="Anular" aria-label="Anular" ${payment.invoiceStatus === "Anulada" ? "disabled" : ""}>×</button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
 function renderBilling() {
   const billablePayments = activeBillingPayments();
   const collectedToday = paymentCollections(todayIso)
@@ -6050,34 +6137,55 @@ function renderBilling() {
 
   renderReceivablesAgingReport();
 
-  document.getElementById("ledgerList").innerHTML = state.payments.length
-    ? state.payments
-        .map((payment) => `
-          <article class="ledger-item">
-            <span class="amount-pill">${currency.format(payment.amount)}</span>
-            <div>
-              <strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} · ${escapeHtml(payment.receiptNumber || "REC-S/N")} · ${escapeHtml(patientById(payment.patientId).name)}</strong>
-              <p>${escapeHtml(payment.concept)}${payment.type === "Producto" ? ` · Cant. ${payment.quantity || 1}` : ""} · ${escapeHtml(payment.method)} · ${escapeHtml(payment.invoiceStatus || "Pagada")}${payment.reference ? ` · Ref. ${escapeHtml(payment.reference)}` : ""} · ${escapeHtml(paymentBillToLabel(payment))} · Doctor ${escapeHtml(paymentDoctorLabel(payment))} · Cajero ${escapeHtml(paymentCashierLabel(payment))} · ${formatDate(payment.date)}</p>
-              <p>Tipo: ${escapeHtml(payment.invoiceType || "Consumidor Final")}${payment.ncf ? ` · NCF ${escapeHtml(payment.ncf)}` : ""}${payment.documentKind ? ` · ${escapeHtml(payment.documentKind)}` : ""}</p>
-              <p>Total ${currency.format(invoiceNetAmount(payment))} · Pagado ${currency.format(invoicePaidAmount(payment))} · Crédito ${currency.format(invoiceCreditAmount(payment))} · Balance ${currency.format(invoiceBalance(payment))}</p>
-              ${(payment.paymentHistory || []).length ? `<p>Historial: ${payment.paymentHistory.map((item) => `${formatDate(item.date)} ${currency.format(item.amount)} ${item.method || ""}`).join(" | ")}</p>` : ""}
-              ${(payment.creditNotes || []).length ? `<p>Notas de crédito: ${payment.creditNotes.map((note) => `${formatDate(note.date)} ${currency.format(note.amount)} - ${escapeHtml(note.reason)}`).join(" | ")}</p>` : ""}
-              ${(payment.discount || 0) > 0 ? `<p>Descuento: ${currency.format(payment.discount)} · ${escapeHtml(payment.discountReason || "Sin motivo")}</p>` : ""}
-              ${payment.voidReason ? `<p>Anulada por ${escapeHtml(userById(payment.voidedBy).name)} · ${escapeHtml(payment.voidReason)}</p>` : ""}
-              ${(payment.reprintCount || 0) > 0 ? `<p>Reimpresiones: ${payment.reprintCount}</p>` : ""}
-            </div>
-            <div class="table-actions">
-              <button class="ghost-button pos-action-button ${can("payments:print") ? "" : "permission-hidden"}" data-receipt="${payment.id}">Imprimir</button>
-              <button class="ghost-button pos-action-button ${can("payments:print") ? "" : "permission-hidden"}" data-reprint="${payment.id}">Reimprimir</button>
-              <button class="ghost-button pos-action-button ${can("payments:edit") ? "" : "permission-hidden"}" data-convert-quote="${payment.id}" ${payment.documentKind === "Cotización" ? "" : "disabled"}>Convertir</button>
-              <button class="ghost-button pos-action-button ${can("payments:edit") ? "" : "permission-hidden"}" data-add-payment="${payment.id}" ${invoiceBalance(payment) > 0 ? "" : "disabled"}>Abono</button>
-              <button class="ghost-button pos-action-button ${can("payments:void") ? "" : "permission-hidden"}" data-credit-note="${payment.id}" ${payment.documentKind === "Cotización" || payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Nota crédito</button>
-              <button class="ghost-button pos-action-button danger ${can("payments:void") ? "" : "permission-hidden"}" data-annul="${payment.id}" ${payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Anular</button>
-            </div>
-          </article>
-        `)
-        .join("")
-    : emptyState("No hay pagos registrados.");
+  const billingTerm = normalizeText(value("billingSearch"));
+  const billingStatus = value("billingStatusFilter") || "all";
+  const visiblePayments = state.payments.filter((payment) => {
+    const balance = invoiceBalance(payment);
+    const haystack = normalizeText([
+      payment.invoiceNumber,
+      payment.receiptNumber,
+      payment.ncf,
+      payment.concept,
+      payment.method,
+      payment.invoiceStatus,
+      payment.invoiceType,
+      payment.documentKind,
+      patientById(payment.patientId).name,
+      paymentBillToLabel(payment),
+      paymentDoctorLabel(payment),
+      paymentCashierLabel(payment)
+    ].join(" "));
+    const matchesStatus = billingStatus === "all"
+      || (billingStatus === "open" && balance > 0)
+      || (billingStatus === "paid" && balance <= 0 && payment.invoiceStatus !== "Anulada" && payment.documentKind !== "Cotización")
+      || (billingStatus === "void" && payment.invoiceStatus === "Anulada")
+      || (billingStatus === "quote" && payment.documentKind === "Cotización");
+    return haystack.includes(billingTerm) && matchesStatus;
+  });
+
+  document.getElementById("ledgerList").innerHTML = visiblePayments.length
+    ? `
+      <div class="table-panel compact-table-panel embedded-table">
+        <table class="compact-data-table billing-table">
+          <thead>
+            <tr>
+              <th>Factura</th>
+              <th>Paciente / Facturado a</th>
+              <th>Concepto</th>
+              <th>Método</th>
+              <th>Total</th>
+              <th>Balance</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${visiblePayments.map(billingTableRowTemplate).join("")}
+          </tbody>
+        </table>
+      </div>
+    `
+    : emptyState("No hay pagos registrados con esos filtros.");
 
   document.querySelectorAll("[data-receipt]").forEach((button) => {
     button.addEventListener("click", () => openReceipt(button.dataset.receipt));

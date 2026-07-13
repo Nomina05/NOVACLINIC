@@ -219,7 +219,7 @@
                 <input id="payrollPeriod" type="month">
               </label>
               <button class="ghost-button" id="markPayrollPaid" type="button">Marcar nómina pagada</button>
-              <button class="primary-button" id="processPayrollMonth" type="button">Procesar nómina del mes</button>
+              <button class="primary-button primary-action" id="processPayrollMonth" type="button">Procesar nómina del mes</button>
             </div>
             <div class="panel-card-grid" id="payrollSummary"></div>
             <section class="payroll-section">
@@ -524,7 +524,7 @@
                 <input id="payrollPeriod" type="month">
               </label>
               <button class="ghost-button" id="markPayrollPaid" type="button">Marcar nómina pagada</button>
-              <button class="primary-button" id="processPayrollMonth" type="button">Procesar nómina del mes</button>
+              <button class="primary-button primary-action" id="processPayrollMonth" type="button">Procesar nómina del mes</button>
             </div>
             <div class="panel-card-grid" id="payrollSummary"></div>
             <section class="payroll-section">
@@ -798,10 +798,21 @@
               <h2>Expedientes de pacientes</h2>
               <p>Historial básico, alergias, contacto y balance.</p>
             </div>
-            <button class="primary-button" id="addPatientToolbar">Agregar paciente</button>
+            <button class="primary-button primary-action" id="addPatientToolbar">Agregar paciente</button>
           </div>
-          <div class="table-panel">
-            <table>
+          <div class="compact-list-filters">
+            <label>Buscar<input id="patientLocalSearch" type="search" placeholder="Nombre, código, documento o teléfono"></label>
+            <label>Estado
+              <select id="patientStatusFilter">
+                <option value="all">Todos</option>
+                <option value="debt">Con balance</option>
+                <option value="alert">Con alerta médica</option>
+                <option value="minor">Menores de edad</option>
+              </select>
+            </label>
+          </div>
+          <div class="table-panel compact-table-panel">
+            <table class="compact-data-table">
               <thead>
                 <tr>
                   <th>Paciente</th>
@@ -1007,7 +1018,7 @@
                 <option value="vestibular">Vestibular</option>
                 <option value="lingual">Lingual</option>
               </select>
-              <button class="primary-button" id="updateToothButton" type="button">Actualizar diente</button>
+              <button class="primary-button primary-action" id="updateToothButton" type="button">Actualizar diente</button>
               <button class="ghost-button" id="saveInitialOdontogram" type="button">Guardar inicial</button>
               <button class="ghost-button" id="printOdontogramSummary" type="button">Imprimir resumen</button>
               <span class="selected-tooth-chip" id="selectedToothHint">Selecciona una pieza</span>
@@ -1477,7 +1488,7 @@
                 <option>Parcialmente pagada</option>
               </select>
               <input id="paymentReference" placeholder="Referencia opcional">
-              <button class="primary-button" type="submit">Facturar y cobrar</button>
+              <button class="primary-button primary-action" type="submit">Facturar y cobrar</button>
             </form>
           </div>
           <div class="billing-summary" id="billingSummary"></div>
@@ -1497,6 +1508,18 @@
                   <h2>Movimientos recientes</h2>
                   <p>Pagos y cargos registrados.</p>
                 </div>
+              </div>
+              <div class="compact-list-filters">
+                <label>Buscar<input id="billingSearch" type="search" placeholder="Factura, paciente, concepto o NCF"></label>
+                <label>Estado
+                  <select id="billingStatusFilter">
+                    <option value="all">Todos</option>
+                    <option value="open">Con balance</option>
+                    <option value="paid">Pagadas</option>
+                    <option value="void">Anuladas</option>
+                    <option value="quote">Cotizaciones</option>
+                  </select>
+                </label>
               </div>
               <div class="ledger" id="ledgerList"></div>
             </section>
@@ -1528,12 +1551,12 @@
               <form class="inline-form" id="cashOpeningForm">
                 <input id="cashOpeningAmount" type="number" min="0" step="100" placeholder="Monto inicial" required>
                 <input id="cashOpeningNote" placeholder="Observación">
-                <button class="primary-button" type="submit">Abrir caja</button>
+                <button class="primary-button primary-action cash-action" type="submit">Abrir caja</button>
               </form>
               <form class="inline-form" id="cashCloseForm">
                 <input id="cashCountedAmount" type="number" min="0" step="100" placeholder="Efectivo contado" required>
                 <input id="cashCloseNote" placeholder="Observación del arqueo">
-                <button class="primary-button" id="closeCashRegister" type="submit">Cerrar caja</button>
+                <button class="primary-button primary-action cash-action" id="closeCashRegister" type="submit">Cerrar caja</button>
               </form>
               <button class="ghost-button" id="reopenCashRegister" type="button">Reabrir caja cerrada</button>
             </div>
@@ -1666,7 +1689,7 @@
           <button class="icon-button" id="closePatientRecord" type="button" aria-label="Cerrar">×</button>
         </div>
         <div id="patientRecordContent"></div>
-        <div class="modal-actions">
+        <div class="modal-actions patient-record-actions">
           <button class="ghost-button" id="printPatientRecord" type="button">Imprimir ficha</button>
           <button class="primary-button" id="donePatientRecord" type="button">Listo</button>
         </div>
