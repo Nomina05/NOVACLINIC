@@ -1465,11 +1465,15 @@ function bindForms() {
     const summary = payrollRunSummaryForPeriod(period);
     const existing = state.payrollRuns.find((item) => item.period === period);
     if (existing) {
-      Object.assign(existing, summary, { status: "Procesada", processedAt: new Date().toISOString(), processedBy: currentUser?.id || "sin-usuario" });
+      Object.assign(existing, { ...summary, id: existing.id }, { status: "Procesada", processedAt: new Date().toISOString(), processedBy: currentUser?.id || "sin-usuario" });
     } else {
       state.payrollRuns.unshift({ ...summary, status: "Procesada", processedAt: new Date().toISOString(), processedBy: currentUser?.id || "sin-usuario" });
     }
     persistAndRender();
+  });
+  document.getElementById("payrollPeriod").addEventListener("change", () => {
+    document.getElementById("payrollNoveltyPeriod").value = selectedPayrollPeriod();
+    renderHrPanel();
   });
   document.getElementById("payrollNoveltyForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -2333,8 +2337,9 @@ function renderPayrollLegacy(payrollItems) {
     ["Pagados", `${paidCount}/${payrollItems.length}`]
   ].map(panelCardTemplate).join("");
 
-  document.getElementById("payrollNoveltyTable").innerHTML = (state.payrollNovelties || []).length
-    ? state.payrollNovelties.map((novelty) => `
+  const periodNovelties = (state.payrollNovelties || []).filter((novelty) => (novelty.period || period) === period);
+  document.getElementById("payrollNoveltyTable").innerHTML = periodNovelties.length
+    ? periodNovelties.map((novelty) => `
       <tr>
         <td>${escapeHtml(userById(novelty.userId).name)}</td>
         <td><span class="status-pill ${["Ingreso", "Ajuste"].includes(novelty.type) ? "confirmada" : "pendiente"}">${escapeHtml(novelty.type)}</span></td>
@@ -2540,6 +2545,75 @@ function payrollNoveltyImpact(userId, period = selectedPayrollPeriod()) {
       summary.count += 1;
       return summary;
     }, { income: 0, deduction: 0, count: 0 });
+}
+
+function currentPayrollPeriod() {
+  return todayIso.slice(0, 7);
+}
+
+function selectedPayrollPeriod() {
+  return document.getElementById("payrollPeriod")?.value || currentPayrollPeriod();
+}
+
+function formatPayrollPeriod(period) {
+  if (!period) return formatPayrollPeriod(currentPayrollPeriod());
+  const [year, month] = String(period).split("-");
+  if (!year || !month) return period;
+  return new Intl.DateTimeFormat("es-DO", { month: "long", year: "numeric" }).format(new Date(`${year}-${month}-01T12:00:00`));
+}
+
+function payrollRunSummaryForPeriod(period = selectedPayrollPeriod()) {
+  const items = normalizedPayroll().map(payrollDisplayItem);
+  const adminItems = items.filter((item) => userById(item.userId).role !== "Doctor");
+  const doctorItems = items.filter((item) => userById(item.userId).role === "Doctor");
+  const noveltyItems = (state.payrollNovelties || []).filter((item) => (item.period || period) === period);
+  const noveltyIncome = noveltyItems
+    .filter((item) => ["Ingreso", "Ajuste"].includes(item.type))
+    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const noveltyDeductions = noveltyItems
+    .filter((item) => !["Ingreso", "Ajuste"].includes(item.type))
+    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const administrativeTotal = adminItems.reduce((sum, item) => sum + payrollNet(item), 0);
+  const doctorTotal = doctorItems.reduce((sum, item) => sum + payrollNet(item), 0);
+  return {
+    id: makeId(),
+    period,
+    administrativeTotal,
+    doctorTotal,
+    noveltyIncome,
+    noveltyDeductions,
+    total: administrativeTotal + doctorTotal,
+    employees: items.length,
+    doctorPoints: doctorItems.reduce((sum, item) => sum + (item.commission?.points || 0), 0)
+  };
+}
+
+function renderPayrollRuns() {
+  const table = document.getElementById("payrollRunTable");
+  if (!table) return;
+  const runs = state.payrollRuns || [];
+  table.innerHTML = runs.length
+    ? runs.map((run) => `
+      <tr>
+        <td><strong>${escapeHtml(formatPayrollPeriod(run.period))}</strong></td>
+        <td>${currency.format(Number(run.administrativeTotal) || 0)}</td>
+        <td>${currency.format(Number(run.doctorTotal) || 0)}</td>
+        <td>${currency.format((Number(run.noveltyIncome) || 0) - (Number(run.noveltyDeductions) || 0))}</td>
+        <td><strong>${currency.format(Number(run.total) || 0)}</strong></td>
+        <td><span class="status-pill ${run.status === "Pagada" ? "pagado" : "pendiente"}">${escapeHtml(run.status || "Procesada")}</span></td>
+        <td>${escapeHtml(userById(run.processedBy || run.paidBy).name)}${run.processedAt ? ` · ${formatDateTime(run.processedAt)}` : ""}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="7">${emptyState("Aún no se ha procesado ninguna nómina mensual.")}</td></tr>`;
+}
+
+function attendanceHours(item) {
+  if (!item.timeIn || !item.timeOut) return "Sin cálculo";
+  const [inHour, inMinute] = item.timeIn.split(":").map(Number);
+  const [outHour, outMinute] = item.timeOut.split(":").map(Number);
+  const minutes = (outHour * 60 + outMinute) - (inHour * 60 + inMinute);
+  if (!Number.isFinite(minutes) || minutes <= 0) return "Revisar";
+  return `${(minutes / 60).toFixed(1)} h`;
 }
 
 function doctorCommission(doctorId) {
