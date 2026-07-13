@@ -879,6 +879,9 @@
           </div>
           <div class="agenda-tools">
             <label>Fecha<input id="agendaDateFilter" type="date"></label>
+            <label>Doctor
+              <select id="agendaDoctorFilter"></select>
+            </label>
             <label>Vista
               <select id="agendaViewFilter">
                 <option value="day">Diaria</option>
@@ -891,6 +894,7 @@
                 <option value="Todas">Todas</option>
                 <option>Pendiente</option>
                 <option>Confirmada</option>
+                <option>Llegó</option>
                 <option>Atendida</option>
                 <option>No asistiÃ³</option>
                 <option>Lista de espera</option>
@@ -900,6 +904,26 @@
             <button class="ghost-button" id="todayAgendaButton" type="button">Hoy</button>
           </div>
           <div class="agenda-status-legend" id="agendaStatusLegend"></div>
+          <div class="agenda-insights-grid">
+            <section class="panel agenda-insight-card">
+              <div class="panel-header">
+                <div>
+                  <h2>Disponibilidad por doctor</h2>
+                  <p>Turnos, ausencias, vacaciones y espacios libres.</p>
+                </div>
+              </div>
+              <div id="doctorAvailabilityPanel"></div>
+            </section>
+            <section class="panel agenda-insight-card">
+              <div class="panel-header">
+                <div>
+                  <h2>Lista de espera inteligente</h2>
+                  <p>Pacientes sugeridos para ocupar espacios cancelados.</p>
+                </div>
+              </div>
+              <div id="waitlistSuggestions"></div>
+            </section>
+          </div>
           <div class="agenda-layout">
             <section class="panel">
               <div class="panel-header">

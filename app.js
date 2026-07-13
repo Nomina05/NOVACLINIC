@@ -703,6 +703,7 @@ function bindNavigation() {
   document.getElementById("userSearch").addEventListener("input", renderUsersPanel);
   document.getElementById("userRoleFilter").addEventListener("change", renderUsersPanel);
   document.getElementById("agendaDateFilter").addEventListener("change", renderAgenda);
+  document.getElementById("agendaDoctorFilter").addEventListener("change", renderAgenda);
   document.getElementById("agendaViewFilter").addEventListener("change", renderAgenda);
   document.getElementById("agendaStatusFilter").addEventListener("change", renderAgenda);
   document.getElementById("todayAgendaButton").addEventListener("click", () => {
