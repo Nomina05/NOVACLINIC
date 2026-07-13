@@ -1110,6 +1110,47 @@
             </form>
           </div>
           <div class="panel-card-grid" id="inventorySummary"></div>
+          <div class="inventory-alert-grid" id="inventoryAlerts"></div>
+          <div class="content-grid inventory-operations">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Compras y proveedores</h2>
+                  <p>Entrada de productos al almacÃ©n.</p>
+                </div>
+              </div>
+              <form class="inline-form" id="purchaseForm">
+                <select id="purchaseProduct" required></select>
+                <input id="purchaseSupplier" placeholder="Proveedor" required>
+                <input id="purchaseQuantity" type="number" min="1" step="1" placeholder="Cantidad" required>
+                <input id="purchaseCost" type="number" min="0" step="100" placeholder="Costo compra">
+                <input id="purchaseExpiry" type="date">
+                <button class="primary-button" type="submit">Registrar compra</button>
+              </form>
+              <div class="ledger compact-ledger" id="purchaseList"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Ajustes de almacÃ©n</h2>
+                  <p>Entradas, salidas, ajustes y vencimientos.</p>
+                </div>
+              </div>
+              <form class="inline-form" id="inventoryMovementForm">
+                <select id="inventoryMovementProduct" required></select>
+                <select id="inventoryMovementType">
+                  <option>Entrada</option>
+                  <option>Salida</option>
+                  <option>Ajuste</option>
+                  <option>Vencimiento</option>
+                </select>
+                <input id="inventoryMovementQuantity" type="number" min="1" step="1" placeholder="Cantidad" required>
+                <input id="inventoryMovementNote" placeholder="Motivo del movimiento" required>
+                <button class="primary-button" type="submit">Aplicar</button>
+              </form>
+              <div class="ledger compact-ledger" id="kardexList"></div>
+            </section>
+          </div>
           <div class="table-panel">
             <table>
               <thead>
@@ -1405,6 +1446,15 @@
             </form>
           </div>
           <div class="billing-summary" id="billingSummary"></div>
+          <section class="panel billing-aging-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Cuentas por cobrar por antigÃ¼edad</h2>
+                <p>Facturas con saldo abierto agrupadas por 0-30, 31-60 y 61-90 dÃ­as.</p>
+              </div>
+            </div>
+            <div class="panel-card-grid" id="receivablesAgingReport"></div>
+          </section>
           <div class="content-grid">
             <section class="panel wide">
               <div class="panel-header">
@@ -1453,6 +1503,7 @@
               <button class="ghost-button" id="reopenCashRegister" type="button">Reabrir caja cerrada</button>
             </div>
             <div class="panel-card-grid" id="cashCloseSummary"></div>
+            <div class="cashier-method-detail" id="cashierMethodDetail"></div>
             <div class="ledger" id="cashCloseHistory"></div>
           </section>
         </section>

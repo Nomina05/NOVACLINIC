@@ -374,6 +374,13 @@ seedState.inventory = [
   { id: makeId(), name: "Anestesia lidocaÃ­na", stock: 3, min: 6, price: 450, expiry: "2026-08-15", provider: "Medident" },
   { id: makeId(), name: "Guantes nitrilo", stock: 24, min: 10, price: 350, expiry: "2027-01-01", provider: "Nova Insumos" }
 ];
+seedState.inventoryMovements = [];
+seedState.inventoryPurchases = [];
+seedState.suppliers = [
+  { id: makeId(), name: "Dental Supply RD", phone: "", contact: "" },
+  { id: makeId(), name: "Medident", phone: "", contact: "" },
+  { id: makeId(), name: "Nova Insumos", phone: "", contact: "" }
+];
 
 seedState.settings = {
   clinicName: "NovaClinic",
@@ -546,6 +553,9 @@ function normalizeState(loadedState) {
   const next = { ...cloneSeed(), ...loadedState };
   next.settings = normalizeSettings(next.settings);
   next.inventory = (next.inventory || []).map((item) => ({ price: 0, ...item }));
+  next.inventoryMovements ||= [];
+  next.inventoryPurchases ||= [];
+  next.suppliers ||= [];
   next.payments = (next.payments || []).map((payment) => ({
     type: "Servicio",
     billTo: "patient",
@@ -557,6 +567,9 @@ function normalizeState(loadedState) {
     ncf: "",
     reprintCount: 0,
     reprints: [],
+    paymentHistory: [],
+    creditNotes: [],
+    convertedFromQuoteId: "",
     ...payment
   }));
   next.cashOpenings ||= [];
@@ -1307,6 +1320,95 @@ function doctorAbsenceForDate(doctorId, date) {
   );
 }
 
+function doctorVacationForDate(doctorId, date) {
+  return (state.hrVacations || []).find((vacation) =>
+    vacation.userId === doctorId &&
+    ["Aprobada", "Completada"].includes(vacation.status) &&
+    vacation.start &&
+    date >= vacation.start &&
+    date <= (vacation.end || vacation.start)
+  );
+}
+
+function shiftMatchesDate(shift, date) {
+  if (!shift?.day) return true;
+  const dayName = new Intl.DateTimeFormat("es-DO", { weekday: "long" })
+    .format(new Date(`${date}T12:00:00`))
+    .toLowerCase();
+  const normalizedDay = normalizeText(dayName);
+  const rule = normalizeText(shift.day);
+  if (rule.includes("lunes a viernes")) return !["sabado", "domingo"].includes(normalizedDay);
+  if (rule.includes("fin de semana")) return ["sabado", "domingo"].includes(normalizedDay);
+  return rule.includes(normalizedDay);
+}
+
+function doctorShiftsForDate(doctorId, date) {
+  return (state.hrShifts || [])
+    .filter((shift) => shift.userId === doctorId && shiftMatchesDate(shift, date))
+    .sort((a, b) => `${a.start || "00:00"}`.localeCompare(`${b.start || "00:00"}`));
+}
+
+function minutesFromTime(time) {
+  const [hours, minutes] = String(time || "00:00").split(":").map(Number);
+  return (hours || 0) * 60 + (minutes || 0);
+}
+
+function timeWithinShift(time, shifts) {
+  if (!shifts.length) return true;
+  const current = minutesFromTime(time);
+  return shifts.some((shift) => current >= minutesFromTime(shift.start) && current < minutesFromTime(shift.end));
+}
+
+function doctorAvailabilityBlocks(doctorId, date, time = "") {
+  const blocks = [];
+  const absence = doctorAbsenceForDate(doctorId, date);
+  const vacation = doctorVacationForDate(doctorId, date);
+  const shifts = doctorShiftsForDate(doctorId, date);
+  const hasAssignedShifts = (state.hrShifts || []).some((shift) => shift.userId === doctorId);
+  if (absence) blocks.push(`Ausencia: ${absence.detail || "doctor no disponible"}`);
+  if (vacation) blocks.push(`Vacaciones: ${vacation.type || "periodo aprobado"}`);
+  if (hasAssignedShifts && !shifts.length) blocks.push("Sin turno asignado para este dia");
+  if (time && shifts.length && !timeWithinShift(time, shifts)) {
+    blocks.push(`Fuera de turno (${shifts.map((shift) => `${shift.start}-${shift.end}`).join(", ")})`);
+  }
+  return blocks;
+}
+
+function appointmentOverlapsSlot(appointment, slotMinutes) {
+  const start = minutesFromTime(appointment.time);
+  const end = start + (Number(appointment.duration) || 30);
+  return slotMinutes >= start && slotMinutes < end;
+}
+
+function availableDoctorSlots(doctorId, date) {
+  const blocks = doctorAvailabilityBlocks(doctorId, date);
+  if (blocks.length) return [];
+  const shifts = doctorShiftsForDate(doctorId, date);
+  const windows = shifts.length ? shifts : [{ start: "08:00", end: "18:00" }];
+  const busy = state.appointments.filter((appointment) =>
+    appointment.doctorId === doctorId &&
+    appointment.date === date &&
+    appointment.status !== "Lista de espera" &&
+    !appointmentIsCancelledSlot(appointment)
+  );
+  const slots = [];
+  windows.forEach((shift) => {
+    for (let current = minutesFromTime(shift.start); current < minutesFromTime(shift.end); current += 30) {
+      if (!busy.some((appointment) => appointmentOverlapsSlot(appointment, current))) {
+        slots.push(`${String(Math.floor(current / 60)).padStart(2, "0")}:${String(current % 60).padStart(2, "0")}`);
+      }
+    }
+  });
+  return slots.slice(0, 8);
+}
+
+function doctorsForAgendaFilter(doctorFilter) {
+  return doctors.filter((doctor) =>
+    appointmentBelongsToCurrentDoctor({ doctorId: doctor.id }) &&
+    (doctorFilter === "all" || doctor.id === doctorFilter)
+  );
+}
+
 function bindForms() {
   const dialog = document.getElementById("patientDialog");
   const userDialog = document.getElementById("userDialog");
@@ -1404,9 +1506,9 @@ function bindForms() {
   document.getElementById("appointmentForm").addEventListener("submit", (event) => {
     event.preventDefault();
     if (!can("appointments:create")) return;
-    const absence = doctorAbsenceForDate(value("appointmentDoctor"), value("appointmentDate"));
-    if (absence) {
-      alert(`No se puede agendar. ${doctorById(value("appointmentDoctor")).name} tiene ausencia marcada para ese dÃ­a: ${absence.detail}`);
+    const availabilityBlocks = doctorAvailabilityBlocks(value("appointmentDoctor"), value("appointmentDate"), value("appointmentTime"));
+    if (availabilityBlocks.length) {
+      alert(`No se puede agendar. ${doctorById(value("appointmentDoctor")).name} no tiene disponibilidad:\n\n${availabilityBlocks.join("\n")}`);
       return;
     }
     const conflicts = appointmentConflictsFromForm();
@@ -1428,6 +1530,12 @@ function bindForms() {
     const cost = Number(value("treatmentCost"));
     const procedure = procedureByName(value("treatmentName"));
     const consentSigned = document.getElementById("treatmentConsentSigned")?.checked || false;
+    const supplyUsage = procedureSuppliesForTreatment(value("treatmentName"));
+    const shortage = supplyUsage.find((usage) => usage.product.stock < usage.quantity);
+    if (shortage) {
+      alert(`Stock insuficiente para el procedimiento. ${shortage.product.name}: disponible ${shortage.product.stock}, requerido ${shortage.quantity}.`);
+      return;
+    }
     const treatment = {
       id: makeId(),
       patientId: patient.id,
@@ -1445,6 +1553,15 @@ function bindForms() {
       procedureValue: procedure?.value || 0
     };
     state.treatments.push(treatment);
+    supplyUsage.forEach((usage) => {
+      applyInventoryMovement({
+        productId: usage.product.id,
+        type: "Salida",
+        quantity: usage.quantity,
+        reason: `Insumo usado en procedimiento: ${treatment.name}`,
+        reference: treatment.id
+      });
+    });
     if (consentSigned) createTreatmentConsentDocument(treatment);
     patient.balance += cost;
     event.target.reset();
@@ -1472,6 +1589,7 @@ function bindForms() {
     }
     const amount = Number(value("paymentAmount"));
     const discount = Number(value("paymentDiscount")) || 0;
+    const invoiceTotal = Math.max(0, amount - discount);
     const invoiceType = value("paymentInvoiceType");
     const isQuote = invoiceType === "CotizaciÃ³n";
     const method = value("paymentMethod");
@@ -1480,10 +1598,21 @@ function bindForms() {
       alert("Debe abrir la caja antes de registrar cobros.");
       return;
     }
-    if (!isQuote && method === "Efectivo" && amountReceived < amount) {
+    if (!isQuote && method === "Efectivo" && value("paymentInvoiceStatus") === "Pagada" && amountReceived < invoiceTotal) {
       alert("En pagos en efectivo el monto recibido es obligatorio y no puede ser menor al total facturado.");
       return;
     }
+    const requestedStatus = isQuote ? "CotizaciÃ³n" : value("paymentInvoiceStatus");
+    const initialPaid = isQuote || requestedStatus === "Pendiente"
+      ? 0
+      : Math.min(invoiceTotal, requestedStatus === "Pagada" ? (amountReceived || invoiceTotal) : amountReceived);
+    const finalStatus = isQuote
+      ? "CotizaciÃ³n"
+      : initialPaid >= invoiceTotal
+        ? "Pagada"
+        : initialPaid > 0
+          ? "Parcialmente pagada"
+          : requestedStatus;
     const receiptNumber = nextReceiptNumber();
     const invoiceNumber = nextInvoiceNumber();
     const ncf = isQuote ? "" : nextNcf(invoiceType);
@@ -1498,7 +1627,7 @@ function bindForms() {
       billedToPatientId: billTo === "patient" ? patient.id : "",
       createdBy: cashierId,
       amount,
-      amountReceived: amountReceived || amount,
+      amountReceived: amountReceived || initialPaid,
       discount,
       discountReason: value("paymentDiscountReason"),
       method,
@@ -1508,7 +1637,18 @@ function bindForms() {
       ncf,
       invoiceType,
       documentKind: isQuote ? "CotizaciÃ³n" : "Factura",
-      invoiceStatus: isQuote ? "CotizaciÃ³n" : value("paymentInvoiceStatus"),
+      invoiceStatus: finalStatus,
+      paymentHistory: initialPaid > 0 ? [{
+        id: makeId(),
+        date: todayIso,
+        amount: initialPaid,
+        method,
+        reference: value("paymentReference"),
+        cashierId,
+        createdAt: new Date().toISOString(),
+        note: "Pago inicial"
+      }] : [],
+      creditNotes: [],
       date: todayIso,
       createdAt: new Date().toISOString(),
       concept: value("paymentConcept"),
@@ -1518,10 +1658,16 @@ function bindForms() {
       quantity: product ? quantity : 0
     });
     if (product && !isQuote) {
-      product.stock = Math.max(0, product.stock - quantity);
+      applyInventoryMovement({
+        productId: product.id,
+        type: "Salida",
+        quantity,
+        reason: "Venta facturada",
+        reference: invoiceNumber
+      });
     }
     if (!isQuote) {
-      patient.balance = Math.max(0, patient.balance - amount - discount);
+      patient.balance = Math.max(0, patient.balance - initialPaid);
     }
     event.target.reset();
     document.getElementById("paymentCashier").value = currentUser?.id || "";
@@ -1576,6 +1722,7 @@ function bindForms() {
       openingId: opening?.id || "",
       openingAmount: opening?.openingAmount || 0,
       totals,
+      cashierMethodTotals: cashierMethodTotals(todayIso),
       total,
       expectedTotal,
       expectedCash,
@@ -1748,7 +1895,7 @@ function bindForms() {
     event.preventDefault();
     if (!can("inventory:manage")) return;
     state.inventory ||= [];
-    state.inventory.push({
+    const item = {
       id: makeId(),
       name: value("inventoryName"),
       stock: Number(value("inventoryStock")) || 0,
@@ -1756,7 +1903,68 @@ function bindForms() {
       price: Number(value("inventoryPrice")) || 0,
       expiry: value("inventoryExpiry"),
       provider: value("inventoryProvider") || "Sin proveedor"
+    };
+    state.inventory.push(item);
+    ensureSupplier(item.provider);
+    registerInventoryMovement({
+      productId: item.id,
+      type: "Entrada",
+      quantity: item.stock,
+      reason: "Inventario inicial",
+      reference: "Alta de producto",
+      provider: item.provider,
+      expiry: item.expiry
     });
+    event.target.reset();
+    persistAndRender();
+  });
+
+  document.getElementById("purchaseForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!can("inventory:manage")) return;
+    const product = state.inventory.find((item) => item.id === value("purchaseProduct"));
+    if (!product) return;
+    const quantity = Number(value("purchaseQuantity")) || 0;
+    if (quantity <= 0) return;
+    const supplier = value("purchaseSupplier") || product.provider || "Sin proveedor";
+    product.provider = supplier;
+    product.expiry = value("purchaseExpiry") || product.expiry;
+    ensureSupplier(supplier);
+    state.inventoryPurchases ||= [];
+    const purchase = {
+      id: makeId(),
+      productId: product.id,
+      supplier,
+      quantity,
+      unitCost: Number(value("purchaseCost")) || 0,
+      expiry: value("purchaseExpiry") || product.expiry,
+      date: todayIso,
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser?.id || "sin-usuario"
+    };
+    state.inventoryPurchases.unshift(purchase);
+    applyInventoryMovement({
+      productId: product.id,
+      type: "Entrada",
+      quantity,
+      reason: "Compra a proveedor",
+      reference: purchase.id,
+      provider: supplier,
+      unitCost: purchase.unitCost,
+      expiry: purchase.expiry
+    });
+    event.target.reset();
+    persistAndRender();
+  });
+
+  document.getElementById("inventoryMovementForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!can("inventory:manage")) return;
+    const productId = value("inventoryMovementProduct");
+    const type = value("inventoryMovementType");
+    const quantity = Number(value("inventoryMovementQuantity")) || 0;
+    const reason = value("inventoryMovementNote");
+    if (!applyInventoryMovement({ productId, type, quantity, reason, reference: "Ajuste manual" })) return;
     event.target.reset();
     persistAndRender();
   });
@@ -2092,6 +2300,21 @@ function populateSelects() {
     }
   }
 
+  const agendaDoctorFilter = document.getElementById("agendaDoctorFilter");
+  if (agendaDoctorFilter) {
+    const current = agendaDoctorFilter.value;
+    const agendaDoctorOptions = doctors
+      .filter((doctor) => appointmentBelongsToCurrentDoctor({ doctorId: doctor.id }))
+      .map((doctor) => `<option value="${doctor.id}">${escapeHtml(doctor.name)} Â· ${escapeHtml(doctor.specialty)}</option>`)
+      .join("");
+    agendaDoctorFilter.innerHTML = `<option value="all">Todos los doctores</option>${agendaDoctorOptions}`;
+    if (current && (current === "all" || doctors.some((doctor) => doctor.id === current && appointmentBelongsToCurrentDoctor({ doctorId: doctor.id })))) {
+      agendaDoctorFilter.value = current;
+    } else if (currentUser?.role === "Doctor") {
+      agendaDoctorFilter.value = currentUser.id;
+    }
+  }
+
   const reportCashierFilter = document.getElementById("reportCashierFilter");
   if (reportCashierFilter) {
     const current = reportCashierFilter.value;
@@ -2130,6 +2353,21 @@ function populateSelects() {
     syncPaymentProductFields();
   }
 
+  ["purchaseProduct", "inventoryMovementProduct"].forEach((id) => {
+    const select = document.getElementById(id);
+    if (!select) return;
+    const current = select.value;
+    state.inventory ||= [];
+    select.innerHTML = state.inventory.length
+      ? state.inventory
+          .map((item) => `<option value="${item.id}">${escapeHtml(item.name)} Â· Stock ${item.stock}</option>`)
+          .join("")
+      : `<option value="">Sin productos registrados</option>`;
+    if (current && state.inventory.some((item) => item.id === current)) {
+      select.value = current;
+    }
+  });
+
   const payrollNoveltyUser = document.getElementById("payrollNoveltyUser");
   if (payrollNoveltyUser) {
     const current = payrollNoveltyUser.value;
@@ -2167,11 +2405,9 @@ function renderDashboard() {
   const doctorTreatments = treatmentsForCurrentDoctor();
   const todayAppointments = doctorAppointments.filter((appointment) => appointment.date === todayIso);
   const allTodayAppointments = state.appointments.filter((appointment) => appointment.date === todayIso);
-  const todayIncome = activeBillingPayments()
-    .filter((payment) => payment.date === todayIso)
-    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const pendingBalance = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
-  const patientsWithBalance = state.patients.filter((patient) => patient.balance > 0).length;
+  const todayIncome = paymentCollections(todayIso).reduce((sum, collection) => sum + collection.amount, 0);
+  const pendingBalance = activeBillingPayments().reduce((sum, payment) => sum + invoiceBalance(payment), 0);
+  const patientsWithBalance = new Set(activeBillingPayments().filter((payment) => invoiceBalance(payment) > 0).map((payment) => payment.patientId)).size;
   const activePlans = doctorTreatments.filter((treatment) => treatment.progress < 100).length;
   const confirmed = todayAppointments.filter((appointment) => appointment.status === "Confirmada").length;
   const cashOpening = currentCashOpening();
@@ -2244,10 +2480,11 @@ function renderDashboard() {
         .join("")
     : emptyState("No hay citas registradas para hoy.");
 
+  const receivableAlerts = activeBillingPayments().filter((payment) => invoiceBalance(payment) > 0).slice(0, 3);
   const alerts = [
-    ...state.patients.filter((patient) => patient.balance > 0).slice(0, 3).map((patient) => ({
-      label: patient.name,
-      detail: `Balance pendiente ${currency.format(patient.balance)}`,
+    ...receivableAlerts.map((payment) => ({
+      label: patientById(payment.patientId).name,
+      detail: `${payment.invoiceNumber || "FAC-S/N"} pendiente ${currency.format(invoiceBalance(payment))}`,
       status: "Pendiente"
     })),
     {
@@ -2297,7 +2534,7 @@ function renderReceptionPanel() {
     .filter((appointment) => appointment.date === todayIso)
     .sort(sortByDateTime);
   const pendingAppointments = todayAppointments.filter((appointment) => appointment.status === "Pendiente").length;
-  const pendingBalance = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
+  const pendingBalance = activeBillingPayments().reduce((sum, payment) => sum + invoiceBalance(payment), 0);
 
   document.getElementById("receptionPanelCards").innerHTML = [
     ["Citas de hoy", todayAppointments.length],
@@ -2530,7 +2767,7 @@ function createLaboratoryInvoice(requestId) {
     billedToPatientId: patient?.id || "",
     createdBy: currentUser?.id || "laboratorio",
     amount,
-    amountReceived: amount,
+    amountReceived: 0,
     discount: 0,
     discountReason: "",
     method: "Laboratorio",
@@ -2541,6 +2778,8 @@ function createLaboratoryInvoice(requestId) {
     invoiceType,
     documentKind: "Factura",
     invoiceStatus: "Emitida",
+    paymentHistory: [],
+    creditNotes: [],
     date: todayIso,
     createdAt: new Date().toISOString(),
     concept: `Laboratorio: ${request.piece || "pieza dental"}`,
@@ -3301,14 +3540,10 @@ function resetPermissionProfile(userId) {
 
 function renderAccountingPanel() {
   const billablePayments = activeBillingPayments();
-  const collectedToday = billablePayments
-    .filter((payment) => payment.date === todayIso)
-    .reduce((sum, payment) => sum + payment.amount, 0);
-  const pendingTotal = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
-  const methodTotals = billablePayments.reduce((summary, payment) => {
-    summary[payment.method] = (summary[payment.method] || 0) + payment.amount;
-    return summary;
-  }, {});
+  const collectedToday = paymentCollections(todayIso)
+    .reduce((sum, collection) => sum + collection.amount, 0);
+  const pendingTotal = billablePayments.reduce((sum, payment) => sum + invoiceBalance(payment), 0);
+  const methodTotals = paymentMethodTotals();
 
   document.getElementById("accountingPanelCards").innerHTML = [
     ["Ingresos hoy", currency.format(collectedToday)],
@@ -3331,12 +3566,12 @@ function renderAccountingPanel() {
     `).join("")
     : emptyState("No hay recibos registrados.");
 
-  const balances = state.patients.filter((patient) => patient.balance > 0);
+  const balances = billablePayments.filter((payment) => invoiceBalance(payment) > 0);
   document.getElementById("accountingBalances").innerHTML = balances.length
-    ? balances.slice(0, 5).map((patient) => `
+    ? balances.slice(0, 5).map((payment) => `
       <article class="alert-item">
-        <span class="amount-pill">${currency.format(patient.balance)}</span>
-        <div><strong>${escapeHtml(patient.name)}</strong><p>${escapeHtml(patient.phone)}</p></div>
+        <span class="amount-pill">${currency.format(invoiceBalance(payment))}</span>
+        <div><strong>${escapeHtml(patientById(payment.patientId).name)}</strong><p>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} Â· ${invoiceAgeBucket(payment)}</p></div>
       </article>
     `).join("")
     : emptyState("No hay balances pendientes.");
@@ -3511,7 +3746,7 @@ function renderSelfService() {
       if (!can("appointments:confirm")) return;
       const appointment = state.appointments.find((item) => item.id === button.dataset.selfCheckin);
       if (!appointment) return;
-      appointment.status = "Confirmada";
+      appointment.status = "Llegó";
       appointment.checkInAt = new Date().toISOString();
       persistAndRender();
     });
@@ -4172,18 +4407,22 @@ function dentalHistoryRecordTemplate(item) {
 
 function renderAgenda() {
   const dateFilter = value("agendaDateFilter") || todayIso;
+  const doctorFilter = value("agendaDoctorFilter") || "all";
   const viewMode = value("agendaViewFilter") || "day";
   const statusFilter = value("agendaStatusFilter");
   const range = agendaRange(dateFilter, viewMode);
   const appointments = state.appointments
     .slice()
     .filter((appointment) => appointmentBelongsToCurrentDoctor(appointment))
+    .filter((appointment) => doctorFilter === "all" || appointment.doctorId === doctorFilter)
     .filter((appointment) => appointment.date >= range.start && appointment.date <= range.end)
     .filter((appointment) => statusFilter === "Todas" || appointment.status === statusFilter)
     .sort(sortByDateTime)
   document.getElementById("calendarCaption").textContent = agendaCaption(range, viewMode);
   document.getElementById("agendaStatusLegend").innerHTML = agendaStatusLegendTemplate();
-  document.getElementById("monthCalendar").innerHTML = renderMonthCalendar(dateFilter);
+  renderDoctorAvailabilityPanel(dateFilter, doctorFilter);
+  renderWaitlistSuggestions(dateFilter, doctorFilter);
+  document.getElementById("monthCalendar").innerHTML = renderMonthCalendar(dateFilter, doctorFilter);
   document.getElementById("calendarDay").innerHTML = renderAgendaCalendar(appointments, dateFilter, viewMode, range);
 
   document.getElementById("scheduleBoard").innerHTML = appointments.length
@@ -4194,7 +4433,7 @@ function renderAgenda() {
           <strong>${escapeHtml(patientById(appointment.patientId).name)}</strong>
           <p>${escapeHtml(appointment.type)} Â· ${escapeHtml(doctorById(appointment.doctorId).name)}</p>
           <p>Fecha: ${formatDate(appointment.date)} Â· Recordatorio: ${escapeHtml(appointment.reminder || "Sin recordatorio")}</p>
-          ${doctorAbsenceForDate(appointment.doctorId, appointment.date) ? `<p class="agenda-warning">Doctor con ausencia marcada este dÃ­a.</p>` : ""}
+          ${doctorAvailabilityBlocks(appointment.doctorId, appointment.date, appointment.time).map((block) => `<p class="agenda-warning">${escapeHtml(block)}</p>`).join("")}
         </div>
         <div class="appointment-actions ${can("appointments:confirm") ? "" : "permission-hidden"}">
           <span class="status-pill ${className(appointment.status)}">${escapeHtml(appointment.status)}</span>
@@ -4227,6 +4466,116 @@ function renderAgenda() {
       openAppointmentForm(button.dataset.editAppointment);
     });
   });
+
+  document.querySelectorAll("[data-fill-waitlist]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!can("appointments:create")) return;
+      const waitlistAppointment = state.appointments.find((item) => item.id === button.dataset.fillWaitlist);
+      const cancelledAppointment = state.appointments.find((item) => item.id === button.dataset.cancelledSlot);
+      if (!waitlistAppointment || !cancelledAppointment) return;
+      const blocks = doctorAvailabilityBlocks(cancelledAppointment.doctorId, cancelledAppointment.date, cancelledAppointment.time);
+      if (blocks.length) {
+        alert(`No se puede ocupar ese espacio:\n\n${blocks.join("\n")}`);
+        return;
+      }
+      waitlistAppointment.doctorId = cancelledAppointment.doctorId;
+      waitlistAppointment.date = cancelledAppointment.date;
+      waitlistAppointment.time = cancelledAppointment.time;
+      waitlistAppointment.duration = cancelledAppointment.duration || waitlistAppointment.duration || 30;
+      waitlistAppointment.status = "Pendiente";
+      waitlistAppointment.updatedAt = new Date().toISOString();
+      waitlistAppointment.updatedBy = currentUser?.id || "sin-usuario";
+      waitlistAppointment.movedFromWaitlistAt = new Date().toISOString();
+      persistAndRender();
+    });
+  });
+}
+
+function renderDoctorAvailabilityPanel(dateFilter, doctorFilter) {
+  const container = document.getElementById("doctorAvailabilityPanel");
+  if (!container) return;
+  const visibleDoctors = doctorsForAgendaFilter(doctorFilter);
+  if (!visibleDoctors.length) {
+    container.innerHTML = emptyState("No hay doctores disponibles para este filtro.");
+    return;
+  }
+  container.innerHTML = `
+    <div class="availability-list">
+      ${visibleDoctors.map((doctor) => {
+        const blocks = doctorAvailabilityBlocks(doctor.id, dateFilter);
+        const shifts = doctorShiftsForDate(doctor.id, dateFilter);
+        const slots = availableDoctorSlots(doctor.id, dateFilter);
+        const dayAppointments = state.appointments.filter((appointment) =>
+          appointment.doctorId === doctor.id &&
+          appointment.date === dateFilter &&
+          appointment.status !== "Lista de espera" &&
+          !appointmentIsCancelledSlot(appointment)
+        );
+        return `
+          <article class="availability-card ${blocks.length ? "blocked" : "open"}">
+            <div>
+              <strong>${escapeHtml(doctor.name)}</strong>
+              <p>${shifts.length ? shifts.map((shift) => `${escapeHtml(shift.name || "Turno")} ${shift.start}-${shift.end}`).join(" · ") : "Horario base 08:00-18:00"}</p>
+              ${blocks.length ? blocks.map((block) => `<small class="agenda-warning">${escapeHtml(block)}</small>`).join("") : `<small>${dayAppointments.length} cita(s) programada(s)</small>`}
+            </div>
+            <div class="slot-chip-row">
+              ${slots.length ? slots.slice(0, 5).map((slot) => `<span class="slot-chip">${slot}</span>`).join("") : `<span class="slot-chip muted">Sin espacios</span>`}
+            </div>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function appointmentIsCancelledSlot(appointment) {
+  const status = normalizeText(appointment.status);
+  return status === "cancelada" || status === "no asistio";
+}
+
+function renderWaitlistSuggestions(dateFilter, doctorFilter) {
+  const container = document.getElementById("waitlistSuggestions");
+  if (!container) return;
+  const cancelledSlots = state.appointments
+    .filter((appointment) =>
+      appointmentBelongsToCurrentDoctor(appointment) &&
+      (doctorFilter === "all" || appointment.doctorId === doctorFilter) &&
+      appointment.date === dateFilter &&
+      appointmentIsCancelledSlot(appointment)
+    )
+    .sort(sortByDateTime);
+  const waitlist = state.appointments
+    .filter((appointment) =>
+      appointmentBelongsToCurrentDoctor(appointment) &&
+      appointment.status === "Lista de espera" &&
+      (doctorFilter === "all" || appointment.doctorId === doctorFilter || !appointment.doctorId)
+    )
+    .sort(sortByDateTime);
+
+  if (!cancelledSlots.length || !waitlist.length) {
+    container.innerHTML = emptyState("No hay espacios cancelados o pacientes en espera para sugerir.");
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="waitlist-suggestion-list">
+      ${cancelledSlots.slice(0, 6).map((slot) => {
+        const suggested = waitlist.find((appointment) => appointment.doctorId === slot.doctorId) || waitlist[0];
+        const blocks = doctorAvailabilityBlocks(slot.doctorId, slot.date, slot.time);
+        return `
+          <article class="waitlist-suggestion">
+            <div>
+              <span class="time-chip">${slot.time} · ${doctorById(slot.doctorId).name}</span>
+              <strong>${escapeHtml(patientById(suggested.patientId).name)}</strong>
+              <p>Motivo: ${escapeHtml(suggested.type || "Cita")} · Espacio liberado por ${escapeHtml(patientById(slot.patientId).name)}</p>
+              ${blocks.length ? blocks.map((block) => `<small class="agenda-warning">${escapeHtml(block)}</small>`).join("") : ""}
+            </div>
+            <button class="primary-button" data-fill-waitlist="${suggested.id}" data-cancelled-slot="${slot.id}" type="button" ${blocks.length ? "disabled" : ""}>Ocupar espacio</button>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
 }
 
 function agendaRange(dateText, viewMode) {
@@ -4259,7 +4608,7 @@ function renderAgendaCalendar(appointments, dateFilter, viewMode, range) {
 }
 
 function agendaStatusLegendTemplate() {
-  return ["Confirmada", "Pendiente", "Cancelada", "No asistiÃ³", "Atendida", "Lista de espera"]
+  return ["Confirmada", "Pendiente", "Llegó", "Cancelada", "No asistiÃ³", "Atendida", "Lista de espera"]
     .map((status) => `<span class="agenda-legend-item ${className(status)}"><i></i>${escapeHtml(status)}</span>`)
     .join("");
 }
@@ -4293,13 +4642,14 @@ function renderMonthAgendaSummary(appointments, range) {
     const dayAppointments = appointments.filter((appointment) => appointment.date === iso);
     const waitlist = dayAppointments.filter((appointment) => appointment.status === "Lista de espera").length;
     const confirmed = dayAppointments.filter((appointment) => appointment.status === "Confirmada").length;
+    const arrived = dayAppointments.filter((appointment) => appointment.status === "Llegó").length;
     const pending = dayAppointments.filter((appointment) => appointment.status === "Pendiente").length;
-    const cancelled = dayAppointments.filter((appointment) => ["Cancelada", "No asistiÃ³"].includes(appointment.status)).length;
+    const cancelled = dayAppointments.filter(appointmentIsCancelledSlot).length;
     return `
       <article class="agenda-month-summary ${dayAppointments.length ? "has-items" : ""}">
         <strong>${index + 1}</strong>
         <span>${dayAppointments.length} cita(s)</span>
-        ${dayAppointments.length ? `<div class="agenda-month-dots"><i class="confirmada">${confirmed}</i><i class="pendiente">${pending}</i><i class="cancelada">${cancelled}</i></div>` : ""}
+        ${dayAppointments.length ? `<div class="agenda-month-dots"><i class="confirmada">${confirmed}</i><i class="llego">${arrived}</i><i class="pendiente">${pending}</i><i class="cancelada">${cancelled}</i></div>` : ""}
         ${waitlist ? `<small>${waitlist} en espera</small>` : ""}
       </article>
     `;
@@ -4307,7 +4657,7 @@ function renderMonthAgendaSummary(appointments, range) {
   return `<div class="agenda-month-summary-grid">${items}</div>`;
 }
 
-function renderMonthCalendar(dateFilter) {
+function renderMonthCalendar(dateFilter, doctorFilter = "all") {
   const selected = new Date(`${dateFilter}T12:00:00`);
   const year = selected.getFullYear();
   const month = selected.getMonth();
@@ -4317,7 +4667,12 @@ function renderMonthCalendar(dateFilter) {
   const dayCells = Array.from({ length: days }, (_, index) => {
     const day = index + 1;
     const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const count = state.appointments.filter((appointment) => appointment.date === iso && appointment.status !== "Cancelada" && appointmentBelongsToCurrentDoctor(appointment)).length;
+    const count = state.appointments.filter((appointment) =>
+      appointment.date === iso &&
+      !appointmentIsCancelledSlot(appointment) &&
+      appointmentBelongsToCurrentDoctor(appointment) &&
+      (doctorFilter === "all" || appointment.doctorId === doctorFilter)
+    ).length;
     return `
       <button class="month-day ${iso === dateFilter ? "active" : ""}" data-month-date="${iso}" type="button">
         <strong>${day}</strong>
@@ -4374,7 +4729,7 @@ function calendarAppointmentTemplate(appointment) {
 }
 
 function appointmentStatusOptions(currentStatus) {
-  return ["Pendiente", "Confirmada", "Atendida", "No asistiÃ³", "Lista de espera", "Cancelada"]
+  return ["Pendiente", "Confirmada", "Llegó", "Atendida", "No asistiÃ³", "Lista de espera", "Cancelada"]
     .map((status) => `<option ${status === currentStatus ? "selected" : ""}>${status}</option>`)
     .join("");
 }
@@ -4895,20 +5250,16 @@ function renderTreatments() {
 
 function renderBilling() {
   const billablePayments = activeBillingPayments();
-  const collectedToday = billablePayments
-    .filter((payment) => payment.date === todayIso)
-    .reduce((sum, payment) => sum + payment.amount, 0);
+  const collectedToday = paymentCollections(todayIso)
+    .reduce((sum, collection) => sum + collection.amount, 0);
   const discountsToday = billablePayments
     .filter((payment) => payment.date === todayIso)
     .reduce((sum, payment) => sum + (Number(payment.discount) || 0), 0);
   const productsToday = billablePayments
     .filter((payment) => payment.date === todayIso && payment.type === "Producto")
     .reduce((sum, payment) => sum + (Number(payment.quantity) || 1), 0);
-  const pendingTotal = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
-  const methodTotals = billablePayments.reduce((summary, payment) => {
-    summary[payment.method] = (summary[payment.method] || 0) + payment.amount;
-    return summary;
-  }, {});
+  const pendingTotal = billablePayments.reduce((sum, payment) => sum + invoiceBalance(payment), 0);
+  const methodTotals = paymentMethodTotals();
 
   document.getElementById("billingSummary").innerHTML = [
     ["Cobrado hoy", currency.format(collectedToday)],
@@ -4924,6 +5275,8 @@ function renderBilling() {
     </article>
   `).join("");
 
+  renderReceivablesAgingReport();
+
   document.getElementById("ledgerList").innerHTML = state.payments.length
     ? state.payments
         .map((payment) => `
@@ -4933,6 +5286,9 @@ function renderBilling() {
               <strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} Â· ${escapeHtml(payment.receiptNumber || "REC-S/N")} Â· ${escapeHtml(patientById(payment.patientId).name)}</strong>
               <p>${escapeHtml(payment.concept)}${payment.type === "Producto" ? ` Â· Cant. ${payment.quantity || 1}` : ""} Â· ${escapeHtml(payment.method)} Â· ${escapeHtml(payment.invoiceStatus || "Pagada")}${payment.reference ? ` Â· Ref. ${escapeHtml(payment.reference)}` : ""} Â· ${escapeHtml(paymentBillToLabel(payment))} Â· Doctor ${escapeHtml(paymentDoctorLabel(payment))} Â· Cajero ${escapeHtml(paymentCashierLabel(payment))} Â· ${formatDate(payment.date)}</p>
               <p>Tipo: ${escapeHtml(payment.invoiceType || "Consumidor Final")}${payment.ncf ? ` Â· NCF ${escapeHtml(payment.ncf)}` : ""}${payment.documentKind ? ` Â· ${escapeHtml(payment.documentKind)}` : ""}</p>
+              <p>Total ${currency.format(invoiceNetAmount(payment))} Â· Pagado ${currency.format(invoicePaidAmount(payment))} Â· CrÃ©dito ${currency.format(invoiceCreditAmount(payment))} Â· Balance ${currency.format(invoiceBalance(payment))}</p>
+              ${(payment.paymentHistory || []).length ? `<p>Historial: ${payment.paymentHistory.map((item) => `${formatDate(item.date)} ${currency.format(item.amount)} ${item.method || ""}`).join(" | ")}</p>` : ""}
+              ${(payment.creditNotes || []).length ? `<p>Notas de crÃ©dito: ${payment.creditNotes.map((note) => `${formatDate(note.date)} ${currency.format(note.amount)} - ${escapeHtml(note.reason)}`).join(" | ")}</p>` : ""}
               ${(payment.discount || 0) > 0 ? `<p>Descuento: ${currency.format(payment.discount)} Â· ${escapeHtml(payment.discountReason || "Sin motivo")}</p>` : ""}
               ${payment.voidReason ? `<p>Anulada por ${escapeHtml(userById(payment.voidedBy).name)} Â· ${escapeHtml(payment.voidReason)}</p>` : ""}
               ${(payment.reprintCount || 0) > 0 ? `<p>Reimpresiones: ${payment.reprintCount}</p>` : ""}
@@ -4940,6 +5296,9 @@ function renderBilling() {
             <div class="table-actions">
               <button class="ghost-button pos-action-button" data-receipt="${payment.id}">Imprimir</button>
               <button class="ghost-button pos-action-button" data-reprint="${payment.id}">Reimprimir</button>
+              <button class="ghost-button pos-action-button" data-convert-quote="${payment.id}" ${payment.documentKind === "CotizaciÃ³n" ? "" : "disabled"}>Convertir</button>
+              <button class="ghost-button pos-action-button" data-add-payment="${payment.id}" ${invoiceBalance(payment) > 0 ? "" : "disabled"}>Abono</button>
+              <button class="ghost-button pos-action-button" data-credit-note="${payment.id}" ${payment.documentKind === "CotizaciÃ³n" || payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Nota crÃ©dito</button>
               <button class="ghost-button pos-action-button danger" data-annul="${payment.id}" ${payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Anular</button>
             </div>
           </article>
@@ -4956,16 +5315,25 @@ function renderBilling() {
   document.querySelectorAll("[data-annul]").forEach((button) => {
     button.addEventListener("click", () => annulInvoice(button.dataset.annul));
   });
+  document.querySelectorAll("[data-convert-quote]").forEach((button) => {
+    button.addEventListener("click", () => convertQuoteToInvoice(button.dataset.convertQuote));
+  });
+  document.querySelectorAll("[data-add-payment]").forEach((button) => {
+    button.addEventListener("click", () => addInvoicePayment(button.dataset.addPayment));
+  });
+  document.querySelectorAll("[data-credit-note]").forEach((button) => {
+    button.addEventListener("click", () => createCreditNote(button.dataset.creditNote));
+  });
 
-  const balances = state.patients.filter((patient) => patient.balance > 0);
+  const balances = billablePayments.filter((payment) => invoiceBalance(payment) > 0);
   document.getElementById("balanceList").innerHTML = balances.length
     ? balances
-        .map((patient) => `
+        .map((payment) => `
           <article class="alert-item">
-            <span class="amount-pill">${currency.format(patient.balance)}</span>
+            <span class="amount-pill">${currency.format(invoiceBalance(payment))}</span>
             <div>
-              <strong>${escapeHtml(patient.name)}</strong>
-              <p>${escapeHtml(patient.phone)} Â· ${receivableAgeBucket(patient.lastVisit)} Â· Ãšltima visita: ${formatDate(patient.lastVisit)}</p>
+              <strong>${escapeHtml(patientById(payment.patientId).name)}</strong>
+              <p>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} Â· ${invoiceAgeBucket(payment)} Â· Fecha: ${formatDate(payment.date)}</p>
             </div>
           </article>
         `)
@@ -5008,6 +5376,19 @@ function renderCashClose() {
   if (closeButton) closeButton.disabled = !opening;
   if (reopenButton) reopenButton.disabled = Boolean(opening) || !lastClosing;
 
+  const detailContainer = document.getElementById("cashierMethodDetail");
+  if (detailContainer) {
+    detailContainer.innerHTML = `
+      <div class="panel-header compact-header">
+        <div>
+          <h2>Detalle por cajero y mÃ©todo</h2>
+          <p>Cobros aplicados al cierre del dÃ­a.</p>
+        </div>
+      </div>
+      <div class="cashier-method-grid">${cashCloseDetailTemplate(todayIso)}</div>
+    `;
+  }
+
   document.getElementById("cashCloseHistory").innerHTML = (state.cashClosings || []).length
     ? state.cashClosings.slice(0, 5).map((closing) => `
       <article class="ledger-item">
@@ -5019,10 +5400,138 @@ function renderCashClose() {
           ${closing.note ? `<p>Nota: ${escapeHtml(closing.note)}</p>` : ""}
           ${closing.reopenedAt ? `<p>Reabierta por ${escapeHtml(userById(closing.reopenedBy).name)} Â· ${formatDateTime(closing.reopenedAt)}</p>` : ""}
           <p>Apertura ${currency.format(closing.openingAmount || 0)} Â· Ventas ${currency.format(closing.total)} Â· Usuario: ${escapeHtml(userById(closing.closedBy).name)} Â· Efectivo ${currency.format(closing.totals.Efectivo || 0)} Â· Tarjeta ${currency.format(closing.totals.Tarjeta || 0)} Â· Transferencia ${currency.format(closing.totals.Transferencia || 0)}</p>
+          ${closing.cashierMethodTotals ? `<p>${cashierMethodSummaryText(closing.cashierMethodTotals)}</p>` : ""}
         </div>
       </article>
     `).join("")
     : emptyState("No hay cierres de caja registrados.");
+}
+
+function renderReceivablesAgingReport() {
+  const container = document.getElementById("receivablesAgingReport");
+  if (!container) return;
+  const buckets = {
+    "0-30 dÃ­as": 0,
+    "31-60 dÃ­as": 0,
+    "61-90 dÃ­as": 0,
+    "MÃ¡s de 90 dÃ­as": 0
+  };
+  activeBillingPayments()
+    .filter((payment) => invoiceBalance(payment) > 0)
+    .forEach((payment) => {
+      const bucket = invoiceAgeBucket(payment);
+      buckets[bucket] = (buckets[bucket] || 0) + invoiceBalance(payment);
+    });
+  container.innerHTML = Object.entries(buckets).map(([label, amount]) => `
+    <article class="billing-card">
+      <span>${label}</span>
+      <strong>${currency.format(amount)}</strong>
+    </article>
+  `).join("");
+}
+
+function cashCloseDetailTemplate(date = todayIso) {
+  const grouped = cashierMethodTotals(date);
+  const rows = Object.entries(grouped).flatMap(([cashier, methods]) =>
+    Object.entries(methods).map(([method, amount]) => `
+      <article class="cashier-method-row">
+        <strong>${escapeHtml(cashier)}</strong>
+        <span>${escapeHtml(method)}</span>
+        <b>${currency.format(amount)}</b>
+      </article>
+    `)
+  );
+  return rows.length ? rows.join("") : emptyState("No hay cobros para detallar por cajero.");
+}
+
+function cashierMethodSummaryText(grouped) {
+  return Object.entries(grouped)
+    .flatMap(([cashier, methods]) => Object.entries(methods).map(([method, amount]) => `${cashier} / ${method}: ${currency.format(amount)}`))
+    .join(" Â· ");
+}
+
+function ensureSupplier(name) {
+  state.suppliers ||= [];
+  const supplierName = name || "Sin proveedor";
+  if (!state.suppliers.some((supplier) => normalizeText(supplier.name) === normalizeText(supplierName))) {
+    state.suppliers.push({ id: makeId(), name: supplierName, phone: "", contact: "" });
+  }
+}
+
+function registerInventoryMovement({ productId, type, quantity, reason, reference = "", provider = "", unitCost = 0, expiry = "", previousStock = 0, newStock = 0 }) {
+  state.inventoryMovements ||= [];
+  const product = state.inventory.find((item) => item.id === productId);
+  if (!product || !quantity) return null;
+  const movement = {
+    id: makeId(),
+    productId,
+    productName: product.name,
+    type,
+    quantity: Number(quantity) || 0,
+    previousStock,
+    newStock,
+    reason,
+    reference,
+    provider: provider || product.provider || "",
+    unitCost: Number(unitCost) || 0,
+    expiry: expiry || product.expiry || "",
+    date: todayIso,
+    createdAt: new Date().toISOString(),
+    createdBy: currentUser?.id || "sin-usuario"
+  };
+  state.inventoryMovements.unshift(movement);
+  return movement;
+}
+
+function applyInventoryMovement({ productId, type, quantity, reason, reference = "", provider = "", unitCost = 0, expiry = "" }) {
+  const product = state.inventory.find((item) => item.id === productId);
+  const movementQuantity = Number(quantity) || 0;
+  if (!product || movementQuantity <= 0) return false;
+  const previousStock = Number(product.stock) || 0;
+  const normalizedType = normalizeText(type);
+  const sign = normalizedType === "entrada" ? 1 : -1;
+  const newStock = previousStock + (movementQuantity * sign);
+  if (newStock < 0) {
+    alert(`Stock insuficiente para ${product.name}. Disponible: ${previousStock}.`);
+    return false;
+  }
+  product.stock = newStock;
+  if (expiry) product.expiry = expiry;
+  if (provider) {
+    product.provider = provider;
+    ensureSupplier(provider);
+  }
+  registerInventoryMovement({ productId, type, quantity: movementQuantity, reason, reference, provider, unitCost, expiry, previousStock, newStock });
+  return true;
+}
+
+function inventoryItemByKeyword(keyword) {
+  return state.inventory.find((item) => normalizeText(item.name).includes(normalizeText(keyword)));
+}
+
+function procedureSuppliesForTreatment(procedureName) {
+  const normalized = normalizeText(procedureName);
+  const rules = [];
+  if (normalized.includes("evaluacion") || normalized.includes("control placa")) {
+    rules.push(["guantes", 1]);
+  }
+  if (normalized.includes("exodoncia") || normalized.includes("colgajo")) {
+    rules.push(["anestesia", 1], ["guantes", 1]);
+  }
+  if (normalized.includes("denticion") || normalized.includes("restaur") || normalized.includes("superior") || normalized.includes("subior")) {
+    rules.push(["resina", 1], ["guantes", 1]);
+  }
+  return rules
+    .map(([keyword, quantity]) => ({ product: inventoryItemByKeyword(keyword), quantity }))
+    .filter((usage) => usage.product);
+}
+
+function inventoryExpiryStatus(item) {
+  if (!item.expiry) return { label: "Sin vencimiento", className: "pendiente" };
+  const days = Math.ceil((new Date(`${item.expiry}T12:00:00`) - new Date(`${todayIso}T12:00:00`)) / 86400000);
+  if (days < 0) return { label: "Vencido", className: "cancelada" };
+  if (days <= 60) return { label: "Por vencer", className: "pendiente" };
+  return { label: "Vigente", className: "confirmada" };
 }
 
 function renderInventory() {
@@ -5083,7 +5592,7 @@ function renderReports() {
   const discounts = billablePayments.reduce((sum, payment) => sum + Number(payment.discount || 0), 0);
   const cancelled = appointmentsInRange.filter((appointment) => appointment.status === "Cancelada").length;
   const completedTreatments = state.treatments.filter((treatment) => treatment.progress >= 100).length;
-  const receivable = state.patients.reduce((sum, patient) => sum + patient.balance, 0);
+  const receivable = activeBillingPayments().reduce((sum, payment) => sum + invoiceBalance(payment), 0);
   const averageTicket = billablePayments.length ? income / billablePayments.length : 0;
   const productIncome = billablePayments.filter((payment) => payment.type === "Producto").reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
   const labIncome = billablePayments.filter((payment) => payment.type === "Laboratorio").reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
@@ -5131,7 +5640,7 @@ function renderReports() {
 
   document.getElementById("reportAlerts").innerHTML = [
     ["Stock bajo", `${state.inventory.filter((item) => item.stock <= item.min).length} materiales requieren compra.`],
-    ["Balances", `${state.patients.filter((patient) => patient.balance > 0).length} pacientes con deuda.`],
+    ["Balances", `${activeBillingPayments().filter((payment) => invoiceBalance(payment) > 0).length} facturas con balance.`],
     ["Seguimiento", `${state.treatments.filter((treatment) => treatment.progress > 0 && treatment.progress < 100).length} tratamientos en curso.`],
     ["Tratamientos", `${completedTreatments} tratamientos completados.`],
     ["Caja", `${cashClosingsInRange.filter((closing) => Number(closing.difference || 0) !== 0).length} cierres con diferencia.`],
@@ -5207,7 +5716,7 @@ function exportReportsCsv() {
     .filter((payment) => filters.cashier === "all" || (payment.cashierId || payment.createdBy) === filters.cashier)
     .filter((payment) => filters.invoiceType === "all" || normalizeText(payment.invoiceType || "Consumidor Final") === normalizeText(filters.invoiceType));
   const rows = [
-    ["Fecha", "Factura", "Tipo factura", "Paciente", "Doctor", "Cajero", "Metodo", "Concepto", "Monto", "Estado"],
+    ["Fecha", "Factura", "Tipo factura", "Paciente", "Doctor", "Cajero", "Metodo", "Concepto", "Monto", "Pagado", "Balance", "Antiguedad", "Estado"],
     ...payments.map((payment) => [
       payment.date,
       payment.invoiceNumber || payment.receiptNumber || "",
@@ -5217,7 +5726,10 @@ function exportReportsCsv() {
       paymentCashierLabel(payment),
       payment.method || "",
       payment.concept || "",
-      Number(payment.amount || 0),
+      invoiceNetAmount(payment),
+      invoicePaidAmount(payment),
+      invoiceBalance(payment),
+      invoiceBalance(payment) > 0 ? invoiceAgeBucket(payment) : "",
       payment.invoiceStatus || "Pagada"
     ])
   ];
@@ -5290,6 +5802,7 @@ function renderPosInvoiceReport(payments = activeBillingPayments()) {
 function renderBillingReportList(payments, cashClosings, expectedCash, countedCash) {
   const byMethod = groupPaymentTotals(payments, (payment) => payment.method || "Sin mÃ©todo");
   const byCashier = groupPaymentTotals(payments, (payment) => paymentCashierLabel(payment));
+  const agingRows = receivablesAgingRows(payments);
   const methodRows = reportRankingRows(byMethod, "MÃ©todos de pago");
   const cashierRows = reportRankingRows(byCashier, "Cajeros");
   const cashStatus = `
@@ -5304,9 +5817,31 @@ function renderBillingReportList(payments, cashClosings, expectedCash, countedCa
   `;
   document.getElementById("billingReportList").innerHTML = [
     cashStatus,
+    ...agingRows,
     ...methodRows,
     ...cashierRows
   ].join("") || emptyState("No hay facturaciÃ³n en el perÃ­odo seleccionado.");
+}
+
+function receivablesAgingRows(payments) {
+  const buckets = payments
+    .filter((payment) => invoiceBalance(payment) > 0)
+    .reduce((summary, payment) => {
+      const bucket = invoiceAgeBucket(payment);
+      summary[bucket] ||= { label: bucket, total: 0, count: 0 };
+      summary[bucket].total += invoiceBalance(payment);
+      summary[bucket].count += 1;
+      return summary;
+    }, {});
+  return Object.values(buckets).map((item) => `
+    <article class="clinical-item report-list-item">
+      <span class="report-rank">${item.count}</span>
+      <div>
+        <strong>Cuentas por cobrar Â· ${escapeHtml(item.label)}</strong>
+        <p>${item.count} factura(s) Â· ${currency.format(item.total)}</p>
+      </div>
+    </article>
+  `);
 }
 
 function renderOperationsReportList(payments, filters) {
@@ -5320,7 +5855,7 @@ function renderOperationsReportList(payments, filters) {
     ["Productos facturados", `${productSales} ventas`, reportType === "facturacion" ? "Incluido en el filtro de facturaciÃ³n." : "Incluye ventas desde almacÃ©n."],
     ["Laboratorio pendiente", `${labPending} trabajos`, `${labCompleted} completados o facturados.`],
     ["Stock crÃ­tico", `${lowStock.length} productos`, lowStock.slice(0, 3).map((item) => item.name).join(", ") || "Sin alertas crÃ­ticas."],
-    ["Pacientes con balance", `${state.patients.filter((patient) => patient.balance > 0).length} pacientes`, currency.format(state.patients.reduce((sum, patient) => sum + patient.balance, 0))]
+    ["Facturas con balance", `${activeBillingPayments().filter((payment) => invoiceBalance(payment) > 0).length} facturas`, currency.format(activeBillingPayments().reduce((sum, payment) => sum + invoiceBalance(payment), 0))]
   ].map(([label, valueText, detail]) => `
     <article class="alert-item report-alert">
       <span class="status-pill pendiente">${label}</span>
@@ -5568,6 +6103,32 @@ function activeBillingPayments(payments = state.payments) {
   return payments.filter((payment) => payment.invoiceStatus !== "Anulada" && payment.documentKind !== "CotizaciÃ³n");
 }
 
+function invoiceNetAmount(payment) {
+  return Math.max(0, Number(payment.amount || 0) - Number(payment.discount || 0));
+}
+
+function invoicePaidAmount(payment) {
+  const historyTotal = (payment.paymentHistory || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  if (historyTotal > 0) return historyTotal;
+  if (["Pagada", "Emitida"].includes(payment.invoiceStatus) && payment.amountReceived === undefined) {
+    return invoiceNetAmount(payment);
+  }
+  return Math.min(invoiceNetAmount(payment), Number(payment.amountReceived || 0));
+}
+
+function invoiceCreditAmount(payment) {
+  return (payment.creditNotes || []).reduce((sum, note) => sum + Number(note.amount || 0), 0);
+}
+
+function invoiceBalance(payment) {
+  if (payment.invoiceStatus === "Anulada" || payment.documentKind === "CotizaciÃ³n") return 0;
+  return Math.max(0, invoiceNetAmount(payment) - invoicePaidAmount(payment) - invoiceCreditAmount(payment));
+}
+
+function invoiceAgeBucket(payment) {
+  return receivableAgeBucket(payment.date || payment.createdAt?.slice(0, 10) || todayIso);
+}
+
 function syncPaymentProductFields() {
   const paymentType = value("paymentType");
   const isProduct = paymentType === "Producto";
@@ -5620,22 +6181,49 @@ function paymentCashierLabel(payment) {
 }
 
 function paymentMethodTotals(date = null) {
-  return activeBillingPayments()
-    .filter((payment) => !date || payment.date === date)
-    .reduce((summary, payment) => {
-      summary[payment.method] = (summary[payment.method] || 0) + Number(payment.amount || 0);
+  return paymentCollections(date).reduce((summary, collection) => {
+      summary[collection.method] = (summary[collection.method] || 0) + Number(collection.amount || 0);
       return summary;
     }, {});
 }
 
 function cashChangeTotal(date = null) {
   return activeBillingPayments()
-    .filter((payment) => payment.method === "Efectivo")
-    .filter((payment) => !date || payment.date === date)
+    .filter((payment) => payment.method === "Efectivo" && (!date || payment.date === date))
     .reduce((sum, payment) => {
       const received = Number(payment.amountReceived || payment.amount || 0);
-      return sum + Math.max(0, received - Number(payment.amount || 0));
+      return sum + Math.max(0, received - invoiceNetAmount(payment));
     }, 0);
+}
+
+function paymentCollections(date = null) {
+  return activeBillingPayments().flatMap((payment) => {
+    const history = payment.paymentHistory?.length
+      ? payment.paymentHistory
+      : invoicePaidAmount(payment) > 0
+        ? [{ date: payment.date, amount: invoicePaidAmount(payment), method: payment.method, cashierId: payment.cashierId || payment.createdBy }]
+        : [];
+    return history
+      .filter((item) => !date || item.date === date)
+      .map((item) => ({
+        paymentId: payment.id,
+        invoiceNumber: payment.invoiceNumber,
+        patientId: payment.patientId,
+        amount: Number(item.amount || 0),
+        method: item.method || payment.method,
+        cashierId: item.cashierId || payment.cashierId || payment.createdBy,
+        date: item.date || payment.date
+      }));
+  });
+}
+
+function cashierMethodTotals(date = null) {
+  return paymentCollections(date).reduce((summary, collection) => {
+    const cashier = paymentCashierLabel({ cashierId: collection.cashierId });
+    summary[cashier] ||= {};
+    summary[cashier][collection.method] = (summary[cashier][collection.method] || 0) + collection.amount;
+    return summary;
+  }, {});
 }
 
 function receivableAgeBucket(dateValue) {
@@ -5681,10 +6269,15 @@ function annulInvoice(paymentId) {
   if (!reason) return;
   if (payment.documentKind !== "CotizaciÃ³n") {
     const patient = patientById(payment.patientId);
-    patient.balance += Number(payment.amount || 0) + Number(payment.discount || 0);
+    patient.balance = Math.max(0, patient.balance - invoiceBalance(payment));
     if (payment.type === "Producto" && payment.productId) {
-      const product = state.inventory.find((item) => item.id === payment.productId);
-      if (product) product.stock += Number(payment.quantity || 1);
+      applyInventoryMovement({
+        productId: payment.productId,
+        type: "Entrada",
+        quantity: Number(payment.quantity || 1),
+        reason: "Reverso por anulacion",
+        reference: payment.invoiceNumber || payment.receiptNumber || payment.id
+      });
     }
   }
   payment.previousInvoiceStatus = payment.invoiceStatus;
@@ -5692,6 +6285,100 @@ function annulInvoice(paymentId) {
   payment.voidReason = reason;
   payment.voidedAt = new Date().toISOString();
   payment.voidedBy = currentUser?.id || "sin-usuario";
+  saveState();
+  renderBilling();
+}
+
+function convertQuoteToInvoice(paymentId) {
+  const payment = state.payments.find((item) => item.id === paymentId);
+  if (!payment || payment.documentKind !== "CotizaciÃ³n") return;
+  const invoiceType = prompt("Tipo de factura para convertir la cotizaciÃ³n", "Consumidor Final");
+  if (!invoiceType) return;
+  payment.convertedFromQuoteId = payment.id;
+  payment.documentKind = "Factura";
+  payment.invoiceType = invoiceType;
+  payment.invoiceStatus = "Pendiente";
+  payment.invoiceNumber = nextInvoiceNumber();
+  payment.receiptNumber = nextReceiptNumber();
+  payment.ncf = nextNcf(invoiceType);
+  payment.date = todayIso;
+  payment.convertedAt = new Date().toISOString();
+  payment.convertedBy = currentUser?.id || "sin-usuario";
+  if (payment.type === "Producto" && payment.productId) {
+    applyInventoryMovement({
+      productId: payment.productId,
+      type: "Salida",
+      quantity: Number(payment.quantity || 1),
+      reason: "Cotizacion convertida en factura",
+      reference: payment.invoiceNumber || payment.id
+    });
+  }
+  saveState();
+  renderBilling();
+}
+
+function addInvoicePayment(paymentId) {
+  const payment = state.payments.find((item) => item.id === paymentId);
+  if (!payment || invoiceBalance(payment) <= 0) return;
+  if (!currentCashOpening()) {
+    alert("Debe abrir la caja antes de registrar abonos.");
+    return;
+  }
+  const amount = Number(prompt(`Monto del abono. Balance actual: ${currency.format(invoiceBalance(payment))}`));
+  if (!amount || amount <= 0) return;
+  if (amount > invoiceBalance(payment)) {
+    alert("El abono no puede ser mayor al balance pendiente.");
+    return;
+  }
+  const method = prompt("MÃ©todo de pago", payment.method || "Efectivo") || payment.method || "Efectivo";
+  const reference = prompt("Referencia del abono", "") || "";
+  payment.paymentHistory ||= [];
+  payment.paymentHistory.unshift({
+    id: makeId(),
+    date: todayIso,
+    amount,
+    method,
+    reference,
+    cashierId: currentUser?.id || payment.cashierId || "sin-usuario",
+    createdAt: new Date().toISOString(),
+    note: "Abono"
+  });
+  payment.amountReceived = invoicePaidAmount(payment);
+  payment.invoiceStatus = invoiceBalance(payment) <= 0 ? "Pagada" : "Parcialmente pagada";
+  payment.updatedAt = new Date().toISOString();
+  payment.updatedBy = currentUser?.id || "sin-usuario";
+  const patient = patientById(payment.patientId);
+  patient.balance = Math.max(0, patient.balance - amount);
+  saveState();
+  renderBilling();
+}
+
+function createCreditNote(paymentId) {
+  const payment = state.payments.find((item) => item.id === paymentId);
+  if (!payment || payment.invoiceStatus === "Anulada" || payment.documentKind === "CotizaciÃ³n") return;
+  const reason = prompt("Motivo obligatorio de la nota de crÃ©dito");
+  if (!reason) return;
+  const available = Math.max(0, invoiceNetAmount(payment) - invoiceCreditAmount(payment));
+  const amount = Number(prompt(`Monto de la nota de crÃ©dito. Disponible: ${currency.format(available)}`, String(Math.min(available, invoiceBalance(payment) || available))));
+  if (!amount || amount <= 0 || amount > available) {
+    alert("Monto de nota de crÃ©dito invÃ¡lido.");
+    return;
+  }
+  payment.creditNotes ||= [];
+  payment.creditNotes.unshift({
+    id: makeId(),
+    number: `NC-${todayIso.replaceAll("-", "")}-${String((payment.creditNotes.length || 0) + 1).padStart(3, "0")}`,
+    date: todayIso,
+    amount,
+    reason,
+    createdAt: new Date().toISOString(),
+    createdBy: currentUser?.id || "sin-usuario"
+  });
+  payment.invoiceStatus = invoiceBalance(payment) <= 0 ? "Nota de crÃ©dito" : "Parcialmente pagada";
+  payment.updatedAt = new Date().toISOString();
+  payment.updatedBy = currentUser?.id || "sin-usuario";
+  const patient = patientById(payment.patientId);
+  patient.balance = Math.max(0, patient.balance - amount);
   saveState();
   renderBilling();
 }
