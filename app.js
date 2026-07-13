@@ -3570,7 +3570,7 @@ function calendarAppointmentTemplate(appointment) {
 }
 
 function appointmentStatusOptions(currentStatus) {
-  return ["Pendiente", "Confirmada", "Atendida", "Cancelada"]
+  return ["Pendiente", "Confirmada", "Atendida", "No asistió", "Lista de espera", "Cancelada"]
     .map((status) => `<option ${status === currentStatus ? "selected" : ""}>${status}</option>`)
     .join("");
 }
@@ -4418,4 +4418,119 @@ function makeUserId(name) {
     .replace(/^-|-$/g, "")
     .slice(0, 24) || "usuario";
   let candidate = base;
-  let index
+  let index = 2;
+  while (users.some((user) => user.id === candidate)) {
+    candidate = `${base}-${index}`;
+    index += 1;
+  }
+  return candidate;
+}
+
+function patientAge(birthdate) {
+  if (!birthdate) return "Edad no registrada";
+  const birth = new Date(`${birthdate}T12:00:00`);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDelta = now.getMonth() - birth.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return `${age} años`;
+}
+
+function patientAgeNumber(birthdate) {
+  if (!birthdate) return null;
+  const birth = new Date(`${birthdate}T12:00:00`);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDelta = now.getMonth() - birth.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
+}
+
+function doctorById(id) {
+  return doctors.find((doctor) => doctor.id === id) || { name: "Sin doctor", specialty: "No asignado" };
+}
+
+function userById(id) {
+  return users.find((user) => user.id === id) || doctorById(id) || { name: "Sin usuario", role: "No asignado" };
+}
+
+function appointmentsForCurrentDoctor() {
+  return state.appointments.filter((appointment) => appointmentBelongsToCurrentDoctor(appointment));
+}
+
+function treatmentsForCurrentDoctor() {
+  return state.treatments.filter((treatment) => treatmentBelongsToCurrentDoctor(treatment));
+}
+
+function appointmentBelongsToCurrentDoctor(appointment) {
+  return permissions().scope === "all" || !appointment.doctorId || appointment.doctorId === currentUser?.id;
+}
+
+function treatmentBelongsToCurrentDoctor(treatment) {
+  return permissions().scope === "all" || !treatment.doctorId || treatment.doctorId === currentUser?.id;
+}
+
+function value(id) {
+  return document.getElementById(id).value;
+}
+
+function formatDate(dateText) {
+  if (!dateText) return "Sin fecha";
+  return new Intl.DateTimeFormat("es-DO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  }).format(new Date(`${dateText}T12:00:00`));
+}
+
+function formatDateTime(dateTimeText) {
+  if (!dateTimeText) return "Sin fecha y hora";
+  return new Intl.DateTimeFormat("es-DO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(dateTimeText));
+}
+
+function localDateTimeValue() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16);
+}
+
+function toDateInputValue(date) {
+  const copy = new Date(date);
+  copy.setMinutes(copy.getMinutes() - copy.getTimezoneOffset());
+  return copy.toISOString().slice(0, 10);
+}
+
+function sortByDateTime(a, b) {
+  return `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
+}
+
+function labelStatus(status) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function className(text) {
+  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function emptyState(message) {
+  return `<article class="alert-item"><div><strong>${message}</strong><p>Agrega información para verla aquí.</p></div></article>`;
+}
+
+function escapeHtml(valueText) {
+  return String(valueText)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
