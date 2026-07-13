@@ -993,6 +993,25 @@ p {
   background: #fbfdfc;
 }
 
+.lab-request-item {
+  align-items: start;
+}
+
+.lab-detail-form {
+  margin-top: 10px;
+}
+
+.lab-detail-form input[type="file"] {
+  min-width: 180px;
+}
+
+.lab-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .clinical-item {
   grid-template-columns: auto minmax(0, 1fr);
 }
@@ -1028,12 +1047,16 @@ p {
 
 .status-pill.pendiente,
 .status-pill.restaurado,
-.status-pill.endodoncia {
+.status-pill.endodoncia,
+.status-pill.lista-de-espera,
+.status-pill.corona,
+.status-pill.registrado {
   color: #7c4b00;
   background: #fff0cc;
 }
 
 .status-pill.cancelada,
+.status-pill.no-asistio,
 .status-pill.caries,
 .status-pill.ausente {
   color: #8a2d25;
@@ -1156,9 +1179,66 @@ p {
   border-left-color: var(--red);
 }
 
+.calendar-chip.no-asistio {
+  background: #ffecea;
+  border-left-color: var(--red);
+}
+
+.calendar-chip.lista-de-espera {
+  background: #fff7e6;
+  border-left-color: var(--amber);
+}
+
 .calendar-chip.atendida {
   background: #e8f5ee;
   border-left-color: var(--green);
+}
+
+.agenda-week-grid,
+.agenda-month-summary-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.agenda-week-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.agenda-week-day,
+.agenda-month-summary {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.agenda-week-day.today,
+.agenda-month-summary.has-items {
+  border-color: #98d7bf;
+  background: #f2fbf6;
+}
+
+.agenda-month-summary-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.agenda-month-summary {
+  min-height: 82px;
+  align-content: start;
+}
+
+.agenda-month-summary span,
+.agenda-month-summary small,
+.agenda-warning {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.agenda-warning {
+  color: #8a2d25;
+  font-weight: 850;
 }
 
 .appointment-actions {
@@ -1468,7 +1548,8 @@ tbody tr:hover {
 .surface-dot.lingual { bottom: 6px; left: 13px; }
 .surface-dot.caries { background: var(--red); }
 .surface-dot.restaurado,
-.surface-dot.endodoncia { background: var(--amber); }
+.surface-dot.endodoncia,
+.surface-dot.corona { background: var(--amber); }
 .surface-dot.implante { background: var(--blue); }
 .surface-dot.ausente { background: #8a948e; }
 
@@ -1489,6 +1570,27 @@ tbody tr:hover {
 .tooth.implante .tooth-shape {
   background: #e0ebff;
   border-color: #9fc0ff;
+}
+
+.tooth.corona .tooth-shape {
+  background: linear-gradient(180deg, #fff4c2, #d6aa35);
+  border-color: #9f7418;
+}
+
+.odontogram-compare {
+  margin-top: 12px;
+}
+
+.odontogram-diff-list {
+  display: grid;
+  gap: 4px;
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+
+.selected-tooth-history {
+  border-color: #98d7bf;
+  background: #f2fbf6;
 }
 
 .summary-row {
@@ -2043,5 +2145,53 @@ dialog::backdrop {
     border-radius: 0 !important;
     box-shadow: none !important;
     font-size: 9px !important;
+  }
+
+  body.print-odontogram,
+  body.print-odontogram html {
+    width: auto !important;
+    min-width: 0 !important;
+    background: #fff !important;
+  }
+
+  body.print-odontogram > :not(#appShell) {
+    display: none !important;
+  }
+
+  body.print-odontogram #appShell,
+  body.print-odontogram #odontogram,
+  body.print-odontogram #odontogram * {
+    display: revert !important;
+    visibility: visible !important;
+  }
+
+  body.print-odontogram .sidebar,
+  body.print-odontogram .topbar,
+  body.print-odontogram .nav-section,
+  body.print-odontogram .toolbar-controls button:not(#printOdontogramSummary),
+  body.print-odontogram .clinical-form,
+  body.print-odontogram #receiptDialog {
+    display: none !important;
+  }
+
+  body.print-odontogram .app-shell,
+  body.print-odontogram .main,
+  body.print-odontogram #odontogram {
+    position: static !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  body.print-odontogram .record-grid,
+  body.print-odontogram .odontogram-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.print-odontogram .dental-arch {
+    min-width: 0 !important;
   }
 }

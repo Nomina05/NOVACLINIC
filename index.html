@@ -202,6 +202,7 @@
                     <th>Estado</th>
                     <th>Entrada</th>
                     <th>Salida</th>
+                    <th>Horas</th>
                     <th>Nota</th>
                   </tr>
                 </thead>
@@ -218,6 +219,12 @@
             </div>
             <form class="inline-form" id="vacationForm">
               <select id="vacationUser" required></select>
+              <select id="vacationType" required>
+                <option>Vacaciones</option>
+                <option>Permiso</option>
+                <option>Licencia médica</option>
+                <option>Ausencia programada</option>
+              </select>
               <input id="vacationStart" type="date" required>
               <input id="vacationEnd" type="date" required>
               <select id="vacationStatus">
@@ -234,9 +241,11 @@
                 <thead>
                   <tr>
                     <th>Empleado</th>
+                    <th>Tipo</th>
                     <th>Desde</th>
                     <th>Hasta</th>
                     <th>Estado</th>
+                    <th>Aprobación</th>
                     <th>Comentario</th>
                   </tr>
                 </thead>
@@ -327,6 +336,10 @@
                 <h2>Nómina</h2>
                 <p>Personal administrativo por salario fijo y doctores por comisión de puntos.</p>
               </div>
+              <label class="compact-field">
+                Período
+                <input id="payrollPeriod" type="month">
+              </label>
               <button class="ghost-button" id="markPayrollPaid" type="button">Marcar nómina pagada</button>
               <button class="primary-button" id="processPayrollMonth" type="button">Procesar nómina del mes</button>
             </div>
@@ -347,6 +360,7 @@
                   <option value="Avance">Avance</option>
                   <option value="Ajuste">Ajuste</option>
                 </select>
+                <input id="payrollNoveltyPeriod" type="month">
                 <input id="payrollNoveltyAmount" type="number" min="0" step="100" placeholder="Monto" required>
                 <input id="payrollNoveltyNote" placeholder="Detalle de la novedad" required>
                 <button class="primary-button" type="submit">Aplicar novedad</button>
@@ -359,6 +373,7 @@
                       <th>Tipo</th>
                       <th>Monto</th>
                       <th>Detalle</th>
+                      <th>Período</th>
                       <th>Fecha</th>
                     </tr>
                   </thead>
@@ -424,6 +439,30 @@
                   </tr>
                 </thead>
                 <tbody id="adminPayrollTable"></tbody>
+              </table>
+              </div>
+            </section>
+            <section class="payroll-section">
+              <div class="panel-header">
+                <div>
+                  <h3>Historial de procesamiento</h3>
+                  <p>Meses procesados, totales pagados y responsable del cierre de nómina.</p>
+                </div>
+              </div>
+              <div class="table-panel">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Período</th>
+                    <th>Administrativa</th>
+                    <th>Doctores</th>
+                    <th>Novedades</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Procesado por</th>
+                  </tr>
+                </thead>
+                <tbody id="payrollRunTable"></tbody>
               </table>
               </div>
             </section>
@@ -722,6 +761,7 @@
                 <option value="ausente">Ausente</option>
                 <option value="endodoncia">Endodoncia</option>
                 <option value="implante">Implante</option>
+                <option value="corona">Corona</option>
               </select>
               <select id="toothSurface">
                 <option value="pieza">Pieza completa</option>
@@ -732,6 +772,8 @@
                 <option value="lingual">Lingual</option>
               </select>
               <button class="primary-button" id="updateToothButton" type="button">Actualizar diente</button>
+              <button class="ghost-button" id="saveInitialOdontogram" type="button">Guardar inicial</button>
+              <button class="ghost-button" id="printOdontogramSummary" type="button">Imprimir resumen</button>
               <span class="selected-tooth-chip" id="selectedToothHint">Selecciona una pieza</span>
             </div>
           </div>
@@ -841,6 +883,7 @@
                 </div>
               </div>
               <div class="status-summary" id="toothSummary"></div>
+              <div class="status-summary odontogram-compare" id="odontogramComparison"></div>
               <div class="clinical-list odontogram-history" id="odontogramHistory"></div>
             </section>
           </div>

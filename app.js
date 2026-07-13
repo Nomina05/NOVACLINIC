@@ -233,6 +233,7 @@ const seedState = {
   settings: {},
   payroll: [],
   payrollNovelties: [],
+  payrollRuns: [],
   hrAttendance: [],
   hrVacations: [],
   hrShifts: [],
@@ -240,6 +241,7 @@ const seedState = {
   cashOpenings: [],
   cashClosings: [],
   odontogramHistory: [],
+  initialOdontograms: {},
   odontograms: {}
 };
 
@@ -535,13 +537,31 @@ function normalizeState(loadedState) {
     ...closing
   }));
   next.hrAttendance ||= [];
-  next.hrVacations ||= [];
+  next.hrVacations = (next.hrVacations || []).map((item) => ({
+    type: "Vacaciones",
+    approvedBy: "",
+    approvedAt: "",
+    ...item
+  }));
   next.hrShifts = Array.isArray(next.hrShifts) && next.hrShifts.length ? next.hrShifts : cloneSeed().hrShifts;
   next.hrEvaluations ||= [];
+  next.payrollRuns ||= [];
+  next.payrollNovelties = (next.payrollNovelties || []).map((item) => ({
+    period: currentPayrollPeriod(),
+    ...item
+  }));
   next.patientPlates ||= [];
   next.patientAttachments ||= [];
   next.patientConsents ||= [];
+  next.initialOdontograms ||= {};
   next.selfServiceRequests ||= [];
+  next.selfServiceRequests = next.selfServiceRequests.map((request) => ({
+    attachments: [],
+    promisedAt: "",
+    deliveredAt: "",
+    labNote: "",
+    ...request
+  }));
   return next;
 }
 
@@ -1094,14 +1114,14 @@ function appointmentConflictsFromForm() {
     appointment.id !== currentId &&
     appointment.patientId === patientId &&
     appointment.date === date &&
-    appointment.status !== "Cancelada"
+    !["Cancelada"].includes(appointment.status)
   );
   const sameTimeDoctorAppointments = state.appointments.filter((appointment) =>
     appointment.id !== currentId &&
     appointment.doctorId === doctorId &&
     appointment.date === date &&
     appointment.time === time &&
-    appointment.status !== "Cancelada"
+    !["Cancelada", "Lista de espera"].includes(appointment.status)
   );
   const conflicts = [];
   if (sameDayPatientAppointments.length) {
@@ -1424,12 +1444,31 @@ function bindForms() {
   document.getElementById("printReceipt").addEventListener("click", () => window.print());
   document.getElementById("markPayrollPaid").addEventListener("click", () => {
     if (!can("payroll:manage")) return;
-    state.payroll = normalizedPayroll().map((item) => ({ ...item, status: "Pagado" }));
+    const period = selectedPayrollPeriod();
+    state.payroll = normalizedPayroll().map((item) => ({ ...item, period, status: "Pagado", paidAt: new Date().toISOString(), paidBy: currentUser?.id || "sin-usuario" }));
+    state.payrollRuns ||= [];
+    const run = state.payrollRuns.find((item) => item.period === period);
+    if (run) {
+      run.status = "Pagada";
+      run.paidAt = new Date().toISOString();
+      run.paidBy = currentUser?.id || "sin-usuario";
+    } else {
+      state.payrollRuns.unshift({ ...payrollRunSummaryForPeriod(period), status: "Pagada", paidAt: new Date().toISOString(), paidBy: currentUser?.id || "sin-usuario" });
+    }
     persistAndRender();
   });
   document.getElementById("processPayrollMonth").addEventListener("click", () => {
     if (!can("payroll:manage")) return;
-    state.payroll = normalizedPayroll().map((item) => ({ ...item, status: "Procesada" }));
+    const period = selectedPayrollPeriod();
+    state.payroll = normalizedPayroll().map((item) => ({ ...item, period, status: "Procesada", processedAt: new Date().toISOString(), processedBy: currentUser?.id || "sin-usuario" }));
+    state.payrollRuns ||= [];
+    const summary = payrollRunSummaryForPeriod(period);
+    const existing = state.payrollRuns.find((item) => item.period === period);
+    if (existing) {
+      Object.assign(existing, summary, { status: "Procesada", processedAt: new Date().toISOString(), processedBy: currentUser?.id || "sin-usuario" });
+    } else {
+      state.payrollRuns.unshift({ ...summary, status: "Procesada", processedAt: new Date().toISOString(), processedBy: currentUser?.id || "sin-usuario" });
+    }
     persistAndRender();
   });
   document.getElementById("payrollNoveltyForm").addEventListener("submit", (event) => {
@@ -1443,7 +1482,7 @@ function bindForms() {
       amount: Number(value("payrollNoveltyAmount")) || 0,
       note: value("payrollNoveltyNote"),
       date: todayIso,
-      period: "Mayo 2026",
+      period: value("payrollNoveltyPeriod") || selectedPayrollPeriod(),
       createdBy: currentUser?.id || "sin-usuario"
     });
     event.target.reset();
@@ -1462,6 +1501,8 @@ function bindForms() {
     }
     refreshSelectedToothHint();
   });
+  document.getElementById("saveInitialOdontogram").addEventListener("click", saveInitialOdontogram);
+  document.getElementById("printOdontogramSummary").addEventListener("click", printOdontogramSummary);
 
   document.getElementById("odontogramPatient").addEventListener("change", () => {
     selectedTooth = null;
@@ -1559,13 +1600,17 @@ function bindForms() {
     event.preventDefault();
     if (!can("payroll:manage")) return;
     state.hrVacations ||= [];
+    const vacationStatus = value("vacationStatus");
     state.hrVacations.unshift({
       id: makeId(),
       userId: value("vacationUser"),
+      type: value("vacationType"),
       start: value("vacationStart"),
       end: value("vacationEnd"),
-      status: value("vacationStatus"),
+      status: vacationStatus,
       note: value("vacationNote"),
+      approvedBy: ["Aprobada", "Rechazada", "Completada"].includes(vacationStatus) ? currentUser?.id || "sin-usuario" : "",
+      approvedAt: ["Aprobada", "Rechazada", "Completada"].includes(vacationStatus) ? new Date().toISOString() : "",
       createdBy: currentUser?.id || "sin-usuario"
     });
     event.target.reset();
@@ -1887,6 +1932,8 @@ function populateSelects() {
   document.getElementById("evolutionDate").value ||= todayIso;
   document.getElementById("attendanceDate").value ||= todayIso;
   document.getElementById("evaluationDate").value ||= todayIso;
+  document.getElementById("payrollPeriod").value ||= currentPayrollPeriod();
+  document.getElementById("payrollNoveltyPeriod").value ||= selectedPayrollPeriod();
 }
 
 function renderDashboard() {
@@ -2017,16 +2064,18 @@ function renderLaboratoryPanel() {
   const labRequests = (state.selfServiceRequests || [])
     .filter((request) => request.type === "Laboratorio - pieza dental");
   const pending = labRequests.filter((request) => request.status === "Pendiente").length;
-  const active = labRequests.filter((request) => ["Recibida", "En proceso"].includes(request.status)).length;
-  const completed = labRequests.filter((request) => request.status === "Completada").length;
+  const active = labRequests.filter((request) => ["Recibida", "En proceso", "Terminada"].includes(request.status)).length;
+  const completed = labRequests.filter((request) => ["Completada", "Entregada"].includes(request.status)).length;
   const invoiced = labRequests.filter((request) => request.status === "Facturada").length;
+  const dueSoon = labRequests.filter((request) => request.promisedAt && request.status !== "Facturada" && request.status !== "Cancelada" && request.promisedAt <= todayIso).length;
 
   document.getElementById("laboratoryPanelCards").innerHTML = [
     ["Solicitudes", labRequests.length],
     ["Pendientes", pending],
     ["En proceso", active],
     ["Completadas", completed],
-    ["Facturadas", invoiced]
+    ["Facturadas", invoiced],
+    ["Por vencer", dueSoon]
   ].map(panelCardTemplate).join("");
 
   renderPanelModules("laboratoryPanelModules", "laboratoryPanel");
@@ -2034,11 +2083,12 @@ function renderLaboratoryPanel() {
   document.getElementById("laboratoryStatusList").innerHTML = [
     ["Pendiente", `${pending} trabajos por recibir.`],
     ["En proceso", `${active} trabajos activos.`],
-    ["Completada", `${completed} trabajos entregados.`],
+    ["Entregada", `${completed} trabajos entregados o completados.`],
+    ["Vencimiento", `${dueSoon} trabajos requieren seguimiento por fecha prometida.`],
     ["Facturada", `${invoiced} trabajos facturados al doctor.`]
   ].map(([label, detail]) => `
     <article class="alert-item">
-      <span class="status-pill ${label === "Completada" ? "confirmada" : "pendiente"}">${label}</span>
+      <span class="status-pill ${["Completada", "Entregada", "Facturada"].includes(label) ? "confirmada" : "pendiente"}">${label}</span>
       <div><strong>${detail}</strong><p>Solicitudes generadas desde Autoservicio.</p></div>
     </article>
   `).join("");
@@ -2053,9 +2103,17 @@ function renderLaboratoryPanel() {
       const request = state.selfServiceRequests.find((item) => item.id === select.dataset.labStatus);
       if (!request) return;
       request.status = select.value;
+      if (["Completada", "Entregada"].includes(select.value) && !request.deliveredAt) request.deliveredAt = todayIso;
       request.updatedAt = new Date().toISOString();
       request.updatedBy = currentUser?.id || "sin-usuario";
       persistAndRender();
+    });
+  });
+  document.querySelectorAll("[data-lab-form]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!can("laboratory:manage")) return;
+      await saveLaboratoryRequestDetails(form.dataset.labForm, form);
     });
   });
   document.querySelectorAll("[data-lab-invoice]").forEach((button) => {
@@ -2068,25 +2126,70 @@ function renderLaboratoryPanel() {
 
 function laboratoryRequestTemplate(request) {
   const patient = request.patientId ? patientById(request.patientId) : null;
+  const attachments = request.attachments || [];
+  const canInvoice = ["Completada", "Entregada"].includes(request.status) && request.patientId && !request.invoiceId;
   return `
-    <article class="ledger-item">
-      <span class="status-pill ${request.status === "Completada" ? "confirmada" : "pendiente"}">${escapeHtml(request.status)}</span>
+    <article class="ledger-item lab-request-item">
+      <span class="status-pill ${["Completada", "Entregada", "Facturada"].includes(request.status) ? "confirmada" : "pendiente"}">${escapeHtml(request.status)}</span>
       <div>
         <strong>${escapeHtml(request.piece || "Pieza sin especificar")}</strong>
         <p>${patient ? `Paciente: ${escapeHtml(patient.name)} · ` : ""}${escapeHtml(request.detail || "Sin detalles")}${request.amount ? ` · ${currency.format(request.amount)}` : ""}</p>
+        <p>Prometida: ${request.promisedAt ? formatDate(request.promisedAt) : "Sin fecha"} · Entrega: ${request.deliveredAt ? formatDate(request.deliveredAt) : "Pendiente"}</p>
         <small>Solicitado por ${escapeHtml(userById(request.createdBy).name)} · ${formatDateTime(request.createdAt)}</small>
+        ${request.labNote ? `<p>Nota laboratorio: ${escapeHtml(request.labNote)}</p>` : ""}
+        ${attachments.length ? `<div class="lab-attachments">${attachments.map((file) => `<a class="ghost-link" href="${file.file}" target="_blank" rel="noopener">${escapeHtml(file.fileName || file.type || "Adjunto")}</a>`).join("")}</div>` : ""}
+        <form class="inline-form lab-detail-form ${can("laboratory:manage") ? "" : "permission-hidden"}" data-lab-form="${request.id}">
+          <input name="promisedAt" type="date" value="${escapeHtml(request.promisedAt || "")}" aria-label="Fecha prometida">
+          <input name="deliveredAt" type="date" value="${escapeHtml(request.deliveredAt || "")}" aria-label="Fecha entregada">
+          <input name="amount" type="number" min="0" step="100" value="${Number(request.amount || 0)}" placeholder="Costo">
+          <input name="note" value="${escapeHtml(request.labNote || "")}" placeholder="Nota laboratorio">
+          <input name="attachment" type="file" accept="image/*,.pdf">
+          <button class="ghost-button" type="submit">Guardar trabajo</button>
+        </form>
       </div>
       <select data-lab-status="${request.id}" ${can("laboratory:manage") ? "" : "disabled"}>
-        ${["Pendiente", "Recibida", "En proceso", "Completada", "Facturada", "Cancelada"].map((status) => `<option ${status === request.status ? "selected" : ""}>${status}</option>`).join("")}
+        ${laboratoryStatuses().map((status) => `<option ${status === request.status ? "selected" : ""}>${status}</option>`).join("")}
       </select>
-      <button class="ghost-button ${request.status === "Completada" && request.patientId && !request.invoiceId ? "" : "permission-hidden"}" data-lab-invoice="${request.id}" type="button">Facturar al doctor</button>
+      <button class="ghost-button ${canInvoice ? "" : "permission-hidden"}" data-lab-invoice="${request.id}" type="button">Facturar al doctor</button>
     </article>
   `;
 }
 
+function laboratoryStatuses() {
+  return ["Pendiente", "Recibida", "En proceso", "Terminada", "Completada", "Entregada", "Facturada", "Cancelada"];
+}
+
+async function saveLaboratoryRequestDetails(requestId, form) {
+  const request = state.selfServiceRequests.find((item) => item.id === requestId);
+  if (!request) return;
+  const formData = new FormData(form);
+  request.promisedAt = formData.get("promisedAt") || "";
+  request.deliveredAt = formData.get("deliveredAt") || "";
+  request.amount = Number(formData.get("amount")) || 0;
+  request.labNote = String(formData.get("note") || "");
+  const file = form.querySelector('input[name="attachment"]')?.files?.[0];
+  if (file) {
+    request.attachments ||= [];
+    request.attachments.unshift({
+      id: makeId(),
+      fileName: file.name,
+      file: await readFileAsDataUrl(file),
+      type: file.type || "archivo",
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser?.id || "laboratorio"
+    });
+  }
+  if (request.deliveredAt && ["Terminada", "Completada"].includes(request.status)) {
+    request.status = "Entregada";
+  }
+  request.updatedAt = new Date().toISOString();
+  request.updatedBy = currentUser?.id || "laboratorio";
+  persistAndRender();
+}
+
 function createLaboratoryInvoice(requestId) {
   const request = state.selfServiceRequests.find((item) => item.id === requestId);
-  if (!request || request.status !== "Completada" || request.invoiceId) return;
+  if (!request || !["Completada", "Entregada"].includes(request.status) || request.invoiceId) return;
   if (!request.patientId) {
     alert("Debe existir un paciente asociado para facturar el trabajo.");
     return;
@@ -2127,13 +2230,18 @@ function createLaboratoryInvoice(requestId) {
     createdAt: new Date().toISOString(),
     concept: `Laboratorio: ${request.piece || "pieza dental"}`,
     type: "Laboratorio",
-    laboratoryRequestId: request.id
+    laboratoryRequestId: request.id,
+    laboratoryPiece: request.piece || "",
+    laboratoryDeliveredAt: request.deliveredAt || "",
+    laboratoryPatientName: patient?.name || ""
   };
   state.payments.unshift(payment);
   request.invoiceId = payment.id;
   request.invoiceNumber = invoiceNumber;
   request.amount = amount;
   request.status = "Facturada";
+  request.invoicedAt = new Date().toISOString();
+  request.invoicedBy = currentUser?.id || "laboratorio";
   request.updatedAt = new Date().toISOString();
   request.updatedBy = currentUser?.id || "laboratorio";
   persistAndRender();
@@ -2148,22 +2256,25 @@ function renderHrControls() {
         <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
         <td>${escapeHtml(item.timeIn || "Sin entrada")}</td>
         <td>${escapeHtml(item.timeOut || "Sin salida")}</td>
+        <td>${escapeHtml(attendanceHours(item))}</td>
         <td>${escapeHtml(item.note || "Sin nota")}</td>
       </tr>
     `).join("")
-    : `<tr><td colspan="6">${emptyState("Sin asistencia registrada.")}</td></tr>`;
+    : `<tr><td colspan="7">${emptyState("Sin asistencia registrada.")}</td></tr>`;
 
   document.getElementById("vacationTable").innerHTML = state.hrVacations.length
     ? state.hrVacations.slice(0, 10).map((item) => `
       <tr>
         <td>${escapeHtml(userById(item.userId).name)}</td>
+        <td>${escapeHtml(item.type || "Vacaciones")}</td>
         <td>${formatDate(item.start)}</td>
         <td>${formatDate(item.end)}</td>
         <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
+        <td>${item.approvedBy ? `${escapeHtml(userById(item.approvedBy).name)} · ${formatDateTime(item.approvedAt)}` : "Pendiente"}</td>
         <td>${escapeHtml(item.note || "Sin comentario")}</td>
       </tr>
     `).join("")
-    : `<tr><td colspan="5">${emptyState("Sin solicitudes de vacaciones.")}</td></tr>`;
+    : `<tr><td colspan="7">${emptyState("Sin solicitudes de vacaciones.")}</td></tr>`;
 
   document.getElementById("shiftTable").innerHTML = state.hrShifts.length
     ? state.hrShifts.slice(0, 10).map((item) => `
@@ -2265,6 +2376,7 @@ function renderPayrollLegacy(payrollItems) {
 }
 
 function renderPayroll(payrollItems) {
+  const period = selectedPayrollPeriod();
   const adminPayrollItems = payrollItems.filter((item) => userById(item.userId).role !== "Doctor");
   const doctorPayrollItems = payrollItems.filter((item) => userById(item.userId).role === "Doctor");
   const grossTotal = payrollItems.reduce((sum, item) => sum + payrollGross(item), 0);
@@ -2282,8 +2394,22 @@ function renderPayroll(payrollItems) {
     ["Deducciones", currency.format(deductionsTotal)],
     ["Total neto", currency.format(netTotal)],
     ["Puntos doctores", doctorPoints],
-    ["Pagados", `${paidCount}/${payrollItems.length}`]
+    ["Pagados", `${paidCount}/${payrollItems.length}`],
+    ["Período", formatPayrollPeriod(period)]
   ].map(panelCardTemplate).join("");
+
+  document.getElementById("payrollNoveltyTable").innerHTML = (state.payrollNovelties || []).length
+    ? state.payrollNovelties.map((novelty) => `
+      <tr>
+        <td>${escapeHtml(userById(novelty.userId).name)}</td>
+        <td><span class="status-pill ${["Ingreso", "Ajuste"].includes(novelty.type) ? "confirmada" : "pendiente"}">${escapeHtml(novelty.type)}</span></td>
+        <td>${currency.format(Number(novelty.amount) || 0)}</td>
+        <td>${escapeHtml(novelty.note)}</td>
+        <td>${escapeHtml(formatPayrollPeriod(novelty.period || period))}</td>
+        <td>${formatDate(novelty.date)}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="6">${emptyState("No hay novedades aplicadas para este período.")}</td></tr>`;
 
   document.getElementById("procedurePointTable").innerHTML = procedurePointCatalog.map((procedure) => `
     <tr>
@@ -2344,14 +2470,18 @@ function renderPayroll(payrollItems) {
       </tr>
     `;
   }).join("");
+
+  renderPayrollRuns();
 }
 
 function payrollDisplayItem(item) {
   const user = userById(item.userId);
-  const novelty = payrollNoveltyImpact(item.userId);
+  const period = selectedPayrollPeriod();
+  const novelty = payrollNoveltyImpact(item.userId, period);
   if (user.role !== "Doctor") {
     return {
       ...item,
+      period,
       bonus: item.bonus + novelty.income,
       deductions: item.deductions + novelty.deduction,
       novelty
@@ -2361,6 +2491,7 @@ function payrollDisplayItem(item) {
   const commission = doctorCommission(item.userId);
   return {
     ...item,
+    period,
     base: 0,
     bonus: commission.amount + novelty.income,
     deductions: novelty.deduction,
@@ -2371,12 +2502,13 @@ function payrollDisplayItem(item) {
 
 function normalizedPayroll() {
   state.payroll ||= [];
+  const period = selectedPayrollPeriod();
   users.forEach((user) => {
     if (!state.payroll.some((item) => item.userId === user.id)) {
       state.payroll.push({
         id: makeId(),
         userId: user.id,
-        period: "Mayo 2026",
+        period,
         base: user.role === "Doctor" ? 0 : payrollSeed[user.id]?.base || 45000,
         bonus: user.role === "Doctor" ? 0 : payrollSeed[user.id]?.bonus || 0,
         deductions: user.role === "Doctor" ? 0 : payrollSeed[user.id]?.deductions || 0,
@@ -2395,9 +2527,9 @@ function payrollGross(item) {
   return userById(item.userId).role === "Doctor" ? item.bonus : item.base + item.bonus;
 }
 
-function payrollNoveltyImpact(userId) {
+function payrollNoveltyImpact(userId, period = selectedPayrollPeriod()) {
   return (state.payrollNovelties || [])
-    .filter((novelty) => novelty.userId === userId)
+    .filter((novelty) => novelty.userId === userId && (novelty.period || period) === period)
     .reduce((summary, novelty) => {
       const amount = Number(novelty.amount) || 0;
       if (["Ingreso", "Ajuste"].includes(novelty.type)) {
@@ -3519,7 +3651,7 @@ function renderMonthCalendar(dateFilter) {
   const dayCells = Array.from({ length: days }, (_, index) => {
     const day = index + 1;
     const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const count = state.appointments.filter((appointment) => appointment.date === iso && appointmentBelongsToCurrentDoctor(appointment)).length;
+    const count = state.appointments.filter((appointment) => appointment.date === iso && appointment.status !== "Cancelada" && appointmentBelongsToCurrentDoctor(appointment)).length;
     return `
       <button class="month-day ${iso === dateFilter ? "active" : ""}" data-month-date="${iso}" type="button">
         <strong>${day}</strong>
@@ -3622,7 +3754,7 @@ function renderOdontogram() {
     return summary;
   }, {});
 
-  document.getElementById("toothSummary").innerHTML = ["sano", "caries", "restaurado", "ausente", "endodoncia", "implante"]
+  document.getElementById("toothSummary").innerHTML = odontogramStatuses()
     .map((status) => `
       <div class="summary-row">
         <span class="status-pill ${status}">${labelStatus(status)}</span>
@@ -3632,6 +3764,7 @@ function renderOdontogram() {
     .join("");
 
   renderOdontogramHistory(patientId);
+  renderOdontogramComparison(patientId, teeth);
   renderClinicalRecord(patientId);
   refreshSelectedToothHint();
 }
@@ -3640,8 +3773,22 @@ function renderOdontogramHistory(patientId) {
   const history = (state.odontogramHistory || [])
     .filter((item) => item.patientId === patientId)
     .slice(0, 6);
+  const toothHistory = selectedTooth
+    ? (state.odontogramHistory || [])
+        .filter((item) => item.patientId === patientId && item.tooth === selectedTooth)
+        .slice(0, 5)
+    : [];
   document.getElementById("odontogramHistory").innerHTML = `
     <h3>Historial odontograma</h3>
+    ${selectedTooth ? `
+      <article class="clinical-item selected-tooth-history">
+        <span class="time-chip">${escapeHtml(selectedTooth)}</span>
+        <div>
+          <strong>Historial de la pieza seleccionada</strong>
+          ${toothHistory.length ? toothHistory.map((item) => `<p>${formatDate(item.date)} · ${escapeHtml(item.surface)} · ${labelStatus(item.status)}</p>`).join("") : `<p>Sin cambios para esta pieza.</p>`}
+        </div>
+      </article>
+    ` : ""}
     ${history.length ? history.map((item) => `
       <article class="clinical-item">
         <span class="time-chip">${escapeHtml(item.tooth)}</span>
@@ -3652,6 +3799,96 @@ function renderOdontogramHistory(patientId) {
       </article>
     `).join("") : emptyState("Sin cambios registrados.")}
   `;
+}
+
+function renderOdontogramComparison(patientId, teeth) {
+  const initial = state.initialOdontograms?.[patientId] || {};
+  const current = state.odontograms?.[patientId] || {};
+  const hasInitial = Object.keys(initial).length > 0;
+  const changed = teeth.filter((tooth) => toothDisplayStatus(initial[tooth]) !== toothDisplayStatus(current[tooth]));
+  const currentCounts = teeth.reduce((summary, tooth) => {
+    const status = toothDisplayStatus(current[tooth]);
+    summary[status] = (summary[status] || 0) + 1;
+    return summary;
+  }, {});
+
+  document.getElementById("odontogramComparison").innerHTML = `
+    <div class="summary-row">
+      <span class="status-pill ${hasInitial ? "confirmada" : "pendiente"}">Inicial</span>
+      <strong>${hasInitial ? "Guardado" : "Pendiente"}</strong>
+    </div>
+    <div class="summary-row">
+      <span class="status-pill restaurado">Cambios</span>
+      <strong>${hasInitial ? changed.length : 0}</strong>
+    </div>
+    <div class="summary-row">
+      <span class="status-pill caries">Caries actual</span>
+      <strong>${currentCounts.caries || 0}</strong>
+    </div>
+    ${hasInitial && changed.length ? `
+      <div class="odontogram-diff-list">
+        ${changed.slice(0, 8).map((tooth) => `<small>Pieza ${tooth}: ${labelStatus(toothDisplayStatus(initial[tooth]))} -> ${labelStatus(toothDisplayStatus(current[tooth]))}</small>`).join("")}
+      </div>
+    ` : ""}
+  `;
+}
+
+function saveInitialOdontogram() {
+  if (!can("odontogram:edit")) return;
+  const patientId = value("odontogramPatient");
+  if (!patientId) return;
+  const current = state.odontograms?.[patientId] || {};
+  if (state.initialOdontograms?.[patientId] && !confirm("Ya existe un odontograma inicial para este paciente. ¿Desea reemplazarlo?")) {
+    return;
+  }
+  state.initialOdontograms ||= {};
+  state.initialOdontograms[patientId] = {
+    ...JSON.parse(JSON.stringify(current)),
+    __savedAt: new Date().toISOString(),
+    __savedBy: currentUser?.id || "sin-usuario"
+  };
+  state.odontogramHistory ||= [];
+  state.odontogramHistory.unshift({
+    id: makeId(),
+    patientId,
+    tooth: "Inicial",
+    surface: "Odontograma completo",
+    status: "registrado",
+    date: todayIso,
+    userId: currentUser?.id || "sin-usuario"
+  });
+  persistAndRender();
+}
+
+function printOdontogramSummary() {
+  const section = document.getElementById("odontogram").cloneNode(true);
+  section.querySelectorAll("form, button").forEach((item) => item.remove());
+  const printWindow = window.open("", "_blank", "width=1100,height=800");
+  if (!printWindow) {
+    alert("Permita ventanas emergentes para imprimir el resumen del odontograma.");
+    return;
+  }
+  printWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>Resumen odontograma</title>
+        <link rel="stylesheet" href="styles.css">
+        <style>
+          @page { size: letter; margin: 14mm; }
+          body { background: #fff; color: #10231d; font-family: Inter, Segoe UI, Arial, sans-serif; }
+          .sidebar, .topbar, .toolbar-controls button, form { display: none !important; }
+          .view { display: block !important; }
+          .record-grid, .odontogram-layout { grid-template-columns: 1fr !important; }
+          .dental-arch { min-width: 0 !important; }
+        </style>
+      </head>
+      <body>${section.outerHTML}</body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => printWindow.print(), 300);
 }
 
 function selectTooth(tooth) {
@@ -3680,6 +3917,10 @@ function toothDisplayStatus(entry) {
   return entry.status || Object.values(entry.surfaces || {}).find((status) => status !== "sano") || "sano";
 }
 
+function odontogramStatuses() {
+  return ["sano", "caries", "restaurado", "ausente", "endodoncia", "implante", "corona"];
+}
+
 function selectedToothStatusForSurface() {
   const patientId = value("odontogramPatient");
   const entry = state.odontograms[patientId]?.[selectedTooth];
@@ -3700,10 +3941,12 @@ function syncToothControlsFromSelection() {
 function refreshSelectedToothHint() {
   const hint = document.getElementById("selectedToothHint");
   const updateButton = document.getElementById("updateToothButton");
+  const initialButton = document.getElementById("saveInitialOdontogram");
   if (!hint || !updateButton) return;
 
   const canUpdate = Boolean(selectedTooth && can("odontogram:edit"));
   updateButton.disabled = !canUpdate;
+  if (initialButton) initialButton.disabled = !can("odontogram:edit");
   hint.textContent = selectedTooth
     ? `Pieza ${selectedTooth} lista para actualizar`
     : "Selecciona una pieza";
@@ -4519,7 +4762,7 @@ function labelStatus(status) {
 }
 
 function className(text) {
-  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return normalizeText(text).replace(/\s+/g, "-");
 }
 
 function emptyState(message) {
