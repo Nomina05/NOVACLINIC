@@ -20,7 +20,7 @@ const defaultUsers = [
     id: "admin",
     name: "Administrador",
     role: "Administrador",
-    specialty: "GestiÃ³n general",
+    specialty: "Gestión general",
     room: "Oficina administrativa",
     shift: "Acceso completo",
     pin: "0000"
@@ -29,7 +29,7 @@ const defaultUsers = [
     id: "rivera",
     name: "Dra. Rivera",
     role: "Doctor",
-    specialty: "RehabilitaciÃ³n oral",
+    specialty: "Rehabilitación oral",
     room: "Consultorio 2",
     shift: "8:00 a. m. - 5:00 p. m.",
     pin: "1234"
@@ -45,7 +45,7 @@ const defaultUsers = [
   },
   {
     id: "mendez",
-    name: "Dra. MÃ©ndez",
+    name: "Dra. Méndez",
     role: "Doctor",
     specialty: "Ortodoncia",
     room: "Consultorio 3",
@@ -54,10 +54,10 @@ const defaultUsers = [
   },
   {
     id: "recepcion",
-    name: "RecepciÃ³n",
-    role: "RecepciÃ³n",
-    specialty: "AdmisiÃ³n y cobros",
-    room: "RecepciÃ³n",
+    name: "Recepción",
+    role: "Recepción",
+    specialty: "Admisión y cobros",
+    room: "Recepción",
     shift: "7:30 a. m. - 6:00 p. m.",
     pin: "1111"
   },
@@ -102,7 +102,7 @@ const rolePermissions = {
     actions: ["patients:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress", "selfservice:clinical"],
     scope: "own"
   },
-  RecepciÃ³n: {
+  Recepción: {
     views: ["receptionPanel", "patients", "selfService", "agenda", "billing", "inventory", "reports"],
     actions: ["patients:create", "appointments:create", "appointments:confirm", "payments:create", "inventory:manage", "selfservice:employee", "selfservice:manage"],
     scope: "all"
@@ -139,14 +139,14 @@ const payrollSeed = {
 };
 
 const procedurePointCatalog = [
-  { name: "EvaluaciÃ³n General", points: 1, value: 100 },
-  { name: "EvaluaciÃ³n Especial", points: 2, value: 200 },
+  { name: "Evaluación General", points: 1, value: 100 },
+  { name: "Evaluación Especial", points: 2, value: 200 },
   { name: "Exodoncia Leche", points: 1, value: 100 },
   { name: "Exodoncia Uni", points: 2, value: 200 },
   { name: "Exodoncia Multi", points: 3, value: 300 },
   { name: "Colgajos", points: 3, value: 300 },
   { name: "Control Placa", points: 1, value: 100 },
-  { name: "DenticiÃ³n Subior", points: 1, value: 100 },
+  { name: "Dentición Subior", points: 1, value: 100 },
   { name: "Denticion Superior", points: 1, value: 100 }
 ];
 
@@ -154,20 +154,20 @@ const seedState = {
   patients: [
     {
       id: makeId(),
-      name: "MarÃ­a GÃ³mez",
+      name: "María Gómez",
       phone: "809-555-0184",
       email: "maria.gomez@email.com",
       document: "001-1284567-9",
       birthdate: "1988-09-14",
       gender: "Femenino",
       address: "Ensanche Naco, Santo Domingo",
-      emergency: "Ana GÃ³mez Â· 809-555-0199",
+      emergency: "Ana Gómez · 809-555-0199",
       bloodType: "O+",
       insurance: "ARS Universal",
       allergies: "Penicilina",
-      conditions: "HipertensiÃ³n controlada.",
-      medications: "LosartÃ¡n 50 mg.",
-      clinicalHistory: "RestauraciÃ³n previa en 36. Sensibilidad al frÃ­o en molares inferiores.",
+      conditions: "Hipertensión controlada.",
+      medications: "Losartán 50 mg.",
+      clinicalHistory: "Restauración previa en 36. Sensibilidad al frío en molares inferiores.",
       photo: "",
       lastVisit: "2026-05-16",
       notes: "Sensibilidad en molares inferiores.",
@@ -176,18 +176,18 @@ const seedState = {
     },
     {
       id: makeId(),
-      name: "Carlos PÃ©rez",
+      name: "Carlos Pérez",
       phone: "829-555-0142",
       email: "carlos.perez@email.com",
       document: "402-3332191-1",
       birthdate: "1996-02-03",
       gender: "Masculino",
       address: "Villa Mella, Santo Domingo Norte",
-      emergency: "Luis PÃ©rez Â· 829-555-0188",
+      emergency: "Luis Pérez · 829-555-0188",
       bloodType: "A+",
       insurance: "Privado",
       allergies: "Ninguna",
-      conditions: "Sin condiciones sistÃ©micas reportadas.",
+      conditions: "Sin condiciones sistémicas reportadas.",
       medications: "Ninguno.",
       clinicalHistory: "Ortodoncia activa. Controles mensuales sin complicaciones.",
       photo: "",
@@ -198,17 +198,17 @@ const seedState = {
     },
     {
       id: makeId(),
-      name: "LucÃ­a Mateo",
+      name: "Lucía Mateo",
       phone: "849-555-0118",
       email: "lucia.mateo@email.com",
       document: "031-7119204-6",
       birthdate: "1979-11-22",
       gender: "Femenino",
       address: "Los Prados, Santo Domingo",
-      emergency: "RaÃºl Mateo Â· 849-555-0180",
+      emergency: "Raúl Mateo · 849-555-0180",
       bloodType: "B+",
       insurance: "Senasa",
-      allergies: "LÃ¡tex",
+      allergies: "Látex",
       conditions: "Diabetes tipo 2.",
       medications: "Metformina 850 mg.",
       clinicalHistory: "Endodoncia indicada en 26. Pendiente corona provisional.",
@@ -255,7 +255,7 @@ seedState.appointments = [
     date: todayIso,
     time: "09:00",
     duration: 30,
-    type: "EvaluaciÃ³n",
+    type: "Evaluación",
     reminder: "24 horas antes",
     status: "Confirmada"
   },
@@ -288,7 +288,7 @@ seedState.treatments = [
     id: makeId(),
     patientId: seedState.patients[0].id,
     doctorId: "rivera",
-    name: "EvaluaciÃ³n General",
+    name: "Evaluación General",
     cost: 6200,
     progress: 100,
     status: "Completado",
@@ -327,7 +327,7 @@ seedState.diagnoses = [
     date: todayIso,
     title: "Caries oclusal en 36",
     priority: "Media",
-    notes: "LesiÃ³n activa con sensibilidad al frÃ­o. Indicar restauraciÃ³n con resina."
+    notes: "Lesión activa con sensibilidad al frío. Indicar restauración con resina."
   },
   {
     id: makeId(),
@@ -336,7 +336,7 @@ seedState.diagnoses = [
     date: "2026-05-18",
     title: "Necrosis pulpar en 26",
     priority: "Alta",
-    notes: "Dolor espontÃ¡neo nocturno. Se recomienda endodoncia y corona posterior."
+    notes: "Dolor espontáneo nocturno. Se recomienda endodoncia y corona posterior."
   }
 ];
 
@@ -346,7 +346,7 @@ seedState.evolutions = [
     patientId: seedState.patients[0].id,
     doctorId: "rivera",
     date: "2026-05-16",
-    note: "Se realiza evaluaciÃ³n inicial. Paciente refiere sensibilidad en molares inferiores."
+    note: "Se realiza evaluación inicial. Paciente refiere sensibilidad en molares inferiores."
   },
   {
     id: makeId(),
@@ -362,7 +362,7 @@ seedState.clinicalDocuments = [
     id: makeId(),
     patientId: seedState.patients[0].id,
     type: "Consentimiento informado",
-    title: "Consentimiento para restauraciÃ³n",
+    title: "Consentimiento para restauración",
     note: "Paciente acepta procedimiento restaurativo y cuidados posteriores.",
     date: todayIso,
     createdBy: "rivera"
@@ -371,7 +371,7 @@ seedState.clinicalDocuments = [
 
 seedState.inventory = [
   { id: makeId(), name: "Resina compuesta A2", stock: 8, min: 5, price: 950, expiry: "2026-12-30", provider: "Dental Supply RD" },
-  { id: makeId(), name: "Anestesia lidocaÃ­na", stock: 3, min: 6, price: 450, expiry: "2026-08-15", provider: "Medident" },
+  { id: makeId(), name: "Anestesia lidocaína", stock: 3, min: 6, price: 450, expiry: "2026-08-15", provider: "Medident" },
   { id: makeId(), name: "Guantes nitrilo", stock: 24, min: 10, price: 350, expiry: "2027-01-01", provider: "Nova Insumos" }
 ];
 seedState.inventoryMovements = [];
@@ -385,7 +385,7 @@ seedState.suppliers = [
 seedState.settings = {
   clinicName: "NovaClinic",
   clinicPhone: "809-555-0100",
-  clinicAddress: "Santo Domingo, RepÃºblica Dominicana",
+  clinicAddress: "Santo Domingo, República Dominicana",
   clinicTaxId: "RNC-000000",
   clinicCurrency: "DOP",
   ncfSequences: {
@@ -407,10 +407,10 @@ seedState.payroll = users.map((user) => ({
 }));
 
 seedState.hrShifts = [
-  { id: makeId(), userId: "recepcion", name: "Apertura", area: "RecepciÃ³n", start: "08:00", end: "16:00", day: "Lunes a viernes" },
+  { id: makeId(), userId: "recepcion", name: "Apertura", area: "Recepción", start: "08:00", end: "16:00", day: "Lunes a viernes" },
   { id: makeId(), userId: "contabilidad", name: "Caja", area: "Contabilidad", start: "08:00", end: "17:00", day: "Lunes a viernes" },
   { id: makeId(), userId: "rrhh", name: "Administrativo", area: "Recursos Humanos", start: "08:30", end: "17:30", day: "Lunes a viernes" },
-  { id: makeId(), userId: "rivera", name: "Consulta maÃ±ana", area: "OdontologÃ­a", start: "09:00", end: "13:00", day: "Lunes a viernes" },
+  { id: makeId(), userId: "rivera", name: "Consulta mañana", area: "Odontología", start: "09:00", end: "13:00", day: "Lunes a viernes" },
   { id: makeId(), userId: "mendez", name: "Consulta tarde", area: "Ortodoncia", start: "14:00", end: "18:00", day: "Lunes a viernes" }
 ];
 
@@ -457,7 +457,7 @@ const currency = new Intl.NumberFormat("es-DO", {
 
 const views = {
   dashboard: "Panel doctores",
-  receptionPanel: "Panel recepciÃ³n",
+  receptionPanel: "Panel recepción",
   usersPanel: "Panel usuarios",
   hrPanel: "Panel recursos humanos",
   laboratoryPanel: "Panel laboratorio",
@@ -467,30 +467,30 @@ const views = {
   agenda: "Agenda",
   odontogram: "Odontograma",
   treatments: "Tratamientos",
-  billing: "FacturaciÃ³n",
-  inventory: "AlmacÃ©n",
+  billing: "Facturación",
+  inventory: "Almacén",
   reports: "Reportes",
-  adminPanel: "AdministraciÃ³n"
+  adminPanel: "Administración"
 };
 
 const panelViews = ["dashboard", "receptionPanel", "usersPanel", "hrPanel", "laboratoryPanel", "accountingPanel"];
 
 const permissionCatalog = [
   { view: "dashboard", label: "Panel Doctores", panel: "Paneles", actions: [] },
-  { view: "receptionPanel", label: "Panel RecepciÃ³n", panel: "Paneles", actions: [] },
+  { view: "receptionPanel", label: "Panel Recepción", panel: "Paneles", actions: [] },
   { view: "usersPanel", label: "Panel Usuarios", panel: "Paneles", actions: [] },
   { view: "hrPanel", label: "Panel Recursos Humanos", panel: "Paneles", actions: ["payroll:manage"] },
   { view: "laboratoryPanel", label: "Panel Laboratorio", panel: "Paneles", actions: ["laboratory:manage"] },
   { view: "accountingPanel", label: "Panel Contabilidad", panel: "Paneles", actions: [] },
-  { view: "patients", label: "Pacientes", panel: "RecepciÃ³n", actions: ["patients:create"] },
-  { view: "selfService", label: "Autoservicio", panel: "RecepciÃ³n", actions: ["appointments:confirm", "selfservice:clinical", "selfservice:employee", "selfservice:manage"] },
-  { view: "agenda", label: "Agenda", panel: "RecepciÃ³n", actions: ["appointments:create", "appointments:confirm"] },
-  { view: "billing", label: "FacturaciÃ³n", panel: "Contabilidad", actions: ["payments:create"] },
-  { view: "odontogram", label: "Expediente odontolÃ³gico", panel: "Doctores", actions: ["odontogram:edit"] },
+  { view: "patients", label: "Pacientes", panel: "Recepción", actions: ["patients:create"] },
+  { view: "selfService", label: "Autoservicio", panel: "Recepción", actions: ["appointments:confirm", "selfservice:clinical", "selfservice:employee", "selfservice:manage"] },
+  { view: "agenda", label: "Agenda", panel: "Recepción", actions: ["appointments:create", "appointments:confirm"] },
+  { view: "billing", label: "Facturación", panel: "Contabilidad", actions: ["payments:create"] },
+  { view: "odontogram", label: "Expediente odontológico", panel: "Doctores", actions: ["odontogram:edit"] },
   { view: "treatments", label: "Tratamientos", panel: "Doctores", actions: ["treatments:create", "treatments:progress"] },
-  { view: "inventory", label: "AlmacÃ©n de productos", panel: "Caja y almacÃ©n", actions: ["inventory:manage"] },
+  { view: "inventory", label: "Almacén de productos", panel: "Caja y almacén", actions: ["inventory:manage"] },
   { view: "reports", label: "Reportes", panel: "Contabilidad", actions: [] },
-  { view: "adminPanel", label: "AdministraciÃ³n", panel: "Paneles", actions: ["settings:manage"] }
+  { view: "adminPanel", label: "Administración", panel: "Paneles", actions: ["settings:manage"] }
 ];
 
 const actionPermissionCatalog = [
@@ -501,7 +501,7 @@ const actionPermissionCatalog = [
   { action: "appointments:create", label: "Crear citas", group: "Agenda" },
   { action: "appointments:edit", label: "Editar citas", group: "Agenda" },
   { action: "appointments:confirm", label: "Confirmar citas y llegada", group: "Agenda" },
-  { action: "billing:view", label: "Ver facturaciÃ³n", group: "Facturacion" },
+  { action: "billing:view", label: "Ver facturación", group: "Facturacion" },
   { action: "odontogram:edit", label: "Actualizar odontograma", group: "Doctores" },
   { action: "clinical-documents:create", label: "Crear documentos clinicos", group: "Doctores" },
   { action: "treatments:create", label: "Crear tratamientos", group: "Doctores" },
@@ -548,7 +548,7 @@ const panelModules = {
 const selfServiceActionsByRole = {
   Administrador: ["selfservice:clinical", "selfservice:employee", "selfservice:manage"],
   Doctor: ["selfservice:clinical"],
-  RecepciÃ³n: ["selfservice:employee", "selfservice:manage"],
+  Recepción: ["selfservice:employee", "selfservice:manage"],
   "Recursos Humanos": ["selfservice:employee", "selfservice:manage"],
   Contabilidad: ["selfservice:employee"]
 };
@@ -568,7 +568,7 @@ function loadState() {
   if (!saved) return cloneSeed();
 
   try {
-    return normalizeState(JSON.parse(saved));
+    return normalizeState(repairStoredEncoding(JSON.parse(saved)));
   } catch {
     return cloneSeed();
   }
@@ -645,6 +645,44 @@ function normalizeState(loadedState) {
   return next;
 }
 
+function repairStoredEncoding(value) {
+  const mojibake = (text, passes = 1) => {
+    let output = text;
+    for (let index = 0; index < passes; index += 1) {
+      output = new TextDecoder("windows-1252").decode(new TextEncoder().encode(output));
+    }
+    return output;
+  };
+  const repairedCharacters = ["á", "é", "í", "ó", "ú", "ñ", "ü", "Á", "É", "Í", "Ó", "Ú", "·", "¿", "×"];
+  const replacements = repairedCharacters.flatMap((character) => [
+    [mojibake(character, 2), character],
+    [mojibake(character), character]
+  ]);
+
+  if (typeof value === "string") {
+    let repaired = value;
+    let changed = true;
+    while (changed) {
+      changed = false;
+      replacements.forEach(([from, to]) => {
+        if (repaired.includes(from)) {
+          repaired = repaired.split(from).join(to);
+          changed = true;
+        }
+      });
+    }
+    return repaired;
+  }
+
+  if (Array.isArray(value)) return value.map(repairStoredEncoding);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [repairStoredEncoding(key), repairStoredEncoding(item)])
+    );
+  }
+  return value;
+}
+
 function normalizeSettings(settings = {}) {
   const defaults = cloneSeed().settings;
   const ncfSequences = { ...defaults.ncfSequences, ...(settings.ncfSequences || {}) };
@@ -667,7 +705,7 @@ function loadUsers() {
 
   try {
     const parsed = JSON.parse(saved);
-    return Array.isArray(parsed) && parsed.length ? parsed : [...defaultUsers];
+    return Array.isArray(parsed) && parsed.length ? repairStoredEncoding(parsed) : [...defaultUsers];
   } catch {
     return [...defaultUsers];
   }
@@ -809,12 +847,12 @@ function bindAuth() {
     localStorage.removeItem("novaclinic-current-doctor");
     document.getElementById("userPin").value = "";
     document.getElementById("loginError").textContent = "";
-    logAudit("login:success", `Inicio de sesiÃ³n de ${user.name}`, user.id);
+    logAudit("login:success", `Inicio de sesión de ${user.name}`, user.id);
     applyUserSession(user);
   });
 
   document.getElementById("logoutButton").addEventListener("click", () => {
-    lockSession("logout", "Cierre de sesiÃ³n manual");
+    lockSession("logout", "Cierre de sesión manual");
   });
 }
 
@@ -822,7 +860,7 @@ function populateUserLogin() {
   const userSelect = document.getElementById("userLogin");
   const current = userSelect.value;
   userSelect.innerHTML = users
-    .map((user) => `<option value="${user.id}">${user.name} Â· ${user.role}</option>`)
+    .map((user) => `<option value="${user.id}">${user.name} · ${user.role}</option>`)
     .join("");
   if (current && users.some((user) => user.id === current)) {
     userSelect.value = current;
@@ -833,7 +871,7 @@ function restoreSession() {
   const userId = localStorage.getItem("novaclinic-current-user") || localStorage.getItem("novaclinic-current-doctor");
   const user = users.find((item) => item.id === userId);
   if (user && isSessionExpired()) {
-    lockSession("session:expired", "SesiÃ³n expirada por seguridad");
+    lockSession("session:expired", "Sesión expirada por seguridad");
     return;
   }
   if (user) {
@@ -851,14 +889,14 @@ function applyUserSession(user) {
   document.getElementById("appShell").classList.remove("is-locked");
   document.getElementById("loginScreen").classList.add("is-hidden");
   document.getElementById("currentShift").textContent = user.name;
-  document.getElementById("currentShiftMeta").textContent = `${user.role} Â· ${user.room} Â· ${user.shift}`;
-  document.getElementById("doctorBadge").textContent = `${user.name} Â· ${user.role}`;
+  document.getElementById("currentShiftMeta").textContent = `${user.role} · ${user.room} · ${user.shift}`;
+  document.getElementById("doctorBadge").textContent = `${user.name} · ${user.role}`;
   applyCompactMode();
   applyPermissions();
   render();
 }
 
-function lockSession(reason = "logout", detail = "SesiÃ³n cerrada") {
+function lockSession(reason = "logout", detail = "Sesión cerrada") {
   if (currentUser) logAudit(reason, detail, currentUser.id);
   clearTimeout(sessionExpiryTimer);
   localStorage.removeItem("novaclinic-current-user");
@@ -884,7 +922,7 @@ function isSessionExpired() {
 function extendSession() {
   clearTimeout(sessionExpiryTimer);
   localStorage.setItem("novaclinic-session-expires", sessionExpiryValue());
-  sessionExpiryTimer = setTimeout(() => lockSession("session:expired", "SesiÃ³n expirada por inactividad"), securityConfig.sessionMinutes * 60000);
+  sessionExpiryTimer = setTimeout(() => lockSession("session:expired", "Sesión expirada por inactividad"), securityConfig.sessionMinutes * 60000);
 }
 
 function loginLockMessage(userId) {
@@ -978,7 +1016,7 @@ function saveUserFromForm() {
   user.name = value("newUserName");
   user.role = value("newUserRole");
   user.specialty = value("newUserSpecialty") || user.role;
-  user.room = value("newUserRoom") || "Sin ubicaciÃ³n";
+  user.room = value("newUserRoom") || "Sin ubicación";
   user.shift = value("newUserShift") || "Sin turno asignado";
   const pin = value("newUserPin");
   if (!isValidPin(pin)) {
@@ -989,7 +1027,7 @@ function saveUserFromForm() {
 
   if (!existing) {
     users.push(user);
-    const defaults = rolePermissions[user.role] || rolePermissions["RecepciÃ³n"];
+    const defaults = rolePermissions[user.role] || rolePermissions["Recepción"];
     userPermissionOverrides[user.id] = {
       views: [...defaults.views],
       actions: [...defaults.actions],
@@ -997,7 +1035,7 @@ function saveUserFromForm() {
     };
     saveUserPermissionOverrides();
   } else if (previousRole !== user.role) {
-    const defaults = rolePermissions[user.role] || rolePermissions["RecepciÃ³n"];
+    const defaults = rolePermissions[user.role] || rolePermissions["Recepción"];
     userPermissionOverrides[user.id] = {
       views: [...defaults.views],
       actions: [...defaults.actions],
@@ -1008,7 +1046,7 @@ function saveUserFromForm() {
 
   saveUsers();
   upsertPayrollForUser(user);
-  logAudit(existing ? "users:update" : "users:create", `${existing ? "ActualizÃ³" : "CreÃ³"} usuario ${user.name}`, user.id);
+  logAudit(existing ? "users:update" : "users:create", `${existing ? "Actualizó" : "Creó"} usuario ${user.name}`, user.id);
   if (currentUser?.id === user.id) applyUserSession(user);
   return user;
 }
@@ -1078,7 +1116,7 @@ async function startPatientCamera() {
   const video = document.getElementById("patientCamera");
   const status = document.getElementById("patientCameraStatus");
   if (!video || !navigator.mediaDevices?.getUserMedia) {
-    if (status) status.textContent = "CÃ¡mara no disponible. Use Subir archivo.";
+    if (status) status.textContent = "Cámara no disponible. Use Subir archivo.";
     return;
   }
 
@@ -1088,9 +1126,9 @@ async function startPatientCamera() {
     video.srcObject = patientCameraStream;
     video.classList.remove("is-hidden");
     document.getElementById("patientPhotoPreview")?.classList.remove("is-visible");
-    if (status) status.textContent = "CÃ¡mara activa. Presione Tomar foto.";
+    if (status) status.textContent = "Cámara activa. Presione Tomar foto.";
   } catch {
-    if (status) status.textContent = "No se pudo abrir la cÃ¡mara. Use Subir archivo.";
+    if (status) status.textContent = "No se pudo abrir la cámara. Use Subir archivo.";
   }
 }
 
@@ -1106,7 +1144,7 @@ function capturePatientPhoto() {
   const canvas = document.getElementById("patientPhotoCanvas");
   const status = document.getElementById("patientCameraStatus");
   if (!video?.videoWidth || !canvas) {
-    if (status) status.textContent = "La cÃ¡mara aÃºn no estÃ¡ lista.";
+    if (status) status.textContent = "La cámara aún no está lista.";
     return;
   }
 
@@ -1163,7 +1201,7 @@ async function savePatientFromForm() {
   patient.notes = value("patientNotes");
 
   if (!existing) state.patients.push(patient);
-  logAudit(existing ? "patients:edit" : "patients:create", `${existing ? "EditÃ³" : "CreÃ³"} paciente ${patient.name}`, patient.id);
+  logAudit(existing ? "patients:edit" : "patients:create", `${existing ? "Editó" : "Creó"} paciente ${patient.name}`, patient.id);
   return patient;
 }
 
@@ -1262,8 +1300,8 @@ function clinicalAlertPanelTemplate(patient) {
 }
 
 function normalizeDocumentType(documentType) {
-  if (documentType === "Licencia mÃ©dica") return "Licencia de conducir";
-  return documentType || "CÃ©dula";
+  if (documentType === "Licencia médica") return "Licencia de conducir";
+  return documentType || "Cédula";
 }
 
 function splitEmergencyContact(patient) {
@@ -1275,7 +1313,7 @@ function splitEmergencyContact(patient) {
     };
   }
 
-  const parts = String(patient?.emergency || "").split("Â·").map((part) => part.trim());
+  const parts = String(patient?.emergency || "").split("·").map((part) => part.trim());
   return {
     name: parts[0] || "",
     phone: parts[1] || "",
@@ -1290,7 +1328,7 @@ function emergencyContactText(patient) {
     patient.emergencyRelation || patient.relation
   ]
     .filter(Boolean)
-    .join(" Â· ");
+    .join(" · ");
 }
 
 function openAppointmentForm(appointmentId) {
@@ -1355,7 +1393,7 @@ function appointmentConflictsFromForm() {
   );
   const conflicts = [];
   if (sameDayPatientAppointments.length) {
-    conflicts.push(`El paciente ya tiene ${sameDayPatientAppointments.length} cita(s) ese dÃ­a: ${sameDayPatientAppointments.map((appointment) => `${appointment.time} con ${doctorById(appointment.doctorId).name}`).join(", ")}.`);
+    conflicts.push(`El paciente ya tiene ${sameDayPatientAppointments.length} cita(s) ese día: ${sameDayPatientAppointments.map((appointment) => `${appointment.time} con ${doctorById(appointment.doctorId).name}`).join(", ")}.`);
   }
   if (sameTimeDoctorAppointments.length) {
     conflicts.push(`El doctor ya tiene una cita a las ${time}: ${sameTimeDoctorAppointments.map((appointment) => patientById(appointment.patientId).name).join(", ")}.`);
@@ -1578,12 +1616,12 @@ function bindForms() {
       return;
     }
     const conflicts = appointmentConflictsFromForm();
-    if (conflicts.length && !confirm(`Aviso de agenda:\n\n${conflicts.join("\n")}\n\nÂ¿Desea guardar la cita de todos modos?`)) {
+    if (conflicts.length && !confirm(`Aviso de agenda:\n\n${conflicts.join("\n")}\n\n¿Desea guardar la cita de todos modos?`)) {
       return;
     }
     const wasEditingAppointment = Boolean(editingAppointmentId);
     const savedAppointment = saveAppointmentFromForm();
-    logAudit(wasEditingAppointment ? "appointments:edit" : "appointments:create", `GuardÃ³ cita de ${patientById(savedAppointment.patientId).name} con ${doctorById(savedAppointment.doctorId).name}`, savedAppointment.patientId);
+    logAudit(wasEditingAppointment ? "appointments:edit" : "appointments:create", `Guardó cita de ${patientById(savedAppointment.patientId).name} con ${doctorById(savedAppointment.doctorId).name}`, savedAppointment.patientId);
     event.target.reset();
     document.getElementById("appointmentDate").value = todayIso;
     document.getElementById("appointmentWaitlist").checked = false;
@@ -1632,7 +1670,7 @@ function bindForms() {
     });
     if (consentSigned) createTreatmentConsentDocument(treatment);
     patient.balance += cost;
-    logAudit("treatments:create", `CreÃ³ tratamiento ${treatment.name} para ${patient.name}`, patient.id);
+    logAudit("treatments:create", `Creó tratamiento ${treatment.name} para ${patient.name}`, patient.id);
     event.target.reset();
     persistAndRender();
   });
@@ -1660,7 +1698,7 @@ function bindForms() {
     const discount = Number(value("paymentDiscount")) || 0;
     const invoiceTotal = Math.max(0, amount - discount);
     const invoiceType = value("paymentInvoiceType");
-    const isQuote = invoiceType === "CotizaciÃ³n";
+    const isQuote = invoiceType === "Cotización";
     const method = value("paymentMethod");
     const amountReceived = Number(value("paymentReceived")) || 0;
     if (!isQuote && !currentCashOpening()) {
@@ -1671,12 +1709,12 @@ function bindForms() {
       alert("En pagos en efectivo el monto recibido es obligatorio y no puede ser menor al total facturado.");
       return;
     }
-    const requestedStatus = isQuote ? "CotizaciÃ³n" : value("paymentInvoiceStatus");
+    const requestedStatus = isQuote ? "Cotización" : value("paymentInvoiceStatus");
     const initialPaid = isQuote || requestedStatus === "Pendiente"
       ? 0
       : Math.min(invoiceTotal, requestedStatus === "Pagada" ? (amountReceived || invoiceTotal) : amountReceived);
     const finalStatus = isQuote
-      ? "CotizaciÃ³n"
+      ? "Cotización"
       : initialPaid >= invoiceTotal
         ? "Pagada"
         : initialPaid > 0
@@ -1705,7 +1743,7 @@ function bindForms() {
       invoiceNumber,
       ncf,
       invoiceType,
-      documentKind: isQuote ? "CotizaciÃ³n" : "Factura",
+      documentKind: isQuote ? "Cotización" : "Factura",
       invoiceStatus: finalStatus,
       paymentHistory: initialPaid > 0 ? [{
         id: makeId(),
@@ -1738,7 +1776,7 @@ function bindForms() {
     if (!isQuote) {
       patient.balance = Math.max(0, patient.balance - initialPaid);
     }
-    logAudit(isQuote ? "billing:quote" : "billing:create", `${isQuote ? "CreÃ³ cotizaciÃ³n" : "CreÃ³ factura"} ${invoiceNumber} para ${patient.name}`, patient.id);
+    logAudit(isQuote ? "billing:quote" : "billing:create", `${isQuote ? "Creó cotización" : "Creó factura"} ${invoiceNumber} para ${patient.name}`, patient.id);
     event.target.reset();
     document.getElementById("paymentCashier").value = currentUser?.id || "";
     syncPaymentProductFields();
@@ -1841,7 +1879,7 @@ function bindForms() {
   document.getElementById("doneReceipt").addEventListener("click", closeReceipt);
   document.getElementById("printReceipt").addEventListener("click", () => {
     if (!can("payments:print")) return;
-    logAudit("print:dialog", "ImprimiÃ³ documento desde visor POS");
+    logAudit("print:dialog", "Imprimió documento desde visor POS");
     window.print();
   });
   document.getElementById("markPayrollPaid").addEventListener("click", () => {
@@ -1857,7 +1895,7 @@ function bindForms() {
     } else {
       state.payrollRuns.unshift({ ...payrollRunSummaryForPeriod(period), status: "Pagada", paidAt: new Date().toISOString(), paidBy: currentUser?.id || "sin-usuario" });
     }
-    logAudit("payroll:paid", `MarcÃ³ nÃ³mina pagada para ${formatPayrollPeriod(period)}`);
+    logAudit("payroll:paid", `Marcó nómina pagada para ${formatPayrollPeriod(period)}`);
     persistAndRender();
   });
   document.getElementById("processPayrollMonth").addEventListener("click", () => {
@@ -1872,7 +1910,7 @@ function bindForms() {
     } else {
       state.payrollRuns.unshift({ ...summary, status: "Procesada", processedAt: new Date().toISOString(), processedBy: currentUser?.id || "sin-usuario" });
     }
-    logAudit("payroll:process", `ProcesÃ³ nÃ³mina de ${formatPayrollPeriod(period)}`);
+    logAudit("payroll:process", `Procesó nómina de ${formatPayrollPeriod(period)}`);
     persistAndRender();
   });
   document.getElementById("payrollPeriod").addEventListener("change", () => {
@@ -1895,7 +1933,7 @@ function bindForms() {
       period: value("payrollNoveltyPeriod") || selectedPayrollPeriod(),
       createdBy: currentUser?.id || "sin-usuario"
     });
-    logAudit("payroll:novelty", `AplicÃ³ novedad ${value("payrollNoveltyType")} a ${userById(value("payrollNoveltyUser")).name}`, value("payrollNoveltyUser"));
+    logAudit("payroll:novelty", `Aplicó novedad ${value("payrollNoveltyType")} a ${userById(value("payrollNoveltyUser")).name}`, value("payrollNoveltyUser"));
     event.target.reset();
     persistAndRender();
   });
@@ -1998,7 +2036,7 @@ function bindForms() {
       previousStock: 0,
       newStock: item.stock
     });
-    logAudit("inventory:create", `CreÃ³ producto ${item.name} con stock ${item.stock}`);
+    logAudit("inventory:create", `Creó producto ${item.name} con stock ${item.stock}`);
     event.target.reset();
     persistAndRender();
   });
@@ -2037,7 +2075,7 @@ function bindForms() {
       unitCost: purchase.unitCost,
       expiry: purchase.expiry
     });
-    logAudit("inventory:purchase", `RegistrÃ³ compra ${quantity} de ${product.name} a ${supplier}`);
+    logAudit("inventory:purchase", `Registró compra ${quantity} de ${product.name} a ${supplier}`);
     event.target.reset();
     persistAndRender();
   });
@@ -2069,7 +2107,7 @@ function bindForms() {
       note: value("attendanceNote"),
       createdBy: currentUser?.id || "sin-usuario"
     });
-    logAudit("hr:attendance", `RegistrÃ³ asistencia ${value("attendanceStatus")} de ${userById(value("attendanceUser")).name}`, value("attendanceUser"));
+    logAudit("hr:attendance", `Registró asistencia ${value("attendanceStatus")} de ${userById(value("attendanceUser")).name}`, value("attendanceUser"));
     event.target.reset();
     document.getElementById("attendanceDate").value = todayIso;
     persistAndRender();
@@ -2092,7 +2130,7 @@ function bindForms() {
       approvedAt: ["Aprobada", "Rechazada", "Completada"].includes(vacationStatus) ? new Date().toISOString() : "",
       createdBy: currentUser?.id || "sin-usuario"
     });
-    logAudit("hr:vacation", `RegistrÃ³ solicitud ${vacationStatus} para ${userById(value("vacationUser")).name}`, value("vacationUser"));
+    logAudit("hr:vacation", `Registró solicitud ${vacationStatus} para ${userById(value("vacationUser")).name}`, value("vacationUser"));
     event.target.reset();
     persistAndRender();
   });
@@ -2105,7 +2143,7 @@ function bindForms() {
       id: makeId(),
       userId: value("shiftUser"),
       name: value("shiftName"),
-      area: value("shiftArea") || userById(value("shiftUser")).room || "Sin Ã¡rea",
+      area: value("shiftArea") || userById(value("shiftUser")).room || "Sin área",
       start: value("shiftStart"),
       end: value("shiftEnd"),
       day: value("shiftDay"),
@@ -2130,7 +2168,7 @@ function bindForms() {
       note: value("evaluationNote"),
       createdBy: currentUser?.id || "sin-usuario"
     });
-    logAudit("hr:evaluation", `RegistrÃ³ evaluaciÃ³n de ${userById(value("evaluationUser")).name}`, value("evaluationUser"));
+    logAudit("hr:evaluation", `Registró evaluación de ${userById(value("evaluationUser")).name}`, value("evaluationUser"));
     event.target.reset();
     document.getElementById("evaluationDate").value = todayIso;
     persistAndRender();
@@ -2182,7 +2220,7 @@ function bindForms() {
 
   document.getElementById("exportData").addEventListener("click", () => {
     if (!can("settings:manage")) return;
-    logAudit("data:export", "ExportaciÃ³n de respaldo JSON");
+    logAudit("data:export", "Exportación de respaldo JSON");
     const payload = JSON.stringify({ state, users: safeUsersForExport(), userPermissionOverrides }, null, 2);
     const blob = new Blob([payload], { type: "application/json" });
     const link = document.createElement("a");
@@ -2202,7 +2240,7 @@ function bindForms() {
     userPermissionOverrides = loadUserPermissionOverrides();
     selectedUserId = "admin";
     state = cloneSeed();
-    logAudit("data:reset", "RestauraciÃ³n de datos demo");
+    logAudit("data:reset", "Restauración de datos demo");
     populateUserLogin();
     persistAndRender();
   });
@@ -2304,7 +2342,7 @@ function firstAllowedView() {
 
 function permissionsForUser(userId) {
   const user = users.find((item) => item.id === userId) || currentUser || users.find((item) => item.id === "recepcion");
-  const defaults = rolePermissions[user?.role] || rolePermissions["RecepciÃ³n"];
+  const defaults = rolePermissions[user?.role] || rolePermissions["Recepción"];
   const override = userPermissionOverrides[user?.id];
   if (!override) {
     return {
@@ -2368,14 +2406,14 @@ function populateSelects() {
     .map((patient) => `<option value="${patient.id}">${escapeHtml(patient.name)}</option>`)
     .join("");
   const doctorOptions = doctors
-    .map((doctor) => `<option value="${doctor.id}">${escapeHtml(doctor.name)} Â· ${escapeHtml(doctor.specialty)}</option>`)
+    .map((doctor) => `<option value="${doctor.id}">${escapeHtml(doctor.name)} · ${escapeHtml(doctor.specialty)}</option>`)
     .join("");
 
   const userOptions = users
-    .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} Â· ${escapeHtml(user.role)}</option>`)
+    .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} · ${escapeHtml(user.role)}</option>`)
     .join("");
 
-  const cashierUsers = users.filter((user) => ["Administrador", "RecepciÃƒÂ³n", "Contabilidad"].includes(user.role));
+  const cashierUsers = users.filter((user) => ["Administrador", "Recepción", "Contabilidad"].includes(user.role));
 
   ["appointmentPatient", "odontogramPatient", "treatmentPatient", "paymentPatient", "selfRequestPatient"].forEach((id) => {
     const select = document.getElementById(id);
@@ -2401,8 +2439,8 @@ function populateSelects() {
   if (paymentCashier) {
     const current = paymentCashier.value;
     paymentCashier.innerHTML = users
-      .filter((user) => ["Administrador", "RecepciÃ³n", "Contabilidad"].includes(user.role))
-      .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} Â· ${escapeHtml(user.role)}</option>`)
+      .filter((user) => ["Administrador", "Recepción", "Contabilidad"].includes(user.role))
+      .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} · ${escapeHtml(user.role)}</option>`)
       .join("");
     if (current && users.some((user) => user.id === current)) {
       paymentCashier.value = current;
@@ -2425,7 +2463,7 @@ function populateSelects() {
     const current = agendaDoctorFilter.value;
     const agendaDoctorOptions = doctors
       .filter((doctor) => appointmentBelongsToCurrentDoctor({ doctorId: doctor.id }))
-      .map((doctor) => `<option value="${doctor.id}">${escapeHtml(doctor.name)} Â· ${escapeHtml(doctor.specialty)}</option>`)
+      .map((doctor) => `<option value="${doctor.id}">${escapeHtml(doctor.name)} · ${escapeHtml(doctor.specialty)}</option>`)
       .join("");
     agendaDoctorFilter.innerHTML = `<option value="all">Todos los doctores</option>${agendaDoctorOptions}`;
     if (current && (current === "all" || doctors.some((doctor) => doctor.id === current && appointmentBelongsToCurrentDoctor({ doctorId: doctor.id })))) {
@@ -2439,7 +2477,7 @@ function populateSelects() {
   if (reportCashierFilter) {
     const current = reportCashierFilter.value;
     reportCashierFilter.innerHTML = `<option value="all">Todos</option>${cashierUsers
-      .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} Ã‚Â· ${escapeHtml(user.role)}</option>`)
+      .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} · ${escapeHtml(user.role)}</option>`)
       .join("")}`;
     if (current && (current === "all" || cashierUsers.some((user) => user.id === current))) {
       reportCashierFilter.value = current;
@@ -2464,7 +2502,7 @@ function populateSelects() {
     state.inventory ||= [];
     paymentProduct.innerHTML = state.inventory.length
       ? state.inventory
-          .map((item) => `<option value="${item.id}">${escapeHtml(item.name)} Â· ${currency.format(item.price || 0)} Â· Stock ${item.stock}</option>`)
+          .map((item) => `<option value="${item.id}">${escapeHtml(item.name)} · ${currency.format(item.price || 0)} · Stock ${item.stock}</option>`)
           .join("")
       : `<option value="">Sin productos disponibles</option>`;
     if (current && state.inventory.some((item) => item.id === current)) {
@@ -2480,7 +2518,7 @@ function populateSelects() {
     state.inventory ||= [];
     select.innerHTML = state.inventory.length
       ? state.inventory
-          .map((item) => `<option value="${item.id}">${escapeHtml(item.name)} Â· Stock ${item.stock}</option>`)
+          .map((item) => `<option value="${item.id}">${escapeHtml(item.name)} · Stock ${item.stock}</option>`)
           .join("")
       : `<option value="">Sin productos registrados</option>`;
     if (current && state.inventory.some((item) => item.id === current)) {
@@ -2703,7 +2741,7 @@ function globalSearchResultTemplate(result) {
 function renderRoleDashboard() {
   const container = document.getElementById("roleDashboardPanel");
   if (!container) return;
-  const role = currentUser?.role || "RecepciÃ³n";
+  const role = currentUser?.role || "Recepción";
   const config = roleDashboardConfig(role);
   const modules = config.modules.filter((viewName) => canView(viewName));
   container.innerHTML = `
@@ -2738,7 +2776,7 @@ function roleDashboardConfig(role) {
       status: "Clinico",
       modules: ["agenda", "patients", "odontogram", "treatments", "selfService"]
     },
-    "RecepciÃ³n": {
+    "Recepción": {
       title: "Panel operativo de recepcion",
       detail: `${todayAppointments} citas para gestionar, admision de pacientes y cobros rapidos.`,
       status: "Front desk",
@@ -2763,7 +2801,7 @@ function roleDashboardConfig(role) {
       modules: ["accountingPanel", "billing", "reports", "inventory"]
     }
   };
-  return roleMap[role] || roleMap["RecepciÃ³n"];
+  return roleMap[role] || roleMap["Recepción"];
 }
 
 function renderDashboard() {
@@ -2819,7 +2857,7 @@ function renderDashboard() {
   document.getElementById("dashboardAlertStrip").innerHTML = [
     {
       label: "Stock bajo",
-      detail: lowStock.length ? `${lowStock.length} productos requieren reposiciÃ³n` : "Inventario sin alertas crÃ­ticas",
+      detail: lowStock.length ? `${lowStock.length} productos requieren reposición` : "Inventario sin alertas críticas",
       status: lowStock.length ? "Pendiente" : "Confirmada",
       view: "inventory"
     },
@@ -2830,8 +2868,8 @@ function renderDashboard() {
       view: "patients"
     },
     {
-      label: "PrÃ³ximas citas",
-      detail: upcomingAppointments.length ? upcomingAppointments.map((appointment) => `${appointment.time} ${patientById(appointment.patientId).name}`).join(" | ") : "No hay prÃ³ximas citas activas",
+      label: "Próximas citas",
+      detail: upcomingAppointments.length ? upcomingAppointments.map((appointment) => `${appointment.time} ${patientById(appointment.patientId).name}`).join(" | ") : "No hay próximas citas activas",
       status: upcomingAppointments.length ? "Confirmada" : "Pendiente",
       view: "agenda"
     }
@@ -2919,7 +2957,7 @@ function renderReceptionPanel() {
 function renderHrPanel() {
   const activeUsers = users.length;
   const doctorsCount = users.filter((user) => user.role === "Doctor").length;
-  const supportCount = users.filter((user) => ["RecepciÃ³n", "Recursos Humanos", "Laboratorio", "Contabilidad"].includes(user.role)).length;
+  const supportCount = users.filter((user) => ["Recepción", "Recursos Humanos", "Laboratorio", "Contabilidad"].includes(user.role)).length;
   const shiftCount = new Set(users.map((user) => user.shift)).size;
   const payrollItems = normalizedPayroll().map(payrollDisplayItem);
   const payrollTotal = payrollItems.reduce((sum, item) => sum + payrollNet(item), 0);
@@ -2933,12 +2971,12 @@ function renderHrPanel() {
   document.getElementById("hrPanelCards").innerHTML = [
     ["Personal activo", activeUsers],
     ["Doctores", doctorsCount],
-    ["NÃ³mina neta", currency.format(payrollTotal)],
+    ["Nómina neta", currency.format(payrollTotal)],
     ["Pagos pendientes", pendingPayroll]
   ].map(panelCardTemplate).join("");
 
   document.getElementById("hrMonthlySummary").innerHTML = [
-    ["NÃ³mina mensual", currency.format(payrollTotal), `${payrollItems.filter((item) => item.status === "Pagado").length} pagados`, "pagado"],
+    ["Nómina mensual", currency.format(payrollTotal), `${payrollItems.filter((item) => item.status === "Pagado").length} pagados`, "pagado"],
     ["Asistencia", state.hrAttendance.filter((item) => item.date?.startsWith(monthPrefix)).length, "Registros del mes", "confirmada"],
     ["Vacaciones", state.hrVacations.filter((item) => item.start?.startsWith(monthPrefix) || item.status === "Solicitada").length, "Solicitudes y ausencias", "pendiente"],
     ["Turnos", state.hrShifts.length || shiftCount, "Asignaciones activas", "confirmada"],
@@ -2952,7 +2990,7 @@ function renderHrPanel() {
       <div>
         <span class="status-pill ${user.role === "Doctor" ? "confirmada" : "pendiente"}">${escapeHtml(user.role)}</span>
         <h2>${escapeHtml(user.name)}</h2>
-        <p>${escapeHtml(user.specialty)} Â· ${escapeHtml(user.room)}</p>
+        <p>${escapeHtml(user.specialty)} · ${escapeHtml(user.room)}</p>
       </div>
       <div class="staff-permissions">
         <strong>Turno</strong>
@@ -2970,7 +3008,7 @@ function renderHrPanel() {
   ].map(([label, detail]) => `
     <article class="alert-item">
       <span class="status-pill pendiente">${label}</span>
-      <div><strong>${detail}</strong><p>MÃ³dulo activo dentro de RRHH.</p></div>
+      <div><strong>${detail}</strong><p>Módulo activo dentro de RRHH.</p></div>
     </article>
   `).join("");
 
@@ -2995,7 +3033,7 @@ function renderEmployeeRecordPanel() {
     ["Empleado", user.name],
     ["Rol", user.role || "Sin rol"],
     ["Turno", shifts[0] ? `${shifts[0].start}-${shifts[0].end}` : user.shift || "Sin turno"],
-    ["NÃ³mina", payrollItem ? currency.format(payrollNet(payrollItem)) : "Sin nÃ³mina"],
+    ["Nómina", payrollItem ? currency.format(payrollNet(payrollItem)) : "Sin nómina"],
     ["Asistencia", `${attendance.length} registros`],
     ["Credencial", credential.label]
   ].map(panelCardTemplate).join("");
@@ -3005,19 +3043,19 @@ function renderEmployeeRecordPanel() {
       badge: item.status,
       status: hrStatusClass(item.status),
       title: `Asistencia ${formatDate(item.date)}`,
-      detail: `${item.timeIn || "Sin entrada"} - ${item.timeOut || "Sin salida"} Â· ${attendanceHours(item)}`
+      detail: `${item.timeIn || "Sin entrada"} - ${item.timeOut || "Sin salida"} · ${attendanceHours(item)}`
     })),
     ...vacations.slice(0, 4).map((item) => ({
       badge: item.status,
       status: hrStatusClass(item.status),
       title: `${item.type || "Vacaciones"} ${formatDate(item.start)} - ${formatDate(item.end)}`,
-      detail: item.approvedBy ? `Aprobado por ${userById(item.approvedBy).name}` : item.note || "Pendiente de aprobaciÃ³n"
+      detail: item.approvedBy ? `Aprobado por ${userById(item.approvedBy).name}` : item.note || "Pendiente de aprobación"
     })),
     ...evaluations.slice(0, 4).map((item) => ({
       badge: item.status,
       status: credentialExpiryStatus(item).className,
-      title: `EvaluaciÃ³n ${Number(item.score) || 0}/100`,
-      detail: `${item.credential || "Sin credencial"} Â· ${credentialExpiryStatus(item).label}`
+      title: `Evaluación ${Number(item.score) || 0}/100`,
+      detail: `${item.credential || "Sin credencial"} · ${credentialExpiryStatus(item).label}`
     }))
   ];
 
@@ -3079,7 +3117,7 @@ function renderLaboratoryPanel() {
         <span class="amount-pill">${currency.format(item.profit)}</span>
         <div>
           <strong>${escapeHtml(item.doctor)}</strong>
-          <p>Facturado ${currency.format(item.revenue)} Â· Costo ${currency.format(item.cost)} Â· ${item.count} trabajo(s)</p>
+          <p>Facturado ${currency.format(item.revenue)} · Costo ${currency.format(item.cost)} · ${item.count} trabajo(s)</p>
         </div>
       </article>
     `).join("")
@@ -3095,7 +3133,7 @@ function renderLaboratoryPanel() {
       if (select.value === "Entregado" && !request.deliveredAt) request.deliveredAt = todayIso;
       request.updatedAt = new Date().toISOString();
       request.updatedBy = currentUser?.id || "sin-usuario";
-      logAudit("laboratory:status", `CambiÃ³ laboratorio ${request.piece || "pieza"} de ${previousStatus} a ${request.status}`, request.createdBy);
+      logAudit("laboratory:status", `Cambió laboratorio ${request.piece || "pieza"} de ${previousStatus} a ${request.status}`, request.createdBy);
       persistAndRender();
     });
   });
@@ -3126,11 +3164,11 @@ function laboratoryRequestTemplate(request) {
       <span class="status-pill ${laboratoryStatusClass(request.status)}">${escapeHtml(request.status)}</span>
       <div>
         <strong>${escapeHtml(request.piece || "Pieza sin especificar")}</strong>
-        <p>${patient ? `Paciente: ${escapeHtml(patient.name)} Â· ` : ""}${escapeHtml(request.detail || "Sin detalles")}</p>
-        <p>Laboratorio: ${escapeHtml(request.labProvider || "Sin laboratorio")} Â· Costo ${currency.format(cost)} Â· Precio ${currency.format(revenue)} Â· Margen ${currency.format(profit)}</p>
-        <p>Prometida: ${request.promisedAt ? formatDate(request.promisedAt) : "Sin fecha"} Â· Entrega: ${request.deliveredAt ? formatDate(request.deliveredAt) : "Pendiente"}</p>
-        <small>Solicitado por ${escapeHtml(userById(request.createdBy).name)} Â· ${formatDateTime(request.createdAt)}</small>
-        ${request.labInstructions ? `<p>Instrucciones/diseÃ±o: ${escapeHtml(request.labInstructions)}</p>` : ""}
+        <p>${patient ? `Paciente: ${escapeHtml(patient.name)} · ` : ""}${escapeHtml(request.detail || "Sin detalles")}</p>
+        <p>Laboratorio: ${escapeHtml(request.labProvider || "Sin laboratorio")} · Costo ${currency.format(cost)} · Precio ${currency.format(revenue)} · Margen ${currency.format(profit)}</p>
+        <p>Prometida: ${request.promisedAt ? formatDate(request.promisedAt) : "Sin fecha"} · Entrega: ${request.deliveredAt ? formatDate(request.deliveredAt) : "Pendiente"}</p>
+        <small>Solicitado por ${escapeHtml(userById(request.createdBy).name)} · ${formatDateTime(request.createdAt)}</small>
+        ${request.labInstructions ? `<p>Instrucciones/diseño: ${escapeHtml(request.labInstructions)}</p>` : ""}
         ${request.labNote ? `<p>Nota laboratorio: ${escapeHtml(request.labNote)}</p>` : ""}
         ${attachments.length ? `<div class="lab-attachments">${attachments.map((file) => `<a class="ghost-link" href="${file.file}" target="_blank" rel="noopener">${escapeHtml(file.fileName || file.type || "Adjunto")}</a>`).join("")}</div>` : ""}
         <form class="inline-form lab-detail-form ${can("laboratory:manage") ? "" : "permission-hidden"}" data-lab-form="${request.id}">
@@ -3139,7 +3177,7 @@ function laboratoryRequestTemplate(request) {
           <input name="labProvider" value="${escapeHtml(request.labProvider || "")}" placeholder="Laboratorio/proveedor">
           <input name="labCost" type="number" min="0" step="100" value="${Number(request.labCost || 0)}" placeholder="Costo laboratorio">
           <input name="amount" type="number" min="0" step="100" value="${Number(request.amount || 0)}" placeholder="Precio a facturar">
-          <input name="instructions" value="${escapeHtml(request.labInstructions || "")}" placeholder="DiseÃ±o o instrucciones de pieza">
+          <input name="instructions" value="${escapeHtml(request.labInstructions || "")}" placeholder="Diseño o instrucciones de pieza">
           <input name="note" value="${escapeHtml(request.labNote || "")}" placeholder="Nota laboratorio">
           <input name="attachment" type="file" accept="image/*,.pdf,.stl,.obj,.zip,.doc,.docx">
           <button class="ghost-button" type="submit">Guardar trabajo</button>
@@ -3239,7 +3277,7 @@ function createLaboratoryInvoice(requestId) {
   const patient = patientById(request.patientId);
   const amount = Number(request.amount) || Number(prompt("Monto a facturar al doctor", "0")) || 0;
   if (amount <= 0) {
-    alert("Indique un monto vÃ¡lido para facturar.");
+    alert("Indique un monto válido para facturar.");
     return;
   }
   const doctorId = request.createdBy;
@@ -3292,7 +3330,7 @@ function createLaboratoryInvoice(requestId) {
   request.invoicedBy = currentUser?.id || "laboratorio";
   request.updatedAt = new Date().toISOString();
   request.updatedBy = currentUser?.id || "laboratorio";
-  logAudit("laboratory:invoice", `FacturÃ³ laboratorio ${invoiceNumber} al doctor ${userById(doctorId).name}`, doctorId);
+  logAudit("laboratory:invoice", `Facturó laboratorio ${invoiceNumber} al doctor ${userById(doctorId).name}`, doctorId);
   persistAndRender();
 }
 
@@ -3328,7 +3366,7 @@ function renderHrControls() {
         <td>${formatDate(item.start)}</td>
         <td>${formatDate(item.end)}</td>
         <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
-        <td>${item.approvedBy ? `${escapeHtml(userById(item.approvedBy).name)} Â· ${formatDateTime(item.approvedAt)}` : "Pendiente"}</td>
+        <td>${item.approvedBy ? `${escapeHtml(userById(item.approvedBy).name)} · ${formatDateTime(item.approvedAt)}` : "Pendiente"}</td>
         <td>${escapeHtml(item.note || "Sin comentario")}</td>
         <td>
           <div class="table-actions">
@@ -3345,9 +3383,9 @@ function renderHrControls() {
       <tr>
         <td>${escapeHtml(userById(item.userId).name)}</td>
         <td><strong>${escapeHtml(item.name)}</strong></td>
-        <td>${escapeHtml(item.area || "Sin Ã¡rea")}</td>
+        <td>${escapeHtml(item.area || "Sin área")}</td>
         <td>${escapeHtml(item.start)} - ${escapeHtml(item.end)}</td>
-        <td>${escapeHtml(item.day || "Sin dÃ­a")}</td>
+        <td>${escapeHtml(item.day || "Sin día")}</td>
       </tr>
     `).join("")
     : `<tr><td colspan="5">${emptyState("Sin turnos registrados.")}</td></tr>`;
@@ -3361,7 +3399,7 @@ function renderHrControls() {
         <td><span class="status-pill ${hrStatusClass(item.status)}">${escapeHtml(item.status)}</span></td>
         <td>${escapeHtml(item.credential || "Sin credencial")}</td>
         <td><span class="status-pill ${credentialExpiryStatus(item).className}">${escapeHtml(credentialExpiryStatus(item).label)}</span></td>
-        <td>${escapeHtml(item.note || "Sin observaciÃ³n")}</td>
+        <td>${escapeHtml(item.note || "Sin observación")}</td>
       </tr>
     `).join("")
     : `<tr><td colspan="7">${emptyState("Sin evaluaciones registradas.")}</td></tr>`;
@@ -3393,7 +3431,7 @@ function credentialExpiryStatus(item) {
   if (!item?.credentialExpiresAt) return { label: "Sin vencimiento", className: hrStatusClass(item?.status) };
   const days = Math.ceil((new Date(`${item.credentialExpiresAt}T12:00:00`) - new Date(`${todayIso}T12:00:00`)) / 86400000);
   if (days < 0) return { label: "Vencida", className: "cancelada" };
-  if (days <= 30) return { label: `Vence en ${days} dÃ­as`, className: "pendiente" };
+  if (days <= 30) return { label: `Vence en ${days} días`, className: "pendiente" };
   return { label: `Vigente hasta ${formatDate(item.credentialExpiresAt)}`, className: "confirmada" };
 }
 
@@ -3415,18 +3453,18 @@ function printPayrollReceipt(userId) {
   const net = payrollNet(item);
   const receipt = `
     <section class="payroll-receipt">
-      <h2>Comprobante individual de nÃ³mina</h2>
-      <p><strong>${escapeHtml(user.name)}</strong> Â· ${escapeHtml(user.role || "Sin rol")}</p>
-      <p>PerÃ­odo: ${escapeHtml(formatPayrollPeriod(item.period))}</p>
+      <h2>Comprobante individual de nómina</h2>
+      <p><strong>${escapeHtml(user.name)}</strong> · ${escapeHtml(user.role || "Sin rol")}</p>
+      <p>Período: ${escapeHtml(formatPayrollPeriod(item.period))}</p>
       <hr>
       <p>Salario base: ${currency.format(item.base || 0)}</p>
       <p>Bonos/comisiones: ${currency.format(item.bonus || 0)}</p>
       <p>Deducciones: ${currency.format(item.deductions || 0)}</p>
       <p>Novedades: ${item.novelty?.count || 0}</p>
-      ${user.role === "Doctor" ? `<p>Puntos: ${item.commission?.points || 0} Â· Procedimientos: ${item.commission?.procedures || 0}</p>` : ""}
+      ${user.role === "Doctor" ? `<p>Puntos: ${item.commission?.points || 0} · Procedimientos: ${item.commission?.procedures || 0}</p>` : ""}
       <h3>Neto a pagar: ${currency.format(net)}</h3>
       <p>Estado: ${escapeHtml(item.status || "Pendiente")}</p>
-      <p>Generado por ${escapeHtml(currentUser?.name || userById(currentUser?.id).name)} Â· ${formatDateTime(new Date().toISOString())}</p>
+      <p>Generado por ${escapeHtml(currentUser?.name || userById(currentUser?.id).name)} · ${formatDateTime(new Date().toISOString())}</p>
     </section>
   `;
   const printWindow = window.open("", "_blank", "width=420,height=700");
@@ -3438,7 +3476,7 @@ function printPayrollReceipt(userId) {
     <!doctype html>
     <html>
       <head>
-        <title>Comprobante de nÃ³mina</title>
+        <title>Comprobante de nómina</title>
         <link rel="stylesheet" href="styles.css">
         <style>
           body { margin: 0; padding: 24px; background: #fff; color: #13261f; font-family: Inter, Segoe UI, Arial, sans-serif; }
@@ -3483,7 +3521,7 @@ function renderPayrollLegacy(payrollItems) {
         <td>${formatDate(novelty.date)}</td>
       </tr>
     `).join("")
-    : `<tr><td colspan="5">${emptyState("No hay novedades aplicadas para este perÃ­odo.")}</td></tr>`;
+    : `<tr><td colspan="5">${emptyState("No hay novedades aplicadas para este período.")}</td></tr>`;
 
   document.getElementById("procedurePointTable").innerHTML = procedurePointCatalog.map((procedure) => `
     <tr>
@@ -3501,7 +3539,7 @@ function renderPayrollLegacy(payrollItems) {
         <td>
           <div class="patient-name">
             <strong>${escapeHtml(user.name)}</strong>
-            <small>${escapeHtml(item.period)} Â· ${isDoctor ? "ComisiÃ³n por procedimientos completados" : "Salario fijo"}</small>
+            <small>${escapeHtml(item.period)} · ${isDoctor ? "Comisión por procedimientos completados" : "Salario fijo"}</small>
           </div>
         </td>
         <td>${escapeHtml(user.role || "Sin rol")}</td>
@@ -3536,7 +3574,7 @@ function renderPayroll(payrollItems) {
     ["Total neto", currency.format(netTotal)],
     ["Puntos doctores", doctorPoints],
     ["Pagados", `${paidCount}/${payrollItems.length}`],
-    ["PerÃ­odo", formatPayrollPeriod(period)]
+    ["Período", formatPayrollPeriod(period)]
   ].map(panelCardTemplate).join("");
 
   document.getElementById("payrollNoveltyTable").innerHTML = (state.payrollNovelties || []).length
@@ -3550,7 +3588,7 @@ function renderPayroll(payrollItems) {
         <td>${formatDate(novelty.date)}</td>
       </tr>
     `).join("")
-    : `<tr><td colspan="6">${emptyState("No hay novedades aplicadas para este perÃ­odo.")}</td></tr>`;
+    : `<tr><td colspan="6">${emptyState("No hay novedades aplicadas para este período.")}</td></tr>`;
 
   document.getElementById("procedurePointTable").innerHTML = procedurePointCatalog.map((procedure) => `
     <tr>
@@ -3570,7 +3608,7 @@ function renderPayroll(payrollItems) {
     ["Doctores", doctorPayrollItems.length],
     ["Puntos", doctorPoints],
     ["Procedimientos", doctorProcedures],
-    ["ComisiÃ³n total", currency.format(doctorCommissionTotal)]
+    ["Comisión total", currency.format(doctorCommissionTotal)]
   ].map(panelCardTemplate).join("");
 
   document.getElementById("adminPayrollTable").innerHTML = adminPayrollItems.map((item) => {
@@ -3580,7 +3618,7 @@ function renderPayroll(payrollItems) {
         <td>
           <div class="patient-name">
             <strong>${escapeHtml(user.name)}</strong>
-            <small>${escapeHtml(item.period)} Â· Salario fijo Â· ${item.novelty?.count || 0} novedades</small>
+            <small>${escapeHtml(item.period)} · Salario fijo · ${item.novelty?.count || 0} novedades</small>
           </div>
         </td>
         <td>${escapeHtml(user.role || "Sin rol")}</td>
@@ -3600,7 +3638,7 @@ function renderPayroll(payrollItems) {
         <td>
           <div class="patient-name">
             <strong>${escapeHtml(user.name)}</strong>
-            <small>${escapeHtml(item.period)} Â· ComisiÃ³n por procedimientos completados Â· ${item.novelty?.count || 0} novedades</small>
+            <small>${escapeHtml(item.period)} · Comisión por procedimientos completados · ${item.novelty?.count || 0} novedades</small>
           </div>
         </td>
         <td>${escapeHtml(user.specialty || "Sin especialidad")}</td>
@@ -3738,14 +3776,14 @@ function renderPayrollRuns() {
         <td>${currency.format((Number(run.noveltyIncome) || 0) - (Number(run.noveltyDeductions) || 0))}</td>
         <td><strong>${currency.format(Number(run.total) || 0)}</strong></td>
         <td><span class="status-pill ${run.status === "Pagada" ? "pagado" : "pendiente"}">${escapeHtml(run.status || "Procesada")}</span></td>
-        <td>${escapeHtml(userById(run.processedBy || run.paidBy).name)}${run.processedAt ? ` Â· ${formatDateTime(run.processedAt)}` : ""}</td>
+        <td>${escapeHtml(userById(run.processedBy || run.paidBy).name)}${run.processedAt ? ` · ${formatDateTime(run.processedAt)}` : ""}</td>
       </tr>
     `).join("")
-    : `<tr><td colspan="7">${emptyState("AÃºn no se ha procesado ninguna nÃ³mina mensual.")}</td></tr>`;
+    : `<tr><td colspan="7">${emptyState("Aún no se ha procesado ninguna nómina mensual.")}</td></tr>`;
 }
 
 function attendanceHours(item) {
-  if (!item.timeIn || !item.timeOut) return "Sin cÃ¡lculo";
+  if (!item.timeIn || !item.timeOut) return "Sin cálculo";
   const [inHour, inMinute] = item.timeIn.split(":").map(Number);
   const [outHour, outMinute] = item.timeOut.split(":").map(Number);
   const minutes = (outHour * 60 + outMinute) - (inHour * 60 + inMinute);
@@ -3810,7 +3848,7 @@ function renderUsersPanel() {
       <button class="compact-user ${user.id === selectedUserId ? "active" : ""}" data-select-user="${user.id}" type="button">
         <div>
           <strong>${escapeHtml(user.name)}</strong>
-          <span>${escapeHtml(user.role)} Â· ${escapeHtml(user.specialty)}</span>
+          <span>${escapeHtml(user.role)} · ${escapeHtml(user.specialty)}</span>
         </div>
         <small>${permissionsForUser(user.id).views.filter((view) => panelViews.includes(view)).length} paneles</small>
       </button>
@@ -3828,7 +3866,7 @@ function renderUsersPanel() {
 }
 
 function renderUserDirectorySummary(visibleUsers) {
-  const roles = ["Doctor", "RecepciÃ³n", "Recursos Humanos", "Laboratorio", "Contabilidad", "Administrador"];
+  const roles = ["Doctor", "Recepción", "Recursos Humanos", "Laboratorio", "Contabilidad", "Administrador"];
   document.getElementById("userDirectorySummary").innerHTML = roles.map((role) => {
     const total = users.filter((user) => user.role === role).length;
     const visible = visibleUsers.filter((user) => user.role === role).length;
@@ -3853,7 +3891,7 @@ function renderSelectedUserPermissions() {
   if (!user) return;
 
   document.getElementById("selectedUserTitle").textContent = user.name;
-  document.getElementById("selectedUserMeta").textContent = `${user.role} Â· ${user.specialty} Â· ${user.room}`;
+  document.getElementById("selectedUserMeta").textContent = `${user.role} · ${user.specialty} · ${user.room}`;
 
   renderPermissionMatrix(user.id);
 }
@@ -3864,7 +3902,7 @@ function selectedUserSummary(user) {
       <div>
         <span class="status-pill ${user.role === "Doctor" ? "confirmada" : "pendiente"}">${escapeHtml(user.role)}</span>
         <h2>${escapeHtml(user.name)}</h2>
-        <p>${escapeHtml(user.specialty)} Â· ${escapeHtml(user.room)}</p>
+        <p>${escapeHtml(user.specialty)} · ${escapeHtml(user.room)}</p>
       </div>
       <div class="staff-permissions">
         <strong>Permisos</strong>
@@ -3878,9 +3916,9 @@ function selectedUserSummary(user) {
 function selfServicePermissionLabel(userPermissions) {
   if (!userPermissions.views.includes("selfService")) return "Autoservicio: sin acceso";
   const labels = [];
-  if (userPermissions.actions.includes("selfservice:clinical")) labels.push("clÃ­nico");
+  if (userPermissions.actions.includes("selfservice:clinical")) labels.push("clínico");
   if (userPermissions.actions.includes("selfservice:employee")) labels.push("empleados");
-  if (userPermissions.actions.includes("selfservice:manage")) labels.push("gestiÃ³n");
+  if (userPermissions.actions.includes("selfservice:manage")) labels.push("gestión");
   return `Autoservicio: ${labels.join(", ") || "solo consulta"}`;
 }
 
@@ -3943,7 +3981,7 @@ function renderPermissionMatrix(targetUserId = selectedUserId) {
     </div>
   `;
   const helpText = canEditPermissions
-    ? user.id === "admin" ? "El Administrador conserva acceso completo." : "Activa solo los paneles y mÃ³dulos que correspondan."
+    ? user.id === "admin" ? "El Administrador conserva acceso completo." : "Activa solo los paneles y módulos que correspondan."
     : "Solo el Administrador puede modificar permisos.";
 
   const profileSelect = document.getElementById("userPermissionProfile");
@@ -4053,7 +4091,7 @@ function updateUserPermission(input) {
     scope: nextPermissions.scope
   };
   saveUserPermissionOverrides();
-  logAudit("permissions:view", `${input.checked ? "HabilitÃ³" : "DeshabilitÃ³"} mÃ³dulo ${viewName} para ${userById(userId).name}`, userId);
+  logAudit("permissions:view", `${input.checked ? "Habilitó" : "Deshabilitó"} módulo ${viewName} para ${userById(userId).name}`, userId);
   renderHrPanel();
   applyPermissions();
   render();
@@ -4079,7 +4117,7 @@ function updateUserActionPermission(input) {
     scope: nextPermissions.scope
   };
   saveUserPermissionOverrides();
-  logAudit("permissions:action", `${input.checked ? "HabilitÃ³" : "DeshabilitÃ³"} acciÃ³n ${action} para ${user.name}`, userId);
+  logAudit("permissions:action", `${input.checked ? "Habilitó" : "Deshabilitó"} acción ${action} para ${user.name}`, userId);
   applyPermissions();
   render();
 }
@@ -4093,7 +4131,7 @@ function updateUserPermissionScope(userId, scope) {
     scope: scope === "own" ? "own" : "all"
   };
   saveUserPermissionOverrides();
-  logAudit("permissions:scope", `CambiÃ³ alcance a ${scope} para ${userById(userId).name}`, userId);
+  logAudit("permissions:scope", `Cambió alcance a ${scope} para ${userById(userId).name}`, userId);
   applyPermissions();
   render();
 }
@@ -4108,7 +4146,7 @@ function applyPermissionProfile(userId, profileRole) {
     scope: defaults.scope
   };
   saveUserPermissionOverrides();
-  logAudit("permissions:profile", `AplicÃ³ perfil ${profileRole} a ${userById(userId).name}`, userId);
+  logAudit("permissions:profile", `Aplicó perfil ${profileRole} a ${userById(userId).name}`, userId);
   applyPermissions();
   render();
 }
@@ -4117,7 +4155,7 @@ function resetPermissionProfile(userId) {
   if (userId === "admin") return;
   delete userPermissionOverrides[userId];
   saveUserPermissionOverrides();
-  logAudit("permissions:reset", `RestableciÃ³ permisos de ${userById(userId).name}`, userId);
+  logAudit("permissions:reset", `Restableció permisos de ${userById(userId).name}`, userId);
   applyPermissions();
   render();
 }
@@ -4133,7 +4171,7 @@ function renderAccountingPanel() {
     ["Ingresos hoy", currency.format(collectedToday)],
     ["Cuentas por cobrar", currency.format(pendingTotal)],
     ["Recibos", billablePayments.length],
-    ["MÃ©todo principal", topPaymentMethod(methodTotals)]
+    ["Método principal", topPaymentMethod(methodTotals)]
   ].map(panelCardTemplate).join("");
 
   renderPanelModules("accountingPanelModules", "accountingPanel");
@@ -4143,8 +4181,8 @@ function renderAccountingPanel() {
       <article class="ledger-item">
         <span class="amount-pill">${currency.format(payment.amount)}</span>
         <div>
-          <strong>${escapeHtml(payment.receiptNumber || "REC-S/N")} Â· ${escapeHtml(patientById(payment.patientId).name)}</strong>
-          <p>${escapeHtml(payment.method)} Â· ${escapeHtml(payment.concept)} Â· ${formatDate(payment.date)}</p>
+          <strong>${escapeHtml(payment.receiptNumber || "REC-S/N")} · ${escapeHtml(patientById(payment.patientId).name)}</strong>
+          <p>${escapeHtml(payment.method)} · ${escapeHtml(payment.concept)} · ${formatDate(payment.date)}</p>
         </div>
       </article>
     `).join("")
@@ -4155,7 +4193,7 @@ function renderAccountingPanel() {
     ? balances.slice(0, 5).map((payment) => `
       <article class="alert-item">
         <span class="amount-pill">${currency.format(invoiceBalance(payment))}</span>
-        <div><strong>${escapeHtml(patientById(payment.patientId).name)}</strong><p>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} Â· ${invoiceAgeBucket(payment)}</p></div>
+        <div><strong>${escapeHtml(patientById(payment.patientId).name)}</strong><p>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} · ${invoiceAgeBucket(payment)}</p></div>
       </article>
     `).join("")
     : emptyState("No hay balances pendientes.");
@@ -4207,7 +4245,7 @@ function renderPanelModules(containerId, panelView) {
     .filter((viewName) => canView(viewName))
     .map(moduleButtonTemplate)
     .join("");
-  container.innerHTML = modules || emptyState("No hay mÃ³dulos habilitados para este panel.");
+  container.innerHTML = modules || emptyState("No hay módulos habilitados para este panel.");
 }
 
 function moduleButtonTemplate(viewName) {
@@ -4230,16 +4268,16 @@ function renderPatients() {
             ${patientPhotoTemplate(patient)}
             <div class="patient-name">
               <strong>${escapeHtml(patient.name)}</strong>
-              <small>${escapeHtml(patient.code || "")} Â· ${escapeHtml(patient.documentType || "Documento")}: ${escapeHtml(patientDocumentLabel(patient))}</small>
-              ${hasMedicalAlert(patient) ? `<span class="medical-alert-mini">Alerta mÃ©dica</span>` : ""}
+              <small>${escapeHtml(patient.code || "")} · ${escapeHtml(patient.documentType || "Documento")}: ${escapeHtml(patientDocumentLabel(patient))}</small>
+              ${hasMedicalAlert(patient) ? `<span class="medical-alert-mini">Alerta médica</span>` : ""}
             </div>
           </div>
         </td>
         <td>
           <div class="patient-detail">
             <span>${escapeHtml(patient.phone)}</span>
-            <small>${escapeHtml(patient.email || "Sin correo")} Â· ${patientAge(patient.birthdate)} Â· ${escapeHtml(patient.gender || "No especificado")} Â· ${escapeHtml(patient.nationality || "Dominicano")}</small>
-            <small>${escapeHtml(patient.address || "Sin direcciÃ³n")}</small>
+            <small>${escapeHtml(patient.email || "Sin correo")} · ${patientAge(patient.birthdate)} · ${escapeHtml(patient.gender || "No especificado")} · ${escapeHtml(patient.nationality || "Dominicano")}</small>
+            <small>${escapeHtml(patient.address || "Sin dirección")}</small>
             <small>Emergencia: ${escapeHtml(emergencyContactText(splitEmergencyContact(patient)) || "No registrada")}</small>
           </div>
         </td>
@@ -4253,7 +4291,7 @@ function renderPatients() {
             <span>${escapeHtml(patient.clinicalHistory || patient.notes || "Sin historial registrado")}</span>
             <small>Condiciones: ${escapeHtml(patient.conditions || "Sin registro")}</small>
             <small>Medicamentos: ${escapeHtml(patient.medications || "Sin registro")}</small>
-            <small>Ãšltima visita: ${formatDate(patient.lastVisit)}</small>
+            <small>Última visita: ${formatDate(patient.lastVisit)}</small>
           </div>
         </td>
         <td>${currency.format(patient.balance)}</td>
@@ -4302,7 +4340,7 @@ function renderSelfService() {
         <span class="status-pill confirmada">${escapeHtml(patient.code || "Paciente")}</span>
         <div>
           <strong>${escapeHtml(patient.name)}</strong>
-          <p>${escapeHtml(patient.phone)} Â· ${escapeHtml(patientDocumentLabel(patient))}</p>
+          <p>${escapeHtml(patient.phone)} · ${escapeHtml(patientDocumentLabel(patient))}</p>
         </div>
         <button class="ghost-button" data-self-service-patient="${patient.id}" type="button">Seleccionar</button>
       </article>
@@ -4353,33 +4391,33 @@ function selfServiceDetailTemplate(patient) {
     <div class="self-service-summary">
       <article class="record-block">
         <h3>${escapeHtml(patient.name)}</h3>
-        <p>${escapeHtml(patient.phone)} Â· ${escapeHtml(patient.email || "Sin correo")}</p>
+        <p>${escapeHtml(patient.phone)} · ${escapeHtml(patient.email || "Sin correo")}</p>
         <p>${escapeHtml(patient.documentType || "Documento")}: ${escapeHtml(patientDocumentLabel(patient))}</p>
         <p>Balance: <strong>${currency.format(patient.balance || 0)}</strong></p>
         <div class="table-actions">
           <button class="ghost-button" data-self-record="${patient.id}" type="button">Abrir ficha</button>
           <button class="ghost-button" data-view-jump="agenda" type="button">Ir a agenda</button>
-          <button class="ghost-button" data-view-jump="billing" type="button">Ir a facturaciÃ³n</button>
+          <button class="ghost-button" data-view-jump="billing" type="button">Ir a facturación</button>
         </div>
       </article>
       <section class="record-block">
-        <h3>PrÃ³ximas citas</h3>
+        <h3>Próximas citas</h3>
         <div class="clinical-list">
           ${appointments.length ? appointments.map((appointment) => `
             <article class="clinical-item">
               <span class="time-chip">${formatDate(appointment.date)}</span>
               <div>
-                <strong>${escapeHtml(appointment.time)} Â· ${escapeHtml(appointment.type)}</strong>
-                <p>${escapeHtml(doctorById(appointment.doctorId).name)} Â· ${escapeHtml(appointment.status)}</p>
+                <strong>${escapeHtml(appointment.time)} · ${escapeHtml(appointment.type)}</strong>
+                <p>${escapeHtml(doctorById(appointment.doctorId).name)} · ${escapeHtml(appointment.status)}</p>
               </div>
               <button class="ghost-button ${can("appointments:confirm") ? "" : "permission-hidden"}" data-self-checkin="${appointment.id}" type="button">Confirmar llegada</button>
             </article>
-          `).join("") : emptyState("No hay prÃ³ximas citas.")}
+          `).join("") : emptyState("No hay próximas citas.")}
         </div>
       </section>
       <section class="record-block">
-        <h3>Solicitud rÃ¡pida</h3>
-        <p>Para actualizar datos, solicitar cita o consultar balance, el personal puede abrir la ficha, agenda o facturaciÃ³n desde este autoservicio.</p>
+        <h3>Solicitud rápida</h3>
+        <p>Para actualizar datos, solicitar cita o consultar balance, el personal puede abrir la ficha, agenda o facturación desde este autoservicio.</p>
       </section>
     </div>
   `;
@@ -4406,8 +4444,8 @@ function syncSelfServiceRequestOptions() {
 }
 
 function selfServiceRequestOptionsForCurrentUser() {
-  const clinicalOptions = ["Placa adicional", "Laboratorio - pieza dental", "Insumos de trabajo", "Ausencia doctor", "ReparaciÃ³n de equipo", "Ticket de TI"];
-  const employeeOptions = ["Vacaciones empleado", "Insumos de trabajo", "Ticket de TI", "ReparaciÃ³n de equipo"];
+  const clinicalOptions = ["Placa adicional", "Laboratorio - pieza dental", "Insumos de trabajo", "Ausencia doctor", "Reparación de equipo", "Ticket de TI"];
+  const employeeOptions = ["Vacaciones empleado", "Insumos de trabajo", "Ticket de TI", "Reparación de equipo"];
   const options = [];
   if (can("selfservice:clinical")) options.push(...clinicalOptions);
   if (can("selfservice:employee")) options.push(...employeeOptions);
@@ -4424,9 +4462,9 @@ function selfServiceRequestTemplate(request) {
     <article class="ledger-item">
       <span class="status-pill ${request.status === "Activa" ? "confirmada" : "pendiente"}">${escapeHtml(request.status)}</span>
       <div>
-        <strong>${escapeHtml(request.type)}${request.piece ? ` Â· ${escapeHtml(request.piece)}` : ""}</strong>
-        <p>${patient ? `Paciente: ${escapeHtml(patient.name)} Â· ` : ""}${escapeHtml(request.detail)}${request.start ? ` Â· ${formatDate(request.start)}${request.end && request.end !== request.start ? ` a ${formatDate(request.end)}` : ""}` : ""}</p>
-        <small>Solicitado por ${escapeHtml(userById(request.createdBy).name)} Â· ${formatDateTime(request.createdAt)}</small>
+        <strong>${escapeHtml(request.type)}${request.piece ? ` · ${escapeHtml(request.piece)}` : ""}</strong>
+        <p>${patient ? `Paciente: ${escapeHtml(patient.name)} · ` : ""}${escapeHtml(request.detail)}${request.start ? ` · ${formatDate(request.start)}${request.end && request.end !== request.start ? ` a ${formatDate(request.end)}` : ""}` : ""}</p>
+        <small>Solicitado por ${escapeHtml(userById(request.createdBy).name)} · ${formatDateTime(request.createdAt)}</small>
       </div>
     </article>
   `;
@@ -4440,9 +4478,9 @@ function ensurePatientCodes() {
       changed = true;
     }
     if (!patient.documentType) {
-      patient.documentType = "CÃ©dula";
+      patient.documentType = "Cédula";
       changed = true;
-    } else if (patient.documentType === "Licencia mÃ©dica") {
+    } else if (patient.documentType === "Licencia médica") {
       patient.documentType = "Licencia de conducir";
       changed = true;
     }
@@ -4509,8 +4547,8 @@ function openPatientRecord(patientId) {
     consents: patientConsents
   });
 
-  document.getElementById("patientRecordTitle").textContent = `${patient.name} Â· ${patient.code || ""}`;
-  document.getElementById("patientRecordMeta").textContent = `${patient.documentType || "Documento"}: ${patientDocumentLabel(patient)} Â· ${patientAge(patient.birthdate)} Â· ${patient.phone}`;
+  document.getElementById("patientRecordTitle").textContent = `${patient.name} · ${patient.code || ""}`;
+  document.getElementById("patientRecordMeta").textContent = `${patient.documentType || "Documento"}: ${patientDocumentLabel(patient)} · ${patientAge(patient.birthdate)} · ${patient.phone}`;
   document.getElementById("patientRecordContent").innerHTML = patientRecordContent({
     patient,
     emergency,
@@ -4561,7 +4599,7 @@ function patientRecordContent({
         <div>
           <span class="status-pill confirmada">${escapeHtml(patient.code || "Paciente")}</span>
           <h2>${escapeHtml(patient.name)}</h2>
-          <p>${escapeHtml(patientAge(patient.birthdate))} Â· ${escapeHtml(patient.gender || "No especificado")} Â· ${escapeHtml(patient.nationality || "Dominicano")}</p>
+          <p>${escapeHtml(patientAge(patient.birthdate))} · ${escapeHtml(patient.gender || "No especificado")} · ${escapeHtml(patient.nationality || "Dominicano")}</p>
         </div>
         <div class="patient-record-badges">${patientRecordBadges(patient).join("")}</div>
       </div>
@@ -4575,36 +4613,36 @@ function patientRecordContent({
       <button class="record-tab active" data-record-tab="personal" type="button">Datos personales</button>
       <button class="record-tab" data-record-tab="insurance" type="button">Seguro</button>
       <button class="record-tab" data-record-tab="emergency" type="button">Emergencia</button>
-      <button class="record-tab" data-record-tab="alerts" type="button">Alertas mÃ©dicas</button>
+      <button class="record-tab" data-record-tab="alerts" type="button">Alertas médicas</button>
       <button class="record-tab" data-record-tab="history" type="button">Historial</button>
     </div>
     <div class="patient-record-tab-panels">
       <section class="record-tab-panel active" data-record-panel="personal">
         <div class="patient-record-grid">
-          <section class="record-block"><h3>Datos personales</h3><p>Documento: <strong>${escapeHtml(patientDocumentLabel(patient))}</strong></p><p>Tipo: ${escapeHtml(patient.documentType || "No registrado")}</p><p>TelÃ©fono: ${escapeHtml(patient.phone || "No registrado")}</p><p>Correo: ${escapeHtml(patient.email || "Sin correo")}</p><p>DirecciÃ³n: ${escapeHtml(patient.address || "Sin direcciÃ³n")}</p></section>
-          <section class="record-block"><h3>Resumen financiero</h3><p>Tratamientos: <strong>${currency.format(treatmentTotal)}</strong></p><p>Pagado: <strong>${currency.format(paidTotal)}</strong></p><p>Balance: <strong>${currency.format(patient.balance)}</strong></p><p>Ãšltima visita: ${formatDate(patient.lastVisit)}</p></section>
+          <section class="record-block"><h3>Datos personales</h3><p>Documento: <strong>${escapeHtml(patientDocumentLabel(patient))}</strong></p><p>Tipo: ${escapeHtml(patient.documentType || "No registrado")}</p><p>Teléfono: ${escapeHtml(patient.phone || "No registrado")}</p><p>Correo: ${escapeHtml(patient.email || "Sin correo")}</p><p>Dirección: ${escapeHtml(patient.address || "Sin dirección")}</p></section>
+          <section class="record-block"><h3>Resumen financiero</h3><p>Tratamientos: <strong>${currency.format(treatmentTotal)}</strong></p><p>Pagado: <strong>${currency.format(paidTotal)}</strong></p><p>Balance: <strong>${currency.format(patient.balance)}</strong></p><p>Última visita: ${formatDate(patient.lastVisit)}</p></section>
         </div>
       </section>
       <section class="record-tab-panel" data-record-panel="insurance">
         <div class="patient-record-grid">
           <section class="record-block"><h3>Seguro del paciente</h3><p>Aseguradora: <strong>${escapeHtml(patient.insurance || "Sin seguro")}</strong></p><p>Tipo de sangre: ${escapeHtml(patient.bloodType || "No registrado")}</p><p>Estado: ${escapeHtml(patient.status || "Activo")}</p></section>
-          <section class="record-block"><h3>IdentificaciÃ³n</h3><p>${patientIsMinor(patient) ? "Paciente menor de edad: documento no requerido." : `Documento registrado: ${escapeHtml(patient.document || "Sin documento")}`}</p><p>Nacionalidad: ${escapeHtml(patient.nationality || "Dominicano")}</p></section>
+          <section class="record-block"><h3>Identificación</h3><p>${patientIsMinor(patient) ? "Paciente menor de edad: documento no requerido." : `Documento registrado: ${escapeHtml(patient.document || "Sin documento")}`}</p><p>Nacionalidad: ${escapeHtml(patient.nationality || "Dominicano")}</p></section>
         </div>
       </section>
       <section class="record-tab-panel" data-record-panel="emergency">
         <div class="patient-record-grid">
-          <section class="record-block"><h3>Contacto de emergencia</h3><p>Nombre: <strong>${escapeHtml(emergency.name || "No registrado")}</strong></p><p>TelÃ©fono: ${escapeHtml(emergency.phone || "Sin telÃ©fono")}</p><p>Parentesco: ${escapeHtml(emergency.relation || "Sin parentesco")}</p></section>
-          <section class="record-block"><h3>Contacto del paciente</h3><p>TelÃ©fono principal: ${escapeHtml(patient.phone || "No registrado")}</p><p>Correo: ${escapeHtml(patient.email || "Sin correo")}</p><p>DirecciÃ³n: ${escapeHtml(patient.address || "Sin direcciÃ³n")}</p></section>
+          <section class="record-block"><h3>Contacto de emergencia</h3><p>Nombre: <strong>${escapeHtml(emergency.name || "No registrado")}</strong></p><p>Teléfono: ${escapeHtml(emergency.phone || "Sin teléfono")}</p><p>Parentesco: ${escapeHtml(emergency.relation || "Sin parentesco")}</p></section>
+          <section class="record-block"><h3>Contacto del paciente</h3><p>Teléfono principal: ${escapeHtml(patient.phone || "No registrado")}</p><p>Correo: ${escapeHtml(patient.email || "Sin correo")}</p><p>Dirección: ${escapeHtml(patient.address || "Sin dirección")}</p></section>
         </div>
       </section>
       <section class="record-tab-panel" data-record-panel="alerts">
         <div class="patient-record-grid">
-          <section class="record-block"><h3>Alertas mÃ©dicas</h3>${hasMedicalAlert(patient) ? `<div class="medical-alert-banner">${escapeHtml(patientMedicalAlertText(patient))}</div>` : `<p>Sin alertas mÃ©dicas activas.</p>`}<p>Alergias: <strong>${escapeHtml(patient.allergies || "Ninguna")}</strong></p></section>
-          <section class="record-block"><h3>Condiciones y medicamentos</h3><p>Condiciones: ${escapeHtml(patient.conditions || "Sin registro")}</p><p>Medicamentos: ${escapeHtml(patient.medications || "Sin registro")}</p><p>Historial clÃ­nico: ${escapeHtml(patient.clinicalHistory || patient.notes || "Sin historial registrado")}</p></section>
+          <section class="record-block"><h3>Alertas médicas</h3>${hasMedicalAlert(patient) ? `<div class="medical-alert-banner">${escapeHtml(patientMedicalAlertText(patient))}</div>` : `<p>Sin alertas médicas activas.</p>`}<p>Alergias: <strong>${escapeHtml(patient.allergies || "Ninguna")}</strong></p></section>
+          <section class="record-block"><h3>Condiciones y medicamentos</h3><p>Condiciones: ${escapeHtml(patient.conditions || "Sin registro")}</p><p>Medicamentos: ${escapeHtml(patient.medications || "Sin registro")}</p><p>Historial clínico: ${escapeHtml(patient.clinicalHistory || patient.notes || "Sin historial registrado")}</p></section>
         </div>
       </section>
       <section class="record-tab-panel" data-record-panel="history">
-        ${patientRecordSection("HistÃ³rico completo del paciente", patientTimeline, patientTimelineTemplate)}
+        ${patientRecordSection("Histórico completo del paciente", patientTimeline, patientTimelineTemplate)}
         ${upcomingAppointmentsByDoctorSection(upcomingAppointments)}
         ${patientRecordSection("Citas", patientAppointments, appointmentRecordTemplate)}
         ${patientRecordSection("Tratamientos", patientTreatments, treatmentRecordTemplate)}
@@ -4612,7 +4650,7 @@ function patientRecordContent({
         ${patientPlatesSection(patient.id, patientPlates)}
         ${patientConsentsSection(patient.id, patientConsents)}
         ${patientAttachmentsSection(patient.id, patientAttachments)}
-        ${patientRecordSection("Documentos clÃ­nicos", patientDocuments, documentRecordTemplate)}
+        ${patientRecordSection("Documentos clínicos", patientDocuments, documentRecordTemplate)}
         ${patientRecordSection("Historial odontograma", patientDentalHistory, dentalHistoryRecordTemplate)}
       </section>
     </div>
@@ -4656,19 +4694,19 @@ function patientTimelineItems({ appointments, treatments, payments, plates, docu
       date: `${item.date || todayIso}T${item.time || "12:00"}`,
       type: "Cita",
       title: item.type,
-      detail: `${doctorById(item.doctorId).name} Â· ${item.status}`
+      detail: `${doctorById(item.doctorId).name} · ${item.status}`
     })),
     ...treatments.map((item) => ({
       date: `${item.start || todayIso}T12:00`,
       type: "Tratamiento",
       title: item.name,
-      detail: `${item.status} Â· ${item.progress || 0}% Â· ${currency.format(item.cost || 0)}`
+      detail: `${item.status} · ${item.progress || 0}% · ${currency.format(item.cost || 0)}`
     })),
     ...payments.map((item) => ({
       date: item.createdAt || `${item.date || todayIso}T12:00`,
       type: "Factura",
       title: item.invoiceNumber || item.receiptNumber || "Movimiento",
-      detail: `${item.concept} Â· ${currency.format(item.amount || 0)} Â· ${item.invoiceStatus || "Pagada"}`
+      detail: `${item.concept} · ${currency.format(item.amount || 0)} · ${item.invoiceStatus || "Pagada"}`
     })),
     ...plates.map((item) => ({
       date: item.takenAt || item.createdAt,
@@ -4706,7 +4744,7 @@ function patientTimelineTemplate(item) {
       <span class="status-pill confirmada">${escapeHtml(item.type)}</span>
       <div>
         <strong>${escapeHtml(item.title || "Registro")}</strong>
-        <p>${formatDateTime(item.date)} Â· ${escapeHtml(item.detail || "")}</p>
+        <p>${formatDateTime(item.date)} · ${escapeHtml(item.detail || "")}</p>
       </div>
     </article>
   `;
@@ -4721,7 +4759,7 @@ function upcomingAppointmentsByDoctorSection(appointments) {
   const groups = Object.entries(grouped);
   return `
     <section class="record-block full">
-      <h3>PrÃ³ximas citas por doctor</h3>
+      <h3>Próximas citas por doctor</h3>
       <div class="appointment-doctor-groups">
         ${groups.length ? groups.map(([doctorId, items]) => `
           <article class="doctor-appointment-group">
@@ -4731,14 +4769,14 @@ function upcomingAppointmentsByDoctorSection(appointments) {
                 <article class="clinical-item">
                   <span class="time-chip">${formatDate(appointment.date)}</span>
                   <div>
-                    <strong>${escapeHtml(appointment.time)} Â· ${escapeHtml(appointment.type)}</strong>
-                    <p>${escapeHtml(appointment.status)} Â· ${appointment.duration || 30} min Â· ${escapeHtml(appointment.reminder || "Sin recordatorio")}</p>
+                    <strong>${escapeHtml(appointment.time)} · ${escapeHtml(appointment.type)}</strong>
+                    <p>${escapeHtml(appointment.status)} · ${appointment.duration || 30} min · ${escapeHtml(appointment.reminder || "Sin recordatorio")}</p>
                   </div>
                 </article>
               `).join("")}
             </div>
           </article>
-        `).join("") : emptyState("No hay prÃ³ximas citas registradas.")}
+        `).join("") : emptyState("No hay próximas citas registradas.")}
       </div>
     </section>
   `;
@@ -4767,13 +4805,13 @@ function patientAttachmentsSection(patientId, attachments) {
       <h3>Adjuntos del paciente</h3>
       <form class="inline-form patient-file-form ${can("clinical-documents:create") ? "" : "permission-hidden"}" id="patientAttachmentForm" data-patient-id="${patientId}">
         <select id="patientAttachmentType">
-          <option>CÃ©dula</option>
+          <option>Cédula</option>
           <option>Seguro</option>
           <option>Receta</option>
-          <option>Documento clÃ­nico</option>
+          <option>Documento clínico</option>
           <option>Otro</option>
         </select>
-        <input id="patientAttachmentNote" placeholder="DescripciÃ³n del archivo">
+        <input id="patientAttachmentNote" placeholder="Descripción del archivo">
         <input id="patientAttachmentFile" type="file" accept="image/*,.pdf,.doc,.docx" required>
         <button class="primary-button" type="submit">Cargar adjunto</button>
       </form>
@@ -4787,16 +4825,16 @@ function patientAttachmentsSection(patientId, attachments) {
 function patientPlatesSection(patientId, plates) {
   return `
     <section class="record-block full">
-      <h3>HistÃ³rico de placas</h3>
+      <h3>Histórico de placas</h3>
       <form class="inline-form plate-form" id="patientPlateForm" data-patient-id="${patientId}">
         <input id="patientPlateTakenAt" type="datetime-local" required>
         <select id="patientPlateType">
-          <option>PanorÃ¡mica</option>
+          <option>Panorámica</option>
           <option>Periapical</option>
           <option>Bitewing</option>
           <option>Oclusal</option>
-          <option>CefalomÃ©trica</option>
-          <option>TomografÃ­a</option>
+          <option>Cefalométrica</option>
+          <option>Tomografía</option>
           <option>Otra</option>
         </select>
         <input id="patientPlateNote" placeholder="Nota o zona evaluada">
@@ -4817,8 +4855,8 @@ function plateRecordTemplate(plate) {
       ${isImage ? `<img src="${plate.file}" alt="Placa ${escapeHtml(plate.type)}">` : `<div class="plate-file">PDF</div>`}
       <div>
         <strong>${escapeHtml(plate.type)}</strong>
-        <p>${formatDateTime(plate.takenAt)} Â· ${escapeHtml(plate.note || "Sin nota")}</p>
-        <small>Cargada por ${escapeHtml(userById(plate.createdBy).name)} Â· ${formatDateTime(plate.createdAt)}</small>
+        <p>${formatDateTime(plate.takenAt)} · ${escapeHtml(plate.note || "Sin nota")}</p>
+        <small>Cargada por ${escapeHtml(userById(plate.createdBy).name)} · ${formatDateTime(plate.createdAt)}</small>
         <a class="ghost-link" href="${plate.file}" target="_blank" rel="noopener">Ver archivo</a>
       </div>
     </article>
@@ -4831,7 +4869,7 @@ function patientConsentTemplate(consent) {
       <span class="time-chip">${formatDateTime(consent.signedAt || consent.createdAt)}</span>
       <div>
         <strong>${escapeHtml(consent.title)}</strong>
-        <p>Firmado y cargado por ${escapeHtml(userById(consent.createdBy).name)} Â· ${escapeHtml(consent.fileName || "Archivo")}</p>
+        <p>Firmado y cargado por ${escapeHtml(userById(consent.createdBy).name)} · ${escapeHtml(consent.fileName || "Archivo")}</p>
         <a class="ghost-link" href="${consent.file}" target="_blank" rel="noopener">Ver consentimiento</a>
       </div>
     </article>
@@ -4844,7 +4882,7 @@ function patientAttachmentTemplate(attachment) {
       <span class="time-chip">${formatDateTime(attachment.createdAt)}</span>
       <div>
         <strong>${escapeHtml(attachment.type)}</strong>
-        <p>${escapeHtml(attachment.note || "Sin descripciÃ³n")} Â· ${escapeHtml(attachment.fileName || "Archivo")}</p>
+        <p>${escapeHtml(attachment.note || "Sin descripción")} · ${escapeHtml(attachment.fileName || "Archivo")}</p>
         <small>Cargado por ${escapeHtml(userById(attachment.createdBy).name)}</small>
         <a class="ghost-link" href="${attachment.file}" target="_blank" rel="noopener">Ver adjunto</a>
       </div>
@@ -4934,8 +4972,8 @@ function appointmentRecordTemplate(appointment) {
     <article class="clinical-item">
       <span class="time-chip">${formatDate(appointment.date)}</span>
       <div>
-        <strong>${escapeHtml(appointment.time)} Â· ${escapeHtml(appointment.type)}</strong>
-        <p>${escapeHtml(doctorById(appointment.doctorId).name)} Â· ${escapeHtml(appointment.status)}</p>
+        <strong>${escapeHtml(appointment.time)} · ${escapeHtml(appointment.type)}</strong>
+        <p>${escapeHtml(doctorById(appointment.doctorId).name)} · ${escapeHtml(appointment.status)}</p>
       </div>
     </article>
   `;
@@ -4947,7 +4985,7 @@ function treatmentRecordTemplate(treatment) {
       <span class="status-pill ${treatmentPhaseClass(treatment.phase || treatment.status)}">${treatment.progress}%</span>
       <div>
         <strong>${escapeHtml(treatment.name)}</strong>
-        <p>${escapeHtml(doctorById(treatment.doctorId).name)} Â· ${currency.format(treatment.cost)} Â· ${escapeHtml(treatment.phase || treatment.status)} Â· ${treatment.consentSigned ? "Consentimiento firmado" : "Consentimiento pendiente"}</p>
+        <p>${escapeHtml(doctorById(treatment.doctorId).name)} · ${currency.format(treatment.cost)} · ${escapeHtml(treatment.phase || treatment.status)} · ${treatment.consentSigned ? "Consentimiento firmado" : "Consentimiento pendiente"}</p>
       </div>
     </article>
   `;
@@ -4958,8 +4996,8 @@ function paymentRecordTemplate(payment) {
     <article class="clinical-item">
       <span class="amount-pill">${currency.format(payment.amount)}</span>
       <div>
-        <strong>${escapeHtml(payment.invoiceNumber || payment.receiptNumber || "Sin nÃºmero")}</strong>
-        <p>${escapeHtml(payment.concept)} Â· ${escapeHtml(payment.method)} Â· ${escapeHtml(paymentBillToLabel(payment))} Â· Doctor ${escapeHtml(paymentDoctorLabel(payment))} Â· Cajero ${escapeHtml(paymentCashierLabel(payment))} Â· ${formatDate(payment.date)}</p>
+        <strong>${escapeHtml(payment.invoiceNumber || payment.receiptNumber || "Sin número")}</strong>
+        <p>${escapeHtml(payment.concept)} · ${escapeHtml(payment.method)} · ${escapeHtml(paymentBillToLabel(payment))} · Doctor ${escapeHtml(paymentDoctorLabel(payment))} · Cajero ${escapeHtml(paymentCashierLabel(payment))} · ${formatDate(payment.date)}</p>
       </div>
     </article>
   `;
@@ -4971,7 +5009,7 @@ function documentRecordTemplate(documentItem) {
       <span class="status-pill confirmada">${escapeHtml(documentItem.type)}</span>
       <div>
         <strong>${escapeHtml(documentItem.title)}</strong>
-        <p>${escapeHtml(documentItem.note)} Â· ${formatDate(documentItem.date)}</p>
+        <p>${escapeHtml(documentItem.note)} · ${formatDate(documentItem.date)}</p>
       </div>
     </article>
   `;
@@ -4982,8 +5020,8 @@ function dentalHistoryRecordTemplate(item) {
     <article class="clinical-item">
       <span class="time-chip">${escapeHtml(item.tooth)}</span>
       <div>
-        <strong>${escapeHtml(item.surface)} Â· ${labelStatus(item.status)}</strong>
-        <p>${formatDate(item.date)} Â· ${escapeHtml(userById(item.userId).name)}</p>
+        <strong>${escapeHtml(item.surface)} · ${labelStatus(item.status)}</strong>
+        <p>${formatDate(item.date)} · ${escapeHtml(userById(item.userId).name)}</p>
       </div>
     </article>
   `;
@@ -5012,11 +5050,11 @@ function renderAgenda() {
   document.getElementById("scheduleBoard").innerHTML = appointments.length
     ? appointments.map((appointment) => `
       <article class="schedule-item">
-        <span class="time-chip">${appointment.time} Â· ${appointment.duration || 30} min</span>
+        <span class="time-chip">${appointment.time} · ${appointment.duration || 30} min</span>
         <div>
           <strong>${escapeHtml(patientById(appointment.patientId).name)}</strong>
-          <p>${escapeHtml(appointment.type)} Â· ${escapeHtml(doctorById(appointment.doctorId).name)}</p>
-          <p>Fecha: ${formatDate(appointment.date)} Â· Recordatorio: ${escapeHtml(appointment.reminder || "Sin recordatorio")}</p>
+          <p>${escapeHtml(appointment.type)} · ${escapeHtml(doctorById(appointment.doctorId).name)}</p>
+          <p>Fecha: ${formatDate(appointment.date)} · Recordatorio: ${escapeHtml(appointment.reminder || "Sin recordatorio")}</p>
           ${doctorAvailabilityBlocks(appointment.doctorId, appointment.date, appointment.time).map((block) => `<p class="agenda-warning">${escapeHtml(block)}</p>`).join("")}
         </div>
         <div class="appointment-actions ${can("appointments:confirm") ? "" : "permission-hidden"}">
@@ -5041,7 +5079,7 @@ function renderAgenda() {
       appointment.status = select.value;
       appointment.updatedAt = new Date().toISOString();
       appointment.updatedBy = currentUser?.id || "sin-usuario";
-      logAudit("appointments:status", `CambiÃ³ cita de ${patientById(appointment.patientId).name} de ${previousStatus} a ${appointment.status}`, appointment.patientId);
+      logAudit("appointments:status", `Cambió cita de ${patientById(appointment.patientId).name} de ${previousStatus} a ${appointment.status}`, appointment.patientId);
       persistAndRender();
     });
   });
@@ -5072,7 +5110,7 @@ function renderAgenda() {
       waitlistAppointment.updatedAt = new Date().toISOString();
       waitlistAppointment.updatedBy = currentUser?.id || "sin-usuario";
       waitlistAppointment.movedFromWaitlistAt = new Date().toISOString();
-      logAudit("appointments:waitlist", `MoviÃ³ lista de espera a ${cancelledAppointment.date} ${cancelledAppointment.time}`, waitlistAppointment.patientId);
+      logAudit("appointments:waitlist", `Movió lista de espera a ${cancelledAppointment.date} ${cancelledAppointment.time}`, waitlistAppointment.patientId);
       persistAndRender();
     });
   });
@@ -5195,7 +5233,7 @@ function renderAgendaCalendar(appointments, dateFilter, viewMode, range) {
 }
 
 function agendaStatusLegendTemplate() {
-  return ["Confirmada", "Pendiente", "Llegó", "Cancelada", "No asistiÃ³", "Atendida", "Lista de espera"]
+  return ["Confirmada", "Pendiente", "Llegó", "Cancelada", "No asistió", "Atendida", "Lista de espera"]
     .map((status) => `<span class="agenda-legend-item ${className(status)}"><i></i>${escapeHtml(status)}</span>`)
     .join("");
 }
@@ -5277,7 +5315,7 @@ function renderMonthCalendar(dateFilter, doctorFilter = "all") {
   });
   return `
     <div class="month-weekdays">
-      <span>Dom</span><span>Lun</span><span>Mar</span><span>MiÃ©</span><span>Jue</span><span>Vie</span><span>SÃ¡b</span>
+      <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
     </div>
     <div class="month-grid">${blanks}${dayCells}</div>
   `;
@@ -5309,14 +5347,14 @@ function calendarAppointmentTemplate(appointment) {
       </div>
       <div>
         <span>${escapeHtml(patientById(appointment.patientId).name)}</span>
-        <small>${escapeHtml(doctorById(appointment.doctorId).name)} Â· ${escapeHtml(appointment.type || "Cita")}</small>
+        <small>${escapeHtml(doctorById(appointment.doctorId).name)} · ${escapeHtml(appointment.type || "Cita")}</small>
       </div>
     </article>
   `;
 }
 
 function appointmentStatusOptions(currentStatus) {
-  return ["Pendiente", "Confirmada", "Llegó", "Atendida", "No asistiÃ³", "Lista de espera", "Cancelada"]
+  return ["Pendiente", "Confirmada", "Llegó", "Atendida", "No asistió", "Lista de espera", "Cancelada"]
     .map((status) => `<option ${status === currentStatus ? "selected" : ""}>${status}</option>`)
     .join("");
 }
@@ -5334,7 +5372,7 @@ function renderOdontogram() {
       ${patientPhotoTemplate(patient)}
       <div>
         <strong>${escapeHtml(patient.name)}</strong>
-        <span>${escapeHtml(patientDocumentLabel(patient))} Â· ${patientAge(patient.birthdate)}</span>
+        <span>${escapeHtml(patientDocumentLabel(patient))} · ${patientAge(patient.birthdate)}</span>
         <span>Alergias: ${escapeHtml(patient.allergies || "Ninguna")}</span>
         <span>Condiciones: ${escapeHtml(patient.conditions || "Sin registro")}</span>
       </div>
@@ -5468,7 +5506,7 @@ function renderOdontogramHistory(patientId) {
         <span class="time-chip">${escapeHtml(selectedTooth)}</span>
         <div>
           <strong>Historial de la pieza seleccionada</strong>
-          ${toothHistory.length ? toothHistory.map((item) => `<p>${formatDate(item.date)} Â· ${escapeHtml(item.surface)} Â· ${labelStatus(item.status)}</p>`).join("") : `<p>Sin cambios para esta pieza.</p>`}
+          ${toothHistory.length ? toothHistory.map((item) => `<p>${formatDate(item.date)} · ${escapeHtml(item.surface)} · ${labelStatus(item.status)}</p>`).join("") : `<p>Sin cambios para esta pieza.</p>`}
         </div>
       </article>
     ` : ""}
@@ -5476,8 +5514,8 @@ function renderOdontogramHistory(patientId) {
       <article class="clinical-item">
         <span class="time-chip">${escapeHtml(item.tooth)}</span>
         <div>
-          <strong>${escapeHtml(item.surface)} Â· ${labelStatus(item.status)}</strong>
-          <p>${formatDate(item.date)} Â· ${escapeHtml(userById(item.userId).name)}</p>
+          <strong>${escapeHtml(item.surface)} · ${labelStatus(item.status)}</strong>
+          <p>${formatDate(item.date)} · ${escapeHtml(userById(item.userId).name)}</p>
         </div>
       </article>
     `).join("") : emptyState("Sin cambios registrados.")}
@@ -5542,7 +5580,7 @@ function saveInitialOdontogram() {
   const patientId = value("odontogramPatient");
   if (!patientId) return;
   const current = state.odontograms?.[patientId] || {};
-  if (state.initialOdontograms?.[patientId] && !confirm("Ya existe un odontograma inicial para este paciente. Â¿Desea reemplazarlo?")) {
+  if (state.initialOdontograms?.[patientId] && !confirm("Ya existe un odontograma inicial para este paciente. ¿Desea reemplazarlo?")) {
     return;
   }
   state.initialOdontograms ||= {};
@@ -5707,11 +5745,11 @@ function renderClinicalRecord(patientId) {
         <div>
           <strong>${escapeHtml(diagnosis.title)}</strong>
           <p>${escapeHtml(diagnosis.notes)}</p>
-          <small>${formatDate(diagnosis.date)} Â· ${escapeHtml(userById(diagnosis.doctorId).name)}</small>
+          <small>${formatDate(diagnosis.date)} · ${escapeHtml(userById(diagnosis.doctorId).name)}</small>
         </div>
       </article>
     `).join("")
-    : emptyState("Sin diagnÃ³sticos registrados."));
+    : emptyState("Sin diagnósticos registrados."));
 
   document.getElementById("evolutionList").innerHTML = evolutions.length
     ? evolutions.map((evolution) => `
@@ -5724,17 +5762,17 @@ function renderClinicalRecord(patientId) {
         </div>
       </article>
     `).join("")
-    : emptyState("Sin evoluciÃ³n registrada.");
+    : emptyState("Sin evolución registrada.");
 
   document.getElementById("recordTreatmentList").innerHTML = treatments.length
     ? treatments.map((treatment) => `
       <article class="clinical-treatment">
         <div>
           <strong>${escapeHtml(treatment.name)}</strong>
-          <small>${escapeHtml(doctorById(treatment.doctorId).name)} Â· ${currency.format(treatment.cost)} Â· ${treatment.consentSigned ? "Consentimiento firmado" : "Consentimiento pendiente"}</small>
+          <small>${escapeHtml(doctorById(treatment.doctorId).name)} · ${currency.format(treatment.cost)} · ${treatment.consentSigned ? "Consentimiento firmado" : "Consentimiento pendiente"}</small>
         </div>
         <div class="progress-track"><div class="progress-bar" style="width:${treatment.progress}%"></div></div>
-        <span>${treatment.progress}% Â· ${escapeHtml(treatment.phase || treatment.status)}</span>
+        <span>${treatment.progress}% · ${escapeHtml(treatment.phase || treatment.status)}</span>
       </article>
     `).join("")
     : emptyState("Sin tratamientos registrados para este paciente.");
@@ -5746,11 +5784,11 @@ function renderClinicalRecord(patientId) {
         <div>
           <strong>${escapeHtml(documentItem.title)}</strong>
           <p>${escapeHtml(documentItem.note)}</p>
-          <small>${formatDate(documentItem.date)} Â· ${escapeHtml(userById(documentItem.createdBy).name)}</small>
+          <small>${formatDate(documentItem.date)} · ${escapeHtml(userById(documentItem.createdBy).name)}</small>
         </div>
       </article>
     `).join("")
-    : emptyState("Sin documentos clÃ­nicos registrados.");
+    : emptyState("Sin documentos clínicos registrados.");
 }
 
 function diagnosisPriorityClass(priority) {
@@ -5808,7 +5846,7 @@ function renderTreatments() {
         <div>
           <span class="status-pill ${treatmentPhaseClass(treatment.phase || treatment.status)}">${escapeHtml(treatment.phase || treatment.status)}</span>
           <h2>${escapeHtml(treatment.name)}</h2>
-          <p>${escapeHtml(patientById(treatment.patientId).name)} Â· ${escapeHtml(doctorById(treatment.doctorId).name)} Â· ${currency.format(treatment.cost)}</p>
+          <p>${escapeHtml(patientById(treatment.patientId).name)} · ${escapeHtml(doctorById(treatment.doctorId).name)} · ${currency.format(treatment.cost)}</p>
           <small>${treatment.consentSigned ? "Consentimiento firmado" : "Consentimiento pendiente"}</small>
         </div>
         <div class="progress-track"><div class="progress-bar" style="width:${treatment.progress}%"></div></div>
@@ -5854,7 +5892,7 @@ function renderBilling() {
     ["Productos facturados", productsToday],
     ["Balance pendiente", currency.format(pendingTotal)],
     ["Facturas/recibos", billablePayments.length],
-    ["MÃ©todo principal", topPaymentMethod(methodTotals)]
+    ["Método principal", topPaymentMethod(methodTotals)]
   ].map(([label, valueText]) => `
     <article class="billing-card">
       <span>${label}</span>
@@ -5870,22 +5908,22 @@ function renderBilling() {
           <article class="ledger-item">
             <span class="amount-pill">${currency.format(payment.amount)}</span>
             <div>
-              <strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} Â· ${escapeHtml(payment.receiptNumber || "REC-S/N")} Â· ${escapeHtml(patientById(payment.patientId).name)}</strong>
-              <p>${escapeHtml(payment.concept)}${payment.type === "Producto" ? ` Â· Cant. ${payment.quantity || 1}` : ""} Â· ${escapeHtml(payment.method)} Â· ${escapeHtml(payment.invoiceStatus || "Pagada")}${payment.reference ? ` Â· Ref. ${escapeHtml(payment.reference)}` : ""} Â· ${escapeHtml(paymentBillToLabel(payment))} Â· Doctor ${escapeHtml(paymentDoctorLabel(payment))} Â· Cajero ${escapeHtml(paymentCashierLabel(payment))} Â· ${formatDate(payment.date)}</p>
-              <p>Tipo: ${escapeHtml(payment.invoiceType || "Consumidor Final")}${payment.ncf ? ` Â· NCF ${escapeHtml(payment.ncf)}` : ""}${payment.documentKind ? ` Â· ${escapeHtml(payment.documentKind)}` : ""}</p>
-              <p>Total ${currency.format(invoiceNetAmount(payment))} Â· Pagado ${currency.format(invoicePaidAmount(payment))} Â· CrÃ©dito ${currency.format(invoiceCreditAmount(payment))} Â· Balance ${currency.format(invoiceBalance(payment))}</p>
+              <strong>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} · ${escapeHtml(payment.receiptNumber || "REC-S/N")} · ${escapeHtml(patientById(payment.patientId).name)}</strong>
+              <p>${escapeHtml(payment.concept)}${payment.type === "Producto" ? ` · Cant. ${payment.quantity || 1}` : ""} · ${escapeHtml(payment.method)} · ${escapeHtml(payment.invoiceStatus || "Pagada")}${payment.reference ? ` · Ref. ${escapeHtml(payment.reference)}` : ""} · ${escapeHtml(paymentBillToLabel(payment))} · Doctor ${escapeHtml(paymentDoctorLabel(payment))} · Cajero ${escapeHtml(paymentCashierLabel(payment))} · ${formatDate(payment.date)}</p>
+              <p>Tipo: ${escapeHtml(payment.invoiceType || "Consumidor Final")}${payment.ncf ? ` · NCF ${escapeHtml(payment.ncf)}` : ""}${payment.documentKind ? ` · ${escapeHtml(payment.documentKind)}` : ""}</p>
+              <p>Total ${currency.format(invoiceNetAmount(payment))} · Pagado ${currency.format(invoicePaidAmount(payment))} · Crédito ${currency.format(invoiceCreditAmount(payment))} · Balance ${currency.format(invoiceBalance(payment))}</p>
               ${(payment.paymentHistory || []).length ? `<p>Historial: ${payment.paymentHistory.map((item) => `${formatDate(item.date)} ${currency.format(item.amount)} ${item.method || ""}`).join(" | ")}</p>` : ""}
-              ${(payment.creditNotes || []).length ? `<p>Notas de crÃ©dito: ${payment.creditNotes.map((note) => `${formatDate(note.date)} ${currency.format(note.amount)} - ${escapeHtml(note.reason)}`).join(" | ")}</p>` : ""}
-              ${(payment.discount || 0) > 0 ? `<p>Descuento: ${currency.format(payment.discount)} Â· ${escapeHtml(payment.discountReason || "Sin motivo")}</p>` : ""}
-              ${payment.voidReason ? `<p>Anulada por ${escapeHtml(userById(payment.voidedBy).name)} Â· ${escapeHtml(payment.voidReason)}</p>` : ""}
+              ${(payment.creditNotes || []).length ? `<p>Notas de crédito: ${payment.creditNotes.map((note) => `${formatDate(note.date)} ${currency.format(note.amount)} - ${escapeHtml(note.reason)}`).join(" | ")}</p>` : ""}
+              ${(payment.discount || 0) > 0 ? `<p>Descuento: ${currency.format(payment.discount)} · ${escapeHtml(payment.discountReason || "Sin motivo")}</p>` : ""}
+              ${payment.voidReason ? `<p>Anulada por ${escapeHtml(userById(payment.voidedBy).name)} · ${escapeHtml(payment.voidReason)}</p>` : ""}
               ${(payment.reprintCount || 0) > 0 ? `<p>Reimpresiones: ${payment.reprintCount}</p>` : ""}
             </div>
             <div class="table-actions">
               <button class="ghost-button pos-action-button ${can("payments:print") ? "" : "permission-hidden"}" data-receipt="${payment.id}">Imprimir</button>
               <button class="ghost-button pos-action-button ${can("payments:print") ? "" : "permission-hidden"}" data-reprint="${payment.id}">Reimprimir</button>
-              <button class="ghost-button pos-action-button ${can("payments:edit") ? "" : "permission-hidden"}" data-convert-quote="${payment.id}" ${payment.documentKind === "CotizaciÃ³n" ? "" : "disabled"}>Convertir</button>
+              <button class="ghost-button pos-action-button ${can("payments:edit") ? "" : "permission-hidden"}" data-convert-quote="${payment.id}" ${payment.documentKind === "Cotización" ? "" : "disabled"}>Convertir</button>
               <button class="ghost-button pos-action-button ${can("payments:edit") ? "" : "permission-hidden"}" data-add-payment="${payment.id}" ${invoiceBalance(payment) > 0 ? "" : "disabled"}>Abono</button>
-              <button class="ghost-button pos-action-button ${can("payments:void") ? "" : "permission-hidden"}" data-credit-note="${payment.id}" ${payment.documentKind === "CotizaciÃ³n" || payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Nota crÃ©dito</button>
+              <button class="ghost-button pos-action-button ${can("payments:void") ? "" : "permission-hidden"}" data-credit-note="${payment.id}" ${payment.documentKind === "Cotización" || payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Nota crédito</button>
               <button class="ghost-button pos-action-button danger ${can("payments:void") ? "" : "permission-hidden"}" data-annul="${payment.id}" ${payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Anular</button>
             </div>
           </article>
@@ -5920,7 +5958,7 @@ function renderBilling() {
             <span class="amount-pill">${currency.format(invoiceBalance(payment))}</span>
             <div>
               <strong>${escapeHtml(patientById(payment.patientId).name)}</strong>
-              <p>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} Â· ${invoiceAgeBucket(payment)} Â· Fecha: ${formatDate(payment.date)}</p>
+              <p>${escapeHtml(payment.invoiceNumber || "FAC-S/N")} · ${invoiceAgeBucket(payment)} · Fecha: ${formatDate(payment.date)}</p>
             </div>
           </article>
         `)
@@ -5968,8 +6006,8 @@ function renderCashClose() {
     detailContainer.innerHTML = `
       <div class="panel-header compact-header">
         <div>
-          <h2>Detalle por cajero y mÃ©todo</h2>
-          <p>Cobros aplicados al cierre del dÃ­a.</p>
+          <h2>Detalle por cajero y método</h2>
+          <p>Cobros aplicados al cierre del día.</p>
         </div>
       </div>
       <div class="cashier-method-grid">${cashCloseDetailTemplate(todayIso)}</div>
@@ -5982,11 +6020,11 @@ function renderCashClose() {
         <span class="amount-pill">${currency.format(closing.expectedTotal || closing.total)}</span>
         <div>
           <strong>Cierre ${formatDate(closing.date)}</strong>
-          <p>Contado ${currency.format(closing.countedAmount ?? closing.expectedTotal ?? closing.total)} Â· Diferencia ${currency.format(closing.difference || 0)} Â· Estado: ${escapeHtml(closing.status || "Cerrada")}</p>
-          <p>Abierta por ${escapeHtml(userById(closing.openedBy).name)} Â· Cerrada por ${escapeHtml(userById(closing.closedBy).name)}</p>
+          <p>Contado ${currency.format(closing.countedAmount ?? closing.expectedTotal ?? closing.total)} · Diferencia ${currency.format(closing.difference || 0)} · Estado: ${escapeHtml(closing.status || "Cerrada")}</p>
+          <p>Abierta por ${escapeHtml(userById(closing.openedBy).name)} · Cerrada por ${escapeHtml(userById(closing.closedBy).name)}</p>
           ${closing.note ? `<p>Nota: ${escapeHtml(closing.note)}</p>` : ""}
-          ${closing.reopenedAt ? `<p>Reabierta por ${escapeHtml(userById(closing.reopenedBy).name)} Â· ${formatDateTime(closing.reopenedAt)}</p>` : ""}
-          <p>Apertura ${currency.format(closing.openingAmount || 0)} Â· Ventas ${currency.format(closing.total)} Â· Usuario: ${escapeHtml(userById(closing.closedBy).name)} Â· Efectivo ${currency.format(closing.totals.Efectivo || 0)} Â· Tarjeta ${currency.format(closing.totals.Tarjeta || 0)} Â· Transferencia ${currency.format(closing.totals.Transferencia || 0)}</p>
+          ${closing.reopenedAt ? `<p>Reabierta por ${escapeHtml(userById(closing.reopenedBy).name)} · ${formatDateTime(closing.reopenedAt)}</p>` : ""}
+          <p>Apertura ${currency.format(closing.openingAmount || 0)} · Ventas ${currency.format(closing.total)} · Usuario: ${escapeHtml(userById(closing.closedBy).name)} · Efectivo ${currency.format(closing.totals.Efectivo || 0)} · Tarjeta ${currency.format(closing.totals.Tarjeta || 0)} · Transferencia ${currency.format(closing.totals.Transferencia || 0)}</p>
           ${closing.cashierMethodTotals ? `<p>${cashierMethodSummaryText(closing.cashierMethodTotals)}</p>` : ""}
         </div>
       </article>
@@ -5998,10 +6036,10 @@ function renderReceivablesAgingReport() {
   const container = document.getElementById("receivablesAgingReport");
   if (!container) return;
   const buckets = {
-    "0-30 dÃ­as": 0,
-    "31-60 dÃ­as": 0,
-    "61-90 dÃ­as": 0,
-    "MÃ¡s de 90 dÃ­as": 0
+    "0-30 días": 0,
+    "31-60 días": 0,
+    "61-90 días": 0,
+    "Más de 90 días": 0
   };
   activeBillingPayments()
     .filter((payment) => invoiceBalance(payment) > 0)
@@ -6034,7 +6072,7 @@ function cashCloseDetailTemplate(date = todayIso) {
 function cashierMethodSummaryText(grouped) {
   return Object.entries(grouped)
     .flatMap(([cashier, methods]) => Object.entries(methods).map(([method, amount]) => `${cashier} / ${method}: ${currency.format(amount)}`))
-    .join(" Â· ");
+    .join(" · ");
 }
 
 function ensureSupplier(name) {
@@ -6196,9 +6234,9 @@ function renderInventory() {
       <article class="ledger-item">
         <span class="amount-pill">${movement.type}</span>
         <div>
-          <strong>${escapeHtml(movement.productName)} Â· ${movement.quantity} unidad(es)</strong>
-          <p>${escapeHtml(movement.reason)} Â· ${formatDate(movement.date)} Â· Stock ${movement.previousStock} -> ${movement.newStock}</p>
-          <p>${movement.reference ? `Ref. ${escapeHtml(movement.reference)} Â· ` : ""}${escapeHtml(movement.provider || "Sin proveedor")}${movement.expiry ? ` Â· Vence ${formatDate(movement.expiry)}` : ""}</p>
+          <strong>${escapeHtml(movement.productName)} · ${movement.quantity} unidad(es)</strong>
+          <p>${escapeHtml(movement.reason)} · ${formatDate(movement.date)} · Stock ${movement.previousStock} -> ${movement.newStock}</p>
+          <p>${movement.reference ? `Ref. ${escapeHtml(movement.reference)} · ` : ""}${escapeHtml(movement.provider || "Sin proveedor")}${movement.expiry ? ` · Vence ${formatDate(movement.expiry)}` : ""}</p>
         </div>
       </article>
     `).join("")
@@ -6210,7 +6248,7 @@ function renderInventory() {
         <span class="amount-pill">${purchase.quantity}</span>
         <div>
           <strong>${escapeHtml(inventoryName(purchase.productId))}</strong>
-          <p>${escapeHtml(purchase.supplier)} Â· ${currency.format(purchase.unitCost || 0)} unidad Â· ${formatDate(purchase.date)}</p>
+          <p>${escapeHtml(purchase.supplier)} · ${currency.format(purchase.unitCost || 0)} unidad · ${formatDate(purchase.date)}</p>
           ${purchase.expiry ? `<p>Vencimiento: ${formatDate(purchase.expiry)}</p>` : ""}
         </div>
       </article>
@@ -6255,15 +6293,15 @@ function renderReports() {
   const cashDifference = cashClosingsInRange.reduce((sum, closing) => sum + Number(closing.difference || 0), 0);
 
   document.getElementById("reportCards").innerHTML = [
-    ["Ingresos del perÃ­odo", currency.format(income), `${billablePayments.length} documentos facturados`, "confirmada"],
+    ["Ingresos del período", currency.format(income), `${billablePayments.length} documentos facturados`, "confirmada"],
     ["Ticket promedio", currency.format(averageTicket), "Promedio por factura o recibo", averageTicket ? "confirmada" : "pendiente"],
     ["Cuentas por cobrar", currency.format(receivable), "Balance pendiente de pacientes", receivable > 0 ? "pendiente" : "confirmada"],
     ["Citas canceladas", cancelled, "Impacto operativo de agenda", cancelled ? "cancelada" : "confirmada"]
   ].map(reportMetricTemplate).join("");
 
   document.getElementById("reportSecondaryCards").innerHTML = [
-    ["Descuentos", currency.format(discounts), "Ajustes aplicados en facturaciÃ³n", discounts ? "pendiente" : "confirmada"],
-    ["Productos", currency.format(productIncome), "Ventas desde almacÃ©n", productIncome ? "confirmada" : "pendiente"],
+    ["Descuentos", currency.format(discounts), "Ajustes aplicados en facturación", discounts ? "pendiente" : "confirmada"],
+    ["Productos", currency.format(productIncome), "Ventas desde almacén", productIncome ? "confirmada" : "pendiente"],
     ["Laboratorio", currency.format(labIncome), "Trabajos facturados a doctores", labIncome ? "confirmada" : "pendiente"],
     ["Diferencia caja", currency.format(cashDifference), `${cashClosingsInRange.length} cierres revisados`, Math.abs(cashDifference) > 0 ? "pendiente" : "confirmada"]
   ].map(reportMetricTemplate).join("");
@@ -6282,8 +6320,8 @@ function renderReports() {
         <span class="report-rank">${appointments}</span>
         <div>
           <strong>${escapeHtml(doctor.name)}</strong>
-          <p>${attended} atendidas Â· ${treatments} tratamientos activos Â· ${currency.format(doctorIncome)}</p>
-          <small>${commission.points} puntos Â· ${commission.procedures} procedimientos completados Â· ${escapeHtml(doctor.specialty)}</small>
+          <p>${attended} atendidas · ${treatments} tratamientos activos · ${currency.format(doctorIncome)}</p>
+          <small>${commission.points} puntos · ${commission.procedures} procedimientos completados · ${escapeHtml(doctor.specialty)}</small>
         </div>
       </article>
     `;
@@ -6302,7 +6340,7 @@ function renderReports() {
   ].map(([label, detail]) => `
     <article class="alert-item report-alert">
       <span class="status-pill pendiente">${label}</span>
-      <div><strong>${detail}</strong><p>Revise el mÃ³dulo correspondiente.</p></div>
+      <div><strong>${detail}</strong><p>Revise el módulo correspondiente.</p></div>
     </article>
   `).join("");
 
@@ -6454,17 +6492,17 @@ function renderPosInvoiceReport(payments = activeBillingPayments()) {
 }
 
 function renderBillingReportList(payments, cashClosings, expectedCash, countedCash) {
-  const byMethod = groupPaymentTotals(payments, (payment) => payment.method || "Sin mÃ©todo");
+  const byMethod = groupPaymentTotals(payments, (payment) => payment.method || "Sin método");
   const byCashier = groupPaymentTotals(payments, (payment) => paymentCashierLabel(payment));
   const agingRows = receivablesAgingRows(payments);
-  const methodRows = reportRankingRows(byMethod, "MÃ©todos de pago");
+  const methodRows = reportRankingRows(byMethod, "Métodos de pago");
   const cashierRows = reportRankingRows(byCashier, "Cajeros");
   const cashStatus = `
     <article class="clinical-item report-list-item">
       <span class="report-rank">${cashClosings.length}</span>
       <div>
         <strong>Cierres de caja</strong>
-        <p>Esperado ${currency.format(expectedCash)} Â· Contado ${currency.format(countedCash)}</p>
+        <p>Esperado ${currency.format(expectedCash)} · Contado ${currency.format(countedCash)}</p>
         <small>Diferencia acumulada ${currency.format(countedCash - expectedCash)}</small>
       </div>
     </article>
@@ -6474,7 +6512,7 @@ function renderBillingReportList(payments, cashClosings, expectedCash, countedCa
     ...agingRows,
     ...methodRows,
     ...cashierRows
-  ].join("") || emptyState("No hay facturaciÃ³n en el perÃ­odo seleccionado.");
+  ].join("") || emptyState("No hay facturación en el período seleccionado.");
 }
 
 function receivablesAgingRows(payments) {
@@ -6491,8 +6529,8 @@ function receivablesAgingRows(payments) {
     <article class="clinical-item report-list-item">
       <span class="report-rank">${item.count}</span>
       <div>
-        <strong>Cuentas por cobrar Â· ${escapeHtml(item.label)}</strong>
-        <p>${item.count} factura(s) Â· ${currency.format(item.total)}</p>
+        <strong>Cuentas por cobrar · ${escapeHtml(item.label)}</strong>
+        <p>${item.count} factura(s) · ${currency.format(item.total)}</p>
       </div>
     </article>
   `);
@@ -6506,9 +6544,9 @@ function renderOperationsReportList(payments, filters) {
   const lowStock = state.inventory.filter((item) => item.stock <= item.min);
   const reportType = filters.type;
   document.getElementById("operationsReportList").innerHTML = [
-    ["Productos facturados", `${productSales} ventas`, reportType === "facturacion" ? "Incluido en el filtro de facturaciÃ³n." : "Incluye ventas desde almacÃ©n."],
+    ["Productos facturados", `${productSales} ventas`, reportType === "facturacion" ? "Incluido en el filtro de facturación." : "Incluye ventas desde almacén."],
     ["Laboratorio pendiente", `${labPending} trabajos`, `${labCompleted} completados o facturados.`],
-    ["Stock crÃ­tico", `${lowStock.length} productos`, lowStock.slice(0, 3).map((item) => item.name).join(", ") || "Sin alertas crÃ­ticas."],
+    ["Stock crítico", `${lowStock.length} productos`, lowStock.slice(0, 3).map((item) => item.name).join(", ") || "Sin alertas críticas."],
     ["Facturas con balance", `${activeBillingPayments().filter((payment) => invoiceBalance(payment) > 0).length} facturas`, currency.format(activeBillingPayments().reduce((sum, payment) => sum + invoiceBalance(payment), 0))]
   ].map(([label, valueText, detail]) => `
     <article class="alert-item report-alert">
@@ -6536,8 +6574,8 @@ function reportRankingRows(grouped, title) {
       <article class="clinical-item report-list-item">
         <span class="report-rank">${index + 1}</span>
         <div>
-          <strong>${escapeHtml(title)} Â· ${escapeHtml(item.label)}</strong>
-          <p>${item.count} documentos Â· ${currency.format(item.total)}</p>
+          <strong>${escapeHtml(title)} · ${escapeHtml(item.label)}</strong>
+          <p>${item.count} documentos · ${currency.format(item.total)}</p>
         </div>
       </article>
     `);
@@ -6569,14 +6607,14 @@ function renderSecurityPanel() {
   const expiresAt = Number(localStorage.getItem("novaclinic-session-expires") || 0);
   const minutesLeft = currentUser && expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 60000)) : 0;
   summary.innerHTML = [
-    ["SesiÃ³n", currentUser ? `${minutesLeft} min` : "Cerrada"],
+    ["Sesión", currentUser ? `${minutesLeft} min` : "Cerrada"],
     ["Bloqueos", lockedUsers],
     ["Intentos fallidos", failedLogins],
     ["Cambios permisos", permissionChanges]
   ].map(panelCardTemplate).join("");
 
   if (!can("security:audit")) {
-    list.innerHTML = emptyState("No tiene permiso para ver la bitÃ¡cora de seguridad.");
+    list.innerHTML = emptyState("No tiene permiso para ver la bitácora de seguridad.");
     return;
   }
 
@@ -6585,7 +6623,7 @@ function renderSecurityPanel() {
       <span class="status-pill ${item.action.includes("failed") || item.action.includes("blocked") ? "cancelada" : "confirmada"}">${escapeHtml(item.action)}</span>
       <div>
         <strong>${escapeHtml(item.detail)}</strong>
-        <p>${formatDateTime(item.at)} Â· Usuario: ${escapeHtml(userById(item.by).name)}${item.targetUserId ? ` Â· Afectado: ${escapeHtml(userById(item.targetUserId).name)}` : ""}</p>
+        <p>${formatDateTime(item.at)} · Usuario: ${escapeHtml(userById(item.by).name)}${item.targetUserId ? ` · Afectado: ${escapeHtml(userById(item.targetUserId).name)}` : ""}</p>
       </div>
     </article>
   `).join("") || emptyState("Sin eventos de seguridad registrados.");
@@ -6613,18 +6651,18 @@ function posInvoiceTicketTemplate(payment, documentTitle = "RECIBO DE PAGO") {
         <img class="ticket-logo" src="NOVACLINIC LOGO.png" alt="NovaClinic">
         <h3>${escapeHtml(settings.clinicName || "NovaClinic")}</h3>
         <p>${escapeHtml(settings.clinicTaxId || "RNC-000000")}</p>
-        <p>${escapeHtml(settings.clinicAddress || "Santo Domingo, RepÃºblica Dominicana")}</p>
-        <p>TelÃ©fono: ${escapeHtml(settings.clinicPhone || "809-555-0100")}</p>
+        <p>${escapeHtml(settings.clinicAddress || "Santo Domingo, República Dominicana")}</p>
+        <p>Teléfono: ${escapeHtml(settings.clinicPhone || "809-555-0100")}</p>
       </div>
       <div class="ticket-separator"></div>
       <div class="ticket-client">
         <strong>${escapeHtml(documentTitle)}</strong>
-        <p>CÃ³digo cliente: ${escapeHtml(patient.code || patient.id || "Sin cÃ³digo")}</p>
+        <p>Código cliente: ${escapeHtml(patient.code || patient.id || "Sin código")}</p>
         <p>Cliente: ${escapeHtml(patient.name)}</p>
         <p>Seguro: ${escapeHtml(patient.insurance || "Sin seguro")}</p>
-        <p>${escapeHtml(patient.address || "DirecciÃ³n no registrada")}</p>
-        <p>TelÃ©fono: ${escapeHtml(patient.phone || "No registrado")}</p>
-        <p>IdentificaciÃ³n: ${escapeHtml(patientDocumentLabel(patient))}</p>
+        <p>${escapeHtml(patient.address || "Dirección no registrada")}</p>
+        <p>Teléfono: ${escapeHtml(patient.phone || "No registrado")}</p>
+        <p>Identificación: ${escapeHtml(patientDocumentLabel(patient))}</p>
       </div>
       <div class="ticket-separator"></div>
       <div class="ticket-invoice-meta">
@@ -6635,8 +6673,8 @@ function posInvoiceTicketTemplate(payment, documentTitle = "RECIBO DE PAGO") {
         <p>Estado: ${escapeHtml(payment.invoiceStatus || "Pagada")}</p>
         <p>Fecha: ${paymentIssuedAtLabel(payment)}</p>
         <p>Referencia: ${escapeHtml(payment.reference || "Sin referencia")}</p>
-        <p>Doctor que atendiÃ³: ${escapeHtml(doctor)}</p>
-        <p>MÃ©todo de pago: ${escapeHtml(payment.method || "Tarjeta")}</p>
+        <p>Doctor que atendió: ${escapeHtml(doctor)}</p>
+        <p>Método de pago: ${escapeHtml(payment.method || "Tarjeta")}</p>
         <p>Vendedor: ${escapeHtml(seller)}</p>
       </div>
       <div class="ticket-items">
@@ -6644,7 +6682,7 @@ function posInvoiceTicketTemplate(payment, documentTitle = "RECIBO DE PAGO") {
           <span>Producto/Proc.</span><span>Cant.</span><span>Precio</span><span>Total</span>
         </div>
         <div class="ticket-item-row">
-          <span>${escapeHtml(payment.concept || "Servicio odontolÃ³gico")}</span>
+          <span>${escapeHtml(payment.concept || "Servicio odontológico")}</span>
           <span>${quantity}</span>
           <span>${currency.format(unit)}</span>
           <span>${currency.format(invoiceGross)}</span>
@@ -6665,7 +6703,7 @@ function posInvoiceTicketTemplate(payment, documentTitle = "RECIBO DE PAGO") {
         <strong>${escapeHtml(seller)}</strong>
       </div>
       <div class="ticket-footer">
-        <p>Todos nuestros servicios cuentan con garantÃ­a segÃºn la polÃ­tica de la clÃ­nica.</p>
+        <p>Todos nuestros servicios cuentan con garantía según la política de la clínica.</p>
         <p>Gracias por su compra.</p>
         <small>Generado en NovaClinic POS</small>
       </div>
@@ -6759,7 +6797,7 @@ function nextNcf(invoiceType) {
 }
 
 function activeBillingPayments(payments = state.payments) {
-  return payments.filter((payment) => payment.invoiceStatus !== "Anulada" && payment.documentKind !== "CotizaciÃ³n");
+  return payments.filter((payment) => payment.invoiceStatus !== "Anulada" && payment.documentKind !== "Cotización");
 }
 
 function invoiceNetAmount(payment) {
@@ -6780,7 +6818,7 @@ function invoiceCreditAmount(payment) {
 }
 
 function invoiceBalance(payment) {
-  if (payment.invoiceStatus === "Anulada" || payment.documentKind === "CotizaciÃ³n") return 0;
+  if (payment.invoiceStatus === "Anulada" || payment.documentKind === "Cotización") return 0;
   return Math.max(0, invoiceNetAmount(payment) - invoicePaidAmount(payment) - invoiceCreditAmount(payment));
 }
 
@@ -6888,10 +6926,10 @@ function cashierMethodTotals(date = null) {
 function receivableAgeBucket(dateValue) {
   if (!dateValue) return "Sin fecha";
   const days = Math.max(0, Math.floor((new Date(`${todayIso}T12:00:00`) - new Date(`${dateValue}T12:00:00`)) / 86400000));
-  if (days <= 30) return "0-30 dÃ­as";
-  if (days <= 60) return "31-60 dÃ­as";
-  if (days <= 90) return "61-90 dÃ­as";
-  return "MÃ¡s de 90 dÃ­as";
+  if (days <= 30) return "0-30 días";
+  if (days <= 60) return "31-60 días";
+  if (days <= 90) return "61-90 días";
+  return "Más de 90 días";
 }
 
 function receivableAgeDays(dateValue) {
@@ -6901,16 +6939,16 @@ function receivableAgeDays(dateValue) {
 
 function topPaymentMethod(methodTotals) {
   const entries = Object.entries(methodTotals).sort((a, b) => b[1] - a[1]);
-  return entries[0] ? `${entries[0][0]} Â· ${currency.format(entries[0][1])}` : "Sin cobros";
+  return entries[0] ? `${entries[0][0]} · ${currency.format(entries[0][1])}` : "Sin cobros";
 }
 
 function openReceipt(paymentId) {
   if (!can("payments:print")) return;
   const payment = state.payments.find((item) => item.id === paymentId);
   if (!payment) return;
-  const title = payment.documentKind === "CotizaciÃ³n" ? "COTIZACIÃ“N" : "RECIBO DE PAGO";
+  const title = payment.documentKind === "Cotización" ? "COTIZACION" : "RECIBO DE PAGO";
   document.getElementById("receiptContent").innerHTML = posInvoiceTicketTemplate(payment, title);
-  logAudit("print:receipt", `ImprimiÃ³ ${payment.invoiceNumber || payment.receiptNumber || "documento"}`, payment.cashierId || payment.createdBy);
+  logAudit("print:receipt", `Imprimió ${payment.invoiceNumber || payment.receiptNumber || "documento"}`, payment.cashierId || payment.createdBy);
   document.getElementById("receiptDialog").showModal();
 }
 
@@ -6925,7 +6963,7 @@ function reprintInvoice(paymentId) {
     by: currentUser?.id || "sin-usuario"
   });
   saveState();
-  logAudit("print:reprint", `ReimpresiÃ³ ${payment.invoiceNumber || payment.receiptNumber || "documento"}`, payment.cashierId || payment.createdBy);
+  logAudit("print:reprint", `Reimpresió ${payment.invoiceNumber || payment.receiptNumber || "documento"}`, payment.cashierId || payment.createdBy);
   openReceipt(paymentId);
   renderBilling();
 }
@@ -6934,9 +6972,9 @@ function annulInvoice(paymentId) {
   if (!can("payments:void")) return;
   const payment = state.payments.find((item) => item.id === paymentId);
   if (!payment || payment.invoiceStatus === "Anulada") return;
-  const reason = prompt("Motivo de anulaciÃ³n de la factura");
+  const reason = prompt("Motivo de anulación de la factura");
   if (!reason) return;
-  if (payment.documentKind !== "CotizaciÃ³n") {
+  if (payment.documentKind !== "Cotización") {
     const patient = patientById(payment.patientId);
     patient.balance = Math.max(0, patient.balance - invoiceBalance(payment));
     if (payment.type === "Producto" && payment.productId) {
@@ -6954,7 +6992,7 @@ function annulInvoice(paymentId) {
   payment.voidReason = reason;
   payment.voidedAt = new Date().toISOString();
   payment.voidedBy = currentUser?.id || "sin-usuario";
-  logAudit("billing:void", `AnulÃ³ ${payment.invoiceNumber || payment.receiptNumber || "factura"}: ${reason}`, payment.patientId);
+  logAudit("billing:void", `Anuló ${payment.invoiceNumber || payment.receiptNumber || "factura"}: ${reason}`, payment.patientId);
   saveState();
   renderBilling();
 }
@@ -6962,13 +7000,13 @@ function annulInvoice(paymentId) {
 function convertQuoteToInvoice(paymentId) {
   if (!can("payments:edit")) return;
   const payment = state.payments.find((item) => item.id === paymentId);
-  if (!payment || payment.documentKind !== "CotizaciÃ³n") return;
-  const invoiceType = prompt("Tipo de factura para convertir la cotizaciÃ³n", "Consumidor Final");
+  if (!payment || payment.documentKind !== "Cotización") return;
+  const invoiceType = prompt("Tipo de factura para convertir la cotización", "Consumidor Final");
   if (!invoiceType) return;
   if (payment.type === "Producto" && payment.productId) {
     const product = state.inventory.find((item) => item.id === payment.productId);
     if (!product || product.stock < Number(payment.quantity || 1)) {
-      alert(`Stock insuficiente para convertir la cotizaciÃ³n. Disponible: ${product?.stock || 0}.`);
+      alert(`Stock insuficiente para convertir la cotización. Disponible: ${product?.stock || 0}.`);
       return;
     }
   }
@@ -6991,7 +7029,7 @@ function convertQuoteToInvoice(paymentId) {
       reference: payment.invoiceNumber || payment.id
     });
   }
-  logAudit("billing:convert", `ConvirtiÃ³ cotizaciÃ³n a factura ${payment.invoiceNumber}`, payment.patientId);
+  logAudit("billing:convert", `Convirtió cotización a factura ${payment.invoiceNumber}`, payment.patientId);
   saveState();
   renderBilling();
 }
@@ -7010,7 +7048,7 @@ function addInvoicePayment(paymentId) {
     alert("El abono no puede ser mayor al balance pendiente.");
     return;
   }
-  const method = prompt("MÃ©todo de pago", payment.method || "Efectivo") || payment.method || "Efectivo";
+  const method = prompt("Método de pago", payment.method || "Efectivo") || payment.method || "Efectivo";
   const reference = prompt("Referencia del abono", "") || "";
   payment.paymentHistory ||= [];
   payment.paymentHistory.unshift({
@@ -7029,7 +7067,7 @@ function addInvoicePayment(paymentId) {
   payment.updatedBy = currentUser?.id || "sin-usuario";
   const patient = patientById(payment.patientId);
   patient.balance = Math.max(0, patient.balance - amount);
-  logAudit("billing:payment", `RegistrÃ³ abono ${currency.format(amount)} a ${payment.invoiceNumber || "factura"}`, payment.patientId);
+  logAudit("billing:payment", `Registró abono ${currency.format(amount)} a ${payment.invoiceNumber || "factura"}`, payment.patientId);
   saveState();
   renderBilling();
 }
@@ -7037,13 +7075,13 @@ function addInvoicePayment(paymentId) {
 function createCreditNote(paymentId) {
   if (!can("payments:void")) return;
   const payment = state.payments.find((item) => item.id === paymentId);
-  if (!payment || payment.invoiceStatus === "Anulada" || payment.documentKind === "CotizaciÃ³n") return;
-  const reason = prompt("Motivo obligatorio de la nota de crÃ©dito");
+  if (!payment || payment.invoiceStatus === "Anulada" || payment.documentKind === "Cotización") return;
+  const reason = prompt("Motivo obligatorio de la nota de crédito");
   if (!reason) return;
   const available = Math.max(0, invoiceNetAmount(payment) - invoiceCreditAmount(payment));
-  const amount = Number(prompt(`Monto de la nota de crÃ©dito. Disponible: ${currency.format(available)}`, String(Math.min(available, invoiceBalance(payment) || available))));
+  const amount = Number(prompt(`Monto de la nota de crédito. Disponible: ${currency.format(available)}`, String(Math.min(available, invoiceBalance(payment) || available))));
   if (!amount || amount <= 0 || amount > available) {
-    alert("Monto de nota de crÃ©dito invÃ¡lido.");
+    alert("Monto de nota de crédito inválido.");
     return;
   }
   payment.creditNotes ||= [];
@@ -7056,12 +7094,12 @@ function createCreditNote(paymentId) {
     createdAt: new Date().toISOString(),
     createdBy: currentUser?.id || "sin-usuario"
   });
-  payment.invoiceStatus = invoiceBalance(payment) <= 0 ? "Nota de crÃ©dito" : "Parcialmente pagada";
+  payment.invoiceStatus = invoiceBalance(payment) <= 0 ? "Nota de crédito" : "Parcialmente pagada";
   payment.updatedAt = new Date().toISOString();
   payment.updatedBy = currentUser?.id || "sin-usuario";
   const patient = patientById(payment.patientId);
   patient.balance = Math.max(0, patient.balance - amount);
-  logAudit("billing:credit-note", `CreÃ³ nota de crÃ©dito ${currency.format(amount)}: ${reason}`, payment.patientId);
+  logAudit("billing:credit-note", `Creó nota de crédito ${currency.format(amount)}: ${reason}`, payment.patientId);
   saveState();
   renderBilling();
 }
@@ -7076,7 +7114,7 @@ function appointmentTemplate(appointment) {
       <span class="time-chip">${appointment.time}</span>
       <div>
         <strong>${escapeHtml(patientById(appointment.patientId).name)}</strong>
-        <p>${escapeHtml(appointment.type)} Â· ${escapeHtml(doctorById(appointment.doctorId).name)} Â· ${escapeHtml(appointment.reminder || "Sin recordatorio")}</p>
+        <p>${escapeHtml(appointment.type)} · ${escapeHtml(doctorById(appointment.doctorId).name)} · ${escapeHtml(appointment.reminder || "Sin recordatorio")}</p>
       </div>
       <span class="status-pill ${className(appointment.status)}">${escapeHtml(appointment.status)}</span>
     </article>
@@ -7146,7 +7184,7 @@ function patientAge(birthdate) {
   if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < birth.getDate())) {
     age -= 1;
   }
-  return `${age} aÃ±os`;
+  return `${age} años`;
 }
 
 function patientAgeNumber(birthdate) {
@@ -7234,7 +7272,7 @@ function className(text) {
 }
 
 function emptyState(message) {
-  return `<article class="alert-item"><div><strong>${message}</strong><p>Agrega informaciÃ³n para verla aquÃ­.</p></div></article>`;
+  return `<article class="alert-item"><div><strong>${message}</strong><p>Agrega información para verla aquí.</p></div></article>`;
 }
 
 function escapeHtml(valueText) {
