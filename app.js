@@ -234,6 +234,8 @@ const seedState = {
   payroll: [],
   payrollNovelties: [],
   payrollRuns: [],
+  auditLog: [],
+  securityLocks: {},
   hrAttendance: [],
   hrVacations: [],
   hrShifts: [],
@@ -429,6 +431,14 @@ let editingAppointmentId = null;
 let patientCameraStream = null;
 let capturedPatientPhoto = "";
 let selectedSelfServicePatientId = null;
+let sessionExpiryTimer = null;
+
+const securityConfig = {
+  maxLoginAttempts: 3,
+  lockoutMinutes: 5,
+  sessionMinutes: 30,
+  minPinLength: 4
+};
 
 const currency = new Intl.NumberFormat("es-DO", {
   style: "currency",
@@ -566,6 +576,8 @@ function normalizeState(loadedState) {
   next.hrShifts = Array.isArray(next.hrShifts) && next.hrShifts.length ? next.hrShifts : cloneSeed().hrShifts;
   next.hrEvaluations ||= [];
   next.payrollRuns ||= [];
+  next.auditLog ||= [];
+  next.securityLocks ||= {};
   next.payrollNovelties = (next.payrollNovelties || []).map((item) => ({
     period: currentPayrollPeriod(),
     ...item
@@ -700,33 +712,43 @@ function bindNavigation() {
 
 function bindAuth() {
   populateUserLogin();
+  ["click", "keydown", "change"].forEach((eventName) => {
+    document.addEventListener(eventName, () => {
+      if (currentUser && !isSessionExpired()) extendSession();
+    });
+  });
 
   document.getElementById("loginForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const user = users.find((item) => item.id === value("userLogin"));
     const pin = value("userPin");
+    const lockMessage = user ? loginLockMessage(user.id) : "";
 
-    if (!user || user.pin !== pin) {
-      document.getElementById("loginError").textContent = "PIN incorrecto para el usuario seleccionado.";
+    if (lockMessage) {
+      document.getElementById("loginError").textContent = lockMessage;
+      logAudit("login:blocked", `Intento bloqueado para ${user.name}`, user.id);
       return;
     }
 
+    if (!user || user.pin !== pin) {
+      registerFailedLogin(user?.id || "sin-usuario");
+      document.getElementById("loginError").textContent = loginLockMessage(user?.id) || "PIN incorrecto para el usuario seleccionado.";
+      logAudit("login:failed", `PIN incorrecto para ${user?.name || "usuario no identificado"}`, user?.id || "sin-usuario");
+      return;
+    }
+
+    clearLoginFailures(user.id);
     localStorage.setItem("novaclinic-current-user", user.id);
+    localStorage.setItem("novaclinic-session-expires", sessionExpiryValue());
     localStorage.removeItem("novaclinic-current-doctor");
     document.getElementById("userPin").value = "";
     document.getElementById("loginError").textContent = "";
+    logAudit("login:success", `Inicio de sesión de ${user.name}`, user.id);
     applyUserSession(user);
   });
 
   document.getElementById("logoutButton").addEventListener("click", () => {
-    localStorage.removeItem("novaclinic-current-user");
-    localStorage.removeItem("novaclinic-current-doctor");
-    currentUser = null;
-    document.getElementById("appShell").classList.add("is-locked");
-    document.getElementById("loginScreen").classList.remove("is-hidden");
-    document.getElementById("currentShift").textContent = "Sin sesion";
-    document.getElementById("currentShiftMeta").textContent = "Selecciona un usuario para entrar";
-    document.getElementById("doctorBadge").textContent = "Sin sesion";
+    lockSession("logout", "Cierre de sesión manual");
   });
 }
 
@@ -744,6 +766,10 @@ function populateUserLogin() {
 function restoreSession() {
   const userId = localStorage.getItem("novaclinic-current-user") || localStorage.getItem("novaclinic-current-doctor");
   const user = users.find((item) => item.id === userId);
+  if (user && isSessionExpired()) {
+    lockSession("session:expired", "Sesión expirada por seguridad");
+    return;
+  }
   if (user) {
     applyUserSession(user);
     return;
@@ -755,6 +781,7 @@ function restoreSession() {
 
 function applyUserSession(user) {
   currentUser = user;
+  extendSession();
   document.getElementById("appShell").classList.remove("is-locked");
   document.getElementById("loginScreen").classList.add("is-hidden");
   document.getElementById("currentShift").textContent = user.name;
@@ -762,6 +789,89 @@ function applyUserSession(user) {
   document.getElementById("doctorBadge").textContent = `${user.name} · ${user.role}`;
   applyPermissions();
   render();
+}
+
+function lockSession(reason = "logout", detail = "Sesión cerrada") {
+  if (currentUser) logAudit(reason, detail, currentUser.id);
+  clearTimeout(sessionExpiryTimer);
+  localStorage.removeItem("novaclinic-current-user");
+  localStorage.removeItem("novaclinic-current-doctor");
+  localStorage.removeItem("novaclinic-session-expires");
+  currentUser = null;
+  document.getElementById("appShell").classList.add("is-locked");
+  document.getElementById("loginScreen").classList.remove("is-hidden");
+  document.getElementById("currentShift").textContent = "Sin sesion";
+  document.getElementById("currentShiftMeta").textContent = "Selecciona un usuario para entrar";
+  document.getElementById("doctorBadge").textContent = "Sin sesion";
+}
+
+function sessionExpiryValue() {
+  return String(Date.now() + securityConfig.sessionMinutes * 60000);
+}
+
+function isSessionExpired() {
+  const expiresAt = Number(localStorage.getItem("novaclinic-session-expires") || 0);
+  return !expiresAt || Date.now() > expiresAt;
+}
+
+function extendSession() {
+  clearTimeout(sessionExpiryTimer);
+  localStorage.setItem("novaclinic-session-expires", sessionExpiryValue());
+  sessionExpiryTimer = setTimeout(() => lockSession("session:expired", "Sesión expirada por inactividad"), securityConfig.sessionMinutes * 60000);
+}
+
+function loginLockMessage(userId) {
+  if (!userId) return "";
+  const lock = state.securityLocks?.[userId];
+  if (!lock?.lockedUntil) return "";
+  const lockedUntil = Number(lock.lockedUntil);
+  if (Date.now() >= lockedUntil) {
+    clearLoginFailures(userId);
+    return "";
+  }
+  const minutes = Math.ceil((lockedUntil - Date.now()) / 60000);
+  return `Usuario bloqueado por seguridad. Intente de nuevo en ${minutes} min.`;
+}
+
+function registerFailedLogin(userId) {
+  if (!userId) return;
+  state.securityLocks ||= {};
+  const lock = state.securityLocks[userId] || { attempts: 0 };
+  lock.attempts = Number(lock.attempts || 0) + 1;
+  lock.lastFailedAt = new Date().toISOString();
+  if (lock.attempts >= securityConfig.maxLoginAttempts) {
+    lock.lockedUntil = Date.now() + securityConfig.lockoutMinutes * 60000;
+  }
+  state.securityLocks[userId] = lock;
+  saveState();
+}
+
+function clearLoginFailures(userId) {
+  if (!userId || !state.securityLocks) return;
+  delete state.securityLocks[userId];
+  saveState();
+}
+
+function isValidPin(pin) {
+  return new RegExp(`^\\d{${securityConfig.minPinLength},}$`).test(String(pin || ""));
+}
+
+function logAudit(action, detail, targetUserId = "") {
+  if (!state?.auditLog) return;
+  state.auditLog.unshift({
+    id: makeId(),
+    action,
+    detail,
+    targetUserId,
+    by: currentUser?.id || targetUserId || "sistema",
+    at: new Date().toISOString()
+  });
+  state.auditLog = state.auditLog.slice(0, 120);
+  saveState();
+}
+
+function safeUsersForExport() {
+  return users.map((user) => ({ ...user, pin: "****" }));
 }
 
 function openUserForm(userId = null) {
@@ -802,7 +912,12 @@ function saveUserFromForm() {
   user.specialty = value("newUserSpecialty") || user.role;
   user.room = value("newUserRoom") || "Sin ubicación";
   user.shift = value("newUserShift") || "Sin turno asignado";
-  user.pin = value("newUserPin");
+  const pin = value("newUserPin");
+  if (!isValidPin(pin)) {
+    alert(`El PIN debe tener al menos ${securityConfig.minPinLength} numeros.`);
+    return null;
+  }
+  user.pin = pin;
 
   if (!existing) {
     users.push(user);
@@ -825,6 +940,7 @@ function saveUserFromForm() {
 
   saveUsers();
   upsertPayrollForUser(user);
+  logAudit(existing ? "users:update" : "users:create", `${existing ? "Actualizó" : "Creó"} usuario ${user.name}`, user.id);
   if (currentUser?.id === user.id) applyUserSession(user);
   return user;
 }
@@ -1212,6 +1328,7 @@ function bindForms() {
     event.preventDefault();
     if (currentUser?.role !== "Administrador") return;
     const savedUser = saveUserFromForm();
+    if (!savedUser) return;
     selectedUserId = savedUser.id;
     closeUserForm();
     populateUserLogin();
@@ -1692,6 +1809,10 @@ function bindForms() {
   document.getElementById("printClinicalRecord").addEventListener("click", () => window.print());
   document.getElementById("printReports").addEventListener("click", () => window.print());
   document.getElementById("reportFilterForm").addEventListener("change", renderReports);
+  document.getElementById("reportFilterForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    renderReports();
+  });
 
   document.getElementById("clinicSettingsForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1708,7 +1829,9 @@ function bindForms() {
   });
 
   document.getElementById("exportData").addEventListener("click", () => {
-    const payload = JSON.stringify({ state, users, userPermissionOverrides }, null, 2);
+    if (!can("settings:manage")) return;
+    logAudit("data:export", "Exportación de respaldo JSON");
+    const payload = JSON.stringify({ state, users: safeUsersForExport(), userPermissionOverrides }, null, 2);
     const blob = new Blob([payload], { type: "application/json" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -1727,6 +1850,7 @@ function bindForms() {
     userPermissionOverrides = loadUserPermissionOverrides();
     selectedUserId = "admin";
     state = cloneSeed();
+    logAudit("data:reset", "Restauración de datos demo");
     populateUserLogin();
     persistAndRender();
   });
@@ -1777,6 +1901,8 @@ function applyPermissions() {
   toggleAction("clinicalDocumentForm", "clinical-documents:create");
   toggleAction("inventoryForm", "inventory:manage");
   toggleAction("clinicSettingsForm", "settings:manage");
+  toggleAction("exportData", "settings:manage");
+  toggleAction("resetDemoData", "settings:manage");
   toggleAction("markPayrollPaid", "payroll:manage");
   toggleAction("processPayrollMonth", "payroll:manage");
   toggleAction("payrollNoveltyForm", "payroll:manage");
@@ -1863,6 +1989,7 @@ function render() {
   renderBilling();
   renderInventory();
   renderReports();
+  renderSecurityPanel();
   renderAdmin();
 }
 
@@ -2906,6 +3033,7 @@ function updateUserPermission(input) {
     scope: nextPermissions.scope
   };
   saveUserPermissionOverrides();
+  logAudit("permissions:view", `${input.checked ? "Habilitó" : "Deshabilitó"} módulo ${viewName} para ${userById(userId).name}`, userId);
   renderHrPanel();
   applyPermissions();
   render();
@@ -2931,6 +3059,7 @@ function updateUserActionPermission(input) {
     scope: nextPermissions.scope
   };
   saveUserPermissionOverrides();
+  logAudit("permissions:action", `${input.checked ? "Habilitó" : "Deshabilitó"} acción ${action} para ${user.name}`, userId);
   applyPermissions();
   render();
 }
@@ -2944,6 +3073,7 @@ function updateUserPermissionScope(userId, scope) {
     scope: scope === "own" ? "own" : "all"
   };
   saveUserPermissionOverrides();
+  logAudit("permissions:scope", `Cambió alcance a ${scope} para ${userById(userId).name}`, userId);
   applyPermissions();
   render();
 }
@@ -2958,6 +3088,7 @@ function applyPermissionProfile(userId, profileRole) {
     scope: defaults.scope
   };
   saveUserPermissionOverrides();
+  logAudit("permissions:profile", `Aplicó perfil ${profileRole} a ${userById(userId).name}`, userId);
   applyPermissions();
   render();
 }
@@ -2966,6 +3097,7 @@ function resetPermissionProfile(userId) {
   if (userId === "admin") return;
   delete userPermissionOverrides[userId];
   saveUserPermissionOverrides();
+  logAudit("permissions:reset", `Restableció permisos de ${userById(userId).name}`, userId);
   applyPermissions();
   render();
 }
@@ -4462,9 +4594,18 @@ function renderInventory() {
 
 function renderReports() {
   const filters = reportFilters();
-  const billablePayments = activeBillingPayments().filter((payment) => inReportRange(payment.date, filters));
-  const appointmentsInRange = state.appointments.filter((appointment) => inReportRange(appointment.date, filters));
+  let billablePayments = activeBillingPayments().filter((payment) => inReportRange(payment.date, filters));
+  let appointmentsInRange = state.appointments.filter((appointment) => inReportRange(appointment.date, filters));
   const cashClosingsInRange = (state.cashClosings || []).filter((closing) => inReportRange(closing.date, filters));
+  if (filters.type === "laboratorio") {
+    billablePayments = billablePayments.filter((payment) => payment.type === "Laboratorio" || payment.laboratoryRequestId);
+  }
+  if (filters.type === "doctores") {
+    billablePayments = billablePayments.filter((payment) => payment.attendedDoctorId || payment.doctorId);
+  }
+  if (filters.type === "caja") {
+    appointmentsInRange = [];
+  }
   const income = billablePayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
   const discounts = billablePayments.reduce((sum, payment) => sum + Number(payment.discount || 0), 0);
   const cancelled = appointmentsInRange.filter((appointment) => appointment.status === "Cancelada").length;
@@ -4546,6 +4687,113 @@ function renderPosInvoiceReport(payments = activeBillingPayments()) {
   document.getElementById("posInvoiceTickets").innerHTML = posInvoices.length
     ? posInvoices.map((payment) => posInvoiceTicketTemplate(payment, "FACTURA POS")).join("")
     : emptyState("No hay facturas POS/POST registradas.");
+}
+
+function renderBillingReportList(payments, cashClosings, expectedCash, countedCash) {
+  const byMethod = groupPaymentTotals(payments, (payment) => payment.method || "Sin método");
+  const byCashier = groupPaymentTotals(payments, (payment) => paymentCashierLabel(payment));
+  const methodRows = reportRankingRows(byMethod, "Métodos de pago");
+  const cashierRows = reportRankingRows(byCashier, "Cajeros");
+  const cashStatus = `
+    <article class="clinical-item report-list-item">
+      <span class="report-rank">${cashClosings.length}</span>
+      <div>
+        <strong>Cierres de caja</strong>
+        <p>Esperado ${currency.format(expectedCash)} · Contado ${currency.format(countedCash)}</p>
+        <small>Diferencia acumulada ${currency.format(countedCash - expectedCash)}</small>
+      </div>
+    </article>
+  `;
+  document.getElementById("billingReportList").innerHTML = [
+    cashStatus,
+    ...methodRows,
+    ...cashierRows
+  ].join("") || emptyState("No hay facturación en el período seleccionado.");
+}
+
+function renderOperationsReportList(payments, filters) {
+  const productSales = payments.filter((payment) => payment.type === "Producto").length;
+  const labRequests = (state.selfServiceRequests || []).filter((request) => request.type === "Laboratorio - pieza dental");
+  const labCompleted = labRequests.filter((request) => ["Completada", "Entregada", "Facturada"].includes(request.status)).length;
+  const labPending = labRequests.filter((request) => !["Completada", "Entregada", "Facturada", "Cancelada"].includes(request.status)).length;
+  const lowStock = state.inventory.filter((item) => item.stock <= item.min);
+  const reportType = filters.type;
+  document.getElementById("operationsReportList").innerHTML = [
+    ["Productos facturados", `${productSales} ventas`, reportType === "facturacion" ? "Incluido en el filtro de facturación." : "Incluye ventas desde almacén."],
+    ["Laboratorio pendiente", `${labPending} trabajos`, `${labCompleted} completados o facturados.`],
+    ["Stock crítico", `${lowStock.length} productos`, lowStock.slice(0, 3).map((item) => item.name).join(", ") || "Sin alertas críticas."],
+    ["Pacientes con balance", `${state.patients.filter((patient) => patient.balance > 0).length} pacientes`, currency.format(state.patients.reduce((sum, patient) => sum + patient.balance, 0))]
+  ].map(([label, valueText, detail]) => `
+    <article class="alert-item report-alert">
+      <span class="status-pill pendiente">${label}</span>
+      <div><strong>${escapeHtml(valueText)}</strong><p>${escapeHtml(detail)}</p></div>
+    </article>
+  `).join("");
+}
+
+function groupPaymentTotals(payments, labelFactory) {
+  return payments.reduce((summary, payment) => {
+    const label = labelFactory(payment);
+    if (!summary[label]) summary[label] = { label, total: 0, count: 0 };
+    summary[label].total += Number(payment.amount || 0);
+    summary[label].count += 1;
+    return summary;
+  }, {});
+}
+
+function reportRankingRows(grouped, title) {
+  return Object.values(grouped)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5)
+    .map((item, index) => `
+      <article class="clinical-item report-list-item">
+        <span class="report-rank">${index + 1}</span>
+        <div>
+          <strong>${escapeHtml(title)} · ${escapeHtml(item.label)}</strong>
+          <p>${item.count} documentos · ${currency.format(item.total)}</p>
+        </div>
+      </article>
+    `);
+}
+
+function reportFilters() {
+  return {
+    start: document.getElementById("reportStartDate")?.value || `${todayIso.slice(0, 8)}01`,
+    end: document.getElementById("reportEndDate")?.value || todayIso,
+    type: document.getElementById("reportTypeFilter")?.value || "general"
+  };
+}
+
+function inReportRange(dateText, filters = reportFilters()) {
+  if (!dateText) return true;
+  return dateText >= filters.start && dateText <= filters.end;
+}
+
+function renderSecurityPanel() {
+  const summary = document.getElementById("securitySummary");
+  const list = document.getElementById("securityAuditList");
+  if (!summary || !list) return;
+  const lockedUsers = Object.values(state.securityLocks || {}).filter((lock) => Number(lock.lockedUntil || 0) > Date.now()).length;
+  const failedLogins = (state.auditLog || []).filter((item) => item.action === "login:failed").length;
+  const permissionChanges = (state.auditLog || []).filter((item) => item.action.startsWith("permissions:")).length;
+  const expiresAt = Number(localStorage.getItem("novaclinic-session-expires") || 0);
+  const minutesLeft = currentUser && expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 60000)) : 0;
+  summary.innerHTML = [
+    ["Sesión", currentUser ? `${minutesLeft} min` : "Cerrada"],
+    ["Bloqueos", lockedUsers],
+    ["Intentos fallidos", failedLogins],
+    ["Cambios permisos", permissionChanges]
+  ].map(panelCardTemplate).join("");
+
+  list.innerHTML = (state.auditLog || []).slice(0, 12).map((item) => `
+    <article class="ledger-item security-audit-item">
+      <span class="status-pill ${item.action.includes("failed") || item.action.includes("blocked") ? "cancelada" : "confirmada"}">${escapeHtml(item.action)}</span>
+      <div>
+        <strong>${escapeHtml(item.detail)}</strong>
+        <p>${formatDateTime(item.at)} · Usuario: ${escapeHtml(userById(item.by).name)}${item.targetUserId ? ` · Afectado: ${escapeHtml(userById(item.targetUserId).name)}` : ""}</p>
+      </div>
+    </article>
+  `).join("") || emptyState("Sin eventos de seguridad registrados.");
 }
 
 function posInvoiceTicketTemplate(payment, documentTitle = "RECIBO DE PAGO") {

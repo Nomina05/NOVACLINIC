@@ -1066,6 +1066,16 @@
                 <button class="ghost-button" id="resetDemoData" type="button">Restaurar demo</button>
               </div>
             </section>
+            <section class="panel wide">
+              <div class="panel-header">
+                <div>
+                  <h2>Seguridad</h2>
+                  <p>Sesiones, bloqueos, auditoría y controles de acceso.</p>
+                </div>
+              </div>
+              <div class="panel-card-grid compact-payroll-summary" id="securitySummary"></div>
+              <div class="ledger security-audit-list" id="securityAuditList"></div>
+            </section>
           </div>
         </section>
 
@@ -1350,7 +1360,7 @@
         </div>
         <div class="form-grid">
           <label>Nombre<input id="newUserName" required></label>
-          <label>PIN<input id="newUserPin" inputmode="numeric" required></label>
+          <label>PIN<input id="newUserPin" inputmode="numeric" pattern="[0-9]{4,}" minlength="4" required></label>
           <label>Rol
             <select id="newUserRole">
               <option>Doctor</option>
