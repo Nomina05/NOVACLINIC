@@ -1070,7 +1070,12 @@
                 <input id="cashOpeningNote" placeholder="Observación">
                 <button class="primary-button" type="submit">Abrir caja</button>
               </form>
-              <button class="primary-button" id="closeCashRegister" type="button">Cerrar caja de hoy</button>
+              <form class="inline-form" id="cashCloseForm">
+                <input id="cashCountedAmount" type="number" min="0" step="100" placeholder="Efectivo contado" required>
+                <input id="cashCloseNote" placeholder="Observación del arqueo">
+                <button class="primary-button" id="closeCashRegister" type="submit">Cerrar caja</button>
+              </form>
+              <button class="ghost-button" id="reopenCashRegister" type="button">Reabrir caja cerrada</button>
             </div>
             <div class="panel-card-grid" id="cashCloseSummary"></div>
             <div class="ledger" id="cashCloseHistory"></div>

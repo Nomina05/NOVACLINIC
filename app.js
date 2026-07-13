@@ -94,7 +94,7 @@ let users = loadUsers();
 const rolePermissions = {
   Administrador: {
     views: ["dashboard", "receptionPanel", "usersPanel", "hrPanel", "laboratoryPanel", "accountingPanel", "patients", "selfService", "agenda", "odontogram", "treatments", "billing", "inventory", "reports", "adminPanel"],
-    actions: ["patients:create", "appointments:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress", "payments:create", "payroll:manage", "users:create", "inventory:manage", "settings:manage", "selfservice:clinical", "selfservice:employee", "selfservice:manage", "laboratory:manage"],
+    actions: ["patients:create", "appointments:create", "appointments:confirm", "odontogram:edit", "clinical-documents:create", "treatments:create", "treatments:progress", "payments:create", "cash:reopen", "payroll:manage", "users:create", "inventory:manage", "settings:manage", "selfservice:clinical", "selfservice:employee", "selfservice:manage", "laboratory:manage"],
     scope: "all"
   },
   Doctor: {
@@ -518,13 +518,20 @@ function normalizeState(loadedState) {
     attendedDoctorId: payment.doctorId || "",
     invoiceType: "Consumidor Final",
     invoiceStatus: "Pagada",
+    amountReceived: Number(payment.amount || 0),
     ncf: "",
     reprintCount: 0,
     reprints: [],
     ...payment
   }));
   next.cashOpenings ||= [];
-  next.cashClosings ||= [];
+  next.cashClosings = (next.cashClosings || []).map((closing) => ({
+    status: "Cerrada",
+    totals: {},
+    countedAmount: closing.expectedCash ?? closing.expectedTotal ?? closing.total ?? 0,
+    difference: 0,
+    ...closing
+  }));
   next.hrAttendance ||= [];
   next.hrVacations ||= [];
   next.hrShifts = Array.isArray(next.hrShifts) && next.hrShifts.length ? next.hrShifts : cloneSeed().hrShifts;
@@ -1082,8 +1089,10 @@ function bindForms() {
     updatePatientPhotoPreview(capturedPatientPhoto);
   });
   document.getElementById("paymentType").addEventListener("change", syncPaymentProductFields);
+  document.getElementById("paymentMethod").addEventListener("change", syncPaymentReceivedRequirement);
   document.getElementById("paymentProduct").addEventListener("change", syncSelectedProductSale);
   document.getElementById("paymentQuantity").addEventListener("input", syncSelectedProductSale);
+  syncPaymentReceivedRequirement();
   document.getElementById("patientBirthdate").addEventListener("change", syncPatientDocumentRequirement);
   document.getElementById("patientIsMinor").addEventListener("change", syncPatientDocumentRequirement);
   dialog.addEventListener("close", () => {
@@ -1218,6 +1227,16 @@ function bindForms() {
     const discount = Number(value("paymentDiscount")) || 0;
     const invoiceType = value("paymentInvoiceType");
     const isQuote = invoiceType === "Cotización";
+    const method = value("paymentMethod");
+    const amountReceived = Number(value("paymentReceived")) || 0;
+    if (!isQuote && !currentCashOpening()) {
+      alert("Debe abrir la caja antes de registrar cobros.");
+      return;
+    }
+    if (!isQuote && method === "Efectivo" && amountReceived < amount) {
+      alert("En pagos en efectivo el monto recibido es obligatorio y no puede ser menor al total facturado.");
+      return;
+    }
     const receiptNumber = nextReceiptNumber();
     const invoiceNumber = nextInvoiceNumber();
     const ncf = isQuote ? "" : nextNcf(invoiceType);
@@ -1232,10 +1251,10 @@ function bindForms() {
       billedToPatientId: billTo === "patient" ? patient.id : "",
       createdBy: cashierId,
       amount,
-      amountReceived: Number(value("paymentReceived")) || amount,
+      amountReceived: amountReceived || amount,
       discount,
       discountReason: value("paymentDiscountReason"),
-      method: value("paymentMethod"),
+      method,
       reference: value("paymentReference"),
       receiptNumber,
       invoiceNumber,
@@ -1260,6 +1279,7 @@ function bindForms() {
     event.target.reset();
     document.getElementById("paymentCashier").value = currentUser?.id || "";
     syncPaymentProductFields();
+    syncPaymentReceivedRequirement();
     persistAndRender();
   });
 
@@ -1269,6 +1289,11 @@ function bindForms() {
     state.cashOpenings ||= [];
     if (currentCashOpening()) {
       alert("Ya existe una caja abierta para hoy.");
+      return;
+    }
+    const closedToday = (state.cashClosings || []).find((closing) => closing.date === todayIso && closing.status !== "Reabierta");
+    if (closedToday) {
+      alert("La caja de hoy ya fue cerrada. Use Reabrir caja cerrada con permiso especial.");
       return;
     }
     state.cashOpenings.unshift({
@@ -1284,7 +1309,8 @@ function bindForms() {
     persistAndRender();
   });
 
-  document.getElementById("closeCashRegister").addEventListener("click", () => {
+  document.getElementById("cashCloseForm").addEventListener("submit", (event) => {
+    event.preventDefault();
     if (!can("payments:create")) return;
     state.cashClosings ||= [];
     const opening = currentCashOpening();
@@ -1294,6 +1320,9 @@ function bindForms() {
     }
     const totals = paymentMethodTotals(todayIso);
     const total = Object.values(totals).reduce((sum, amountValue) => sum + amountValue, 0);
+    const expectedTotal = total + (opening?.openingAmount || 0);
+    const expectedCash = (opening?.openingAmount || 0) + (totals.Efectivo || 0);
+    const countedAmount = Number(value("cashCountedAmount")) || 0;
     state.cashClosings.unshift({
       id: makeId(),
       date: todayIso,
@@ -1301,14 +1330,44 @@ function bindForms() {
       openingAmount: opening?.openingAmount || 0,
       totals,
       total,
-      expectedTotal: total + (opening?.openingAmount || 0),
+      expectedTotal,
+      expectedCash,
+      countedAmount,
+      difference: countedAmount - expectedCash,
+      note: value("cashCloseNote"),
+      openedBy: opening?.openedBy || "",
       closedBy: currentUser?.id || "sin-usuario",
-      closedAt: new Date().toISOString()
+      closedAt: new Date().toISOString(),
+      status: "Cerrada"
     });
     if (opening) {
       opening.status = "Cerrada";
       opening.closedAt = new Date().toISOString();
     }
+    event.target.reset();
+    persistAndRender();
+  });
+
+  document.getElementById("reopenCashRegister").addEventListener("click", () => {
+    if (!can("cash:reopen")) return;
+    if (currentCashOpening()) {
+      alert("Ya existe una caja abierta.");
+      return;
+    }
+    const closing = (state.cashClosings || []).find((item) => item.date === todayIso && item.status !== "Reabierta");
+    if (!closing) {
+      alert("No hay una caja cerrada hoy para reabrir.");
+      return;
+    }
+    const opening = (state.cashOpenings || []).find((item) => item.id === closing.openingId);
+    if (opening) {
+      opening.status = "Abierta";
+      opening.reopenedAt = new Date().toISOString();
+      opening.reopenedBy = currentUser?.id || "sin-usuario";
+    }
+    closing.status = "Reabierta";
+    closing.reopenedAt = new Date().toISOString();
+    closing.reopenedBy = currentUser?.id || "sin-usuario";
     persistAndRender();
   });
 
@@ -1578,7 +1637,8 @@ function applyPermissions() {
   toggleAction("treatmentForm", "treatments:create");
   toggleAction("paymentForm", "payments:create");
   toggleAction("cashOpeningForm", "payments:create");
-  toggleAction("closeCashRegister", "payments:create");
+  toggleAction("cashCloseForm", "payments:create");
+  toggleAction("reopenCashRegister", "cash:reopen");
   toggleAction("toothStatus", "odontogram:edit");
   toggleAction("toothSurface", "odontogram:edit");
   toggleAction("updateToothButton", "odontogram:edit");
@@ -3556,16 +3616,28 @@ function renderCashClose() {
   const opening = currentCashOpening();
   const lastClosing = (state.cashClosings || []).find((closing) => closing.date === todayIso);
   const openingAmount = opening?.openingAmount || lastClosing?.openingAmount || 0;
+  const expectedTotal = openingAmount + total;
+  const expectedCash = openingAmount + (totals.Efectivo || 0);
+  const changeTotal = cashChangeTotal(todayIso);
   document.getElementById("cashCloseSummary").innerHTML = [
     ["Estado", opening ? "Caja abierta" : lastClosing ? "Caja cerrada" : "Sin apertura"],
     ["Monto inicial", currency.format(openingAmount)],
     ["Ventas de hoy", currency.format(total)],
-    ["Total esperado", currency.format(openingAmount + total)],
+    ["Total esperado", currency.format(expectedTotal)],
+    ["Efectivo esperado", currency.format(lastClosing?.expectedCash ?? expectedCash)],
+    ["Efectivo contado", lastClosing?.countedAmount !== undefined ? currency.format(lastClosing.countedAmount) : "Pendiente"],
+    ["Diferencia", lastClosing?.difference !== undefined ? currency.format(lastClosing.difference) : "Pendiente"],
+    ["Devuelto", currency.format(changeTotal)],
     ["Efectivo", currency.format(totals.Efectivo || 0)],
     ["Tarjeta", currency.format(totals.Tarjeta || 0)],
     ["Transferencia", currency.format(totals.Transferencia || 0)],
     ["Seguro", currency.format(totals.Seguro || 0)]
   ].map(panelCardTemplate).join("");
+
+  const closeButton = document.getElementById("closeCashRegister");
+  const reopenButton = document.getElementById("reopenCashRegister");
+  if (closeButton) closeButton.disabled = !opening;
+  if (reopenButton) reopenButton.disabled = Boolean(opening) || !lastClosing;
 
   document.getElementById("cashCloseHistory").innerHTML = (state.cashClosings || []).length
     ? state.cashClosings.slice(0, 5).map((closing) => `
@@ -3573,6 +3645,10 @@ function renderCashClose() {
         <span class="amount-pill">${currency.format(closing.expectedTotal || closing.total)}</span>
         <div>
           <strong>Cierre ${formatDate(closing.date)}</strong>
+          <p>Contado ${currency.format(closing.countedAmount ?? closing.expectedTotal ?? closing.total)} · Diferencia ${currency.format(closing.difference || 0)} · Estado: ${escapeHtml(closing.status || "Cerrada")}</p>
+          <p>Abierta por ${escapeHtml(userById(closing.openedBy).name)} · Cerrada por ${escapeHtml(userById(closing.closedBy).name)}</p>
+          ${closing.note ? `<p>Nota: ${escapeHtml(closing.note)}</p>` : ""}
+          ${closing.reopenedAt ? `<p>Reabierta por ${escapeHtml(userById(closing.reopenedBy).name)} · ${formatDateTime(closing.reopenedAt)}</p>` : ""}
           <p>Apertura ${currency.format(closing.openingAmount || 0)} · Ventas ${currency.format(closing.total)} · Usuario: ${escapeHtml(userById(closing.closedBy).name)} · Efectivo ${currency.format(closing.totals.Efectivo || 0)} · Tarjeta ${currency.format(closing.totals.Tarjeta || 0)} · Transferencia ${currency.format(closing.totals.Transferencia || 0)}</p>
         </div>
       </article>
@@ -3865,6 +3941,13 @@ function syncSelectedProductSale() {
   document.getElementById("paymentAmount").value = (Number(product.price) || 0) * quantity;
 }
 
+function syncPaymentReceivedRequirement() {
+  const receivedInput = document.getElementById("paymentReceived");
+  const isCash = value("paymentMethod") === "Efectivo";
+  receivedInput.required = isCash;
+  receivedInput.placeholder = isCash ? "Monto recibido obligatorio" : "Monto recibido";
+}
+
 function currentCashOpening() {
   state.cashOpenings ||= [];
   return state.cashOpenings.find((opening) => opening.date === todayIso && opening.status === "Abierta");
@@ -3892,6 +3975,16 @@ function paymentMethodTotals(date = null) {
       summary[payment.method] = (summary[payment.method] || 0) + Number(payment.amount || 0);
       return summary;
     }, {});
+}
+
+function cashChangeTotal(date = null) {
+  return activeBillingPayments()
+    .filter((payment) => payment.method === "Efectivo")
+    .filter((payment) => !date || payment.date === date)
+    .reduce((sum, payment) => {
+      const received = Number(payment.amountReceived || payment.amount || 0);
+      return sum + Math.max(0, received - Number(payment.amount || 0));
+    }, 0);
 }
 
 function receivableAgeBucket(dateValue) {
