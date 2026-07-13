@@ -1808,6 +1808,7 @@ function bindForms() {
 
   document.getElementById("printClinicalRecord").addEventListener("click", () => window.print());
   document.getElementById("printReports").addEventListener("click", () => window.print());
+  document.getElementById("exportReports").addEventListener("click", exportReportsCsv);
   document.getElementById("reportFilterForm").addEventListener("change", renderReports);
   document.getElementById("reportFilterForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -2010,6 +2011,8 @@ function populateSelects() {
     .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} · ${escapeHtml(user.role)}</option>`)
     .join("");
 
+  const cashierUsers = users.filter((user) => ["Administrador", "RecepciÃ³n", "Contabilidad"].includes(user.role));
+
   ["appointmentPatient", "odontogramPatient", "treatmentPatient", "paymentPatient", "selfRequestPatient"].forEach((id) => {
     const select = document.getElementById(id);
     const current = select.value;
@@ -2041,6 +2044,26 @@ function populateSelects() {
       paymentCashier.value = current;
     } else if (currentUser) {
       paymentCashier.value = currentUser.id;
+    }
+  }
+
+  const reportDoctorFilter = document.getElementById("reportDoctorFilter");
+  if (reportDoctorFilter) {
+    const current = reportDoctorFilter.value;
+    reportDoctorFilter.innerHTML = `<option value="all">Todos</option>${doctorOptions}`;
+    if (current && (current === "all" || doctors.some((doctor) => doctor.id === current))) {
+      reportDoctorFilter.value = current;
+    }
+  }
+
+  const reportCashierFilter = document.getElementById("reportCashierFilter");
+  if (reportCashierFilter) {
+    const current = reportCashierFilter.value;
+    reportCashierFilter.innerHTML = `<option value="all">Todos</option>${cashierUsers
+      .map((user) => `<option value="${user.id}">${escapeHtml(user.name)} Â· ${escapeHtml(user.role)}</option>`)
+      .join("")}`;
+    if (current && (current === "all" || cashierUsers.some((user) => user.id === current))) {
+      reportCashierFilter.value = current;
     }
   }
 
@@ -3273,6 +3296,16 @@ function panelCardTemplate([label, valueText]) {
   `;
 }
 
+function cashFlowCardTemplate([label, valueText, detail, status = "neutral"]) {
+  return `
+    <article class="cash-flow-card ${status}">
+      <span>${label}</span>
+      <strong>${valueText}</strong>
+      <p>${detail}</p>
+    </article>
+  `;
+}
+
 function renderPanelModules(containerId, panelView) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -4074,6 +4107,7 @@ function renderAgenda() {
     .filter((appointment) => statusFilter === "Todas" || appointment.status === statusFilter)
     .sort(sortByDateTime)
   document.getElementById("calendarCaption").textContent = agendaCaption(range, viewMode);
+  document.getElementById("agendaStatusLegend").innerHTML = agendaStatusLegendTemplate();
   document.getElementById("monthCalendar").innerHTML = renderMonthCalendar(dateFilter);
   document.getElementById("calendarDay").innerHTML = renderAgendaCalendar(appointments, dateFilter, viewMode, range);
 
@@ -4100,6 +4134,8 @@ function renderAgenda() {
     : emptyState("No hay citas con estos filtros.");
 
   document.querySelectorAll("[data-status-appointment]").forEach((select) => {
+    const card = select.closest(".schedule-item");
+    if (card) card.classList.add("appointment-card", className(select.value));
     select.addEventListener("change", () => {
       if (!can("appointments:confirm")) return;
       const appointment = state.appointments.find((item) => item.id === select.dataset.statusAppointment);
@@ -4147,6 +4183,12 @@ function renderAgendaCalendar(appointments, dateFilter, viewMode, range) {
   return renderCalendarDay(appointments, dateFilter);
 }
 
+function agendaStatusLegendTemplate() {
+  return ["Confirmada", "Pendiente", "Cancelada", "No asistió", "Atendida", "Lista de espera"]
+    .map((status) => `<span class="agenda-legend-item ${className(status)}"><i></i>${escapeHtml(status)}</span>`)
+    .join("");
+}
+
 function renderWeekCalendar(appointments, range) {
   const start = new Date(`${range.start}T12:00:00`);
   const days = Array.from({ length: 7 }, (_, index) => {
@@ -4175,10 +4217,14 @@ function renderMonthAgendaSummary(appointments, range) {
     const iso = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(index + 1).padStart(2, "0")}`;
     const dayAppointments = appointments.filter((appointment) => appointment.date === iso);
     const waitlist = dayAppointments.filter((appointment) => appointment.status === "Lista de espera").length;
+    const confirmed = dayAppointments.filter((appointment) => appointment.status === "Confirmada").length;
+    const pending = dayAppointments.filter((appointment) => appointment.status === "Pendiente").length;
+    const cancelled = dayAppointments.filter((appointment) => ["Cancelada", "No asistió"].includes(appointment.status)).length;
     return `
       <article class="agenda-month-summary ${dayAppointments.length ? "has-items" : ""}">
         <strong>${index + 1}</strong>
         <span>${dayAppointments.length} cita(s)</span>
+        ${dayAppointments.length ? `<div class="agenda-month-dots"><i class="confirmada">${confirmed}</i><i class="pendiente">${pending}</i><i class="cancelada">${cancelled}</i></div>` : ""}
         ${waitlist ? `<small>${waitlist} en espera</small>` : ""}
       </article>
     `;
@@ -4240,8 +4286,14 @@ function renderCalendarDay(appointments, dateFilter) {
 function calendarAppointmentTemplate(appointment) {
   return `
     <article class="calendar-chip ${className(appointment.status)}">
-      <strong>${appointment.time}</strong>
-      <span>${escapeHtml(patientById(appointment.patientId).name)}</span>
+      <div class="calendar-chip-time">
+        <strong>${appointment.time}</strong>
+        <small>${appointment.duration || 30} min</small>
+      </div>
+      <div>
+        <span>${escapeHtml(patientById(appointment.patientId).name)}</span>
+        <small>${escapeHtml(doctorById(appointment.doctorId).name)} · ${escapeHtml(appointment.type || "Cita")}</small>
+      </div>
     </article>
   `;
 }
@@ -4302,16 +4354,85 @@ function renderOdontogram() {
   document.getElementById("toothSummary").innerHTML = odontogramStatuses()
     .map((status) => `
       <div class="summary-row">
-        <span class="status-pill ${status}">${labelStatus(status)}</span>
+        <span class="status-pill ${className(status)}">${labelStatus(status)}</span>
         <strong>${counts[status] || 0}</strong>
       </div>
     `)
     .join("");
 
+  document.getElementById("odontogramLegend").innerHTML = odontogramLegendTemplate();
+  renderSelectedToothPanel(patientId, chart);
   renderOdontogramHistory(patientId);
   renderOdontogramComparison(patientId, teeth);
   renderClinicalRecord(patientId);
   refreshSelectedToothHint();
+}
+
+function odontogramLegendTemplate() {
+  return [
+    ["sano", "Sano"],
+    ["caries", "Caries"],
+    ["restaurado", "Restaurado"],
+    ["corona", "Corona"],
+    ["implante", "Implante"],
+    ["ausente", "Extraccion"]
+  ]
+    .map(([status, label]) => `
+      <span class="odontogram-legend-item ${className(status)}">
+        <i aria-hidden="true"></i>
+        ${label}
+      </span>
+    `)
+    .join("");
+}
+
+function renderSelectedToothPanel(patientId, chart) {
+  const panel = document.getElementById("selectedToothPanel");
+  if (!panel) return;
+
+  if (!selectedTooth) {
+    panel.innerHTML = emptyState("Selecciona un diente para ver su historial.");
+    return;
+  }
+
+  const entry = chart[selectedTooth];
+  const status = toothDisplayStatus(entry);
+  const surfaces = entry && typeof entry === "object"
+    ? Object.entries(entry.surfaces || {})
+        .filter(([, surfaceStatus]) => surfaceStatus)
+        .map(([surface, surfaceStatus]) => `
+          <span>
+            ${escapeHtml(surface)}
+            <strong>${labelStatus(surfaceStatus)}</strong>
+          </span>
+        `)
+        .join("")
+    : "";
+  const history = (state.odontogramHistory || [])
+    .filter((item) => item.patientId === patientId && item.tooth === selectedTooth)
+    .slice(0, 6);
+
+  panel.innerHTML = `
+    <div class="selected-tooth-panel-header">
+      <div>
+        <span>Pieza seleccionada</span>
+        <strong>${escapeHtml(selectedTooth)}</strong>
+      </div>
+      <span class="status-pill ${className(status)}">${labelStatus(status)}</span>
+    </div>
+    <div class="selected-tooth-surfaces">
+      ${surfaces || "<span>Pieza completa <strong>Sin superficies marcadas</strong></span>"}
+    </div>
+    <div class="selected-tooth-timeline">
+      <strong>Historial de la pieza</strong>
+      ${history.length ? history.map((item) => `
+        <article>
+          <span>${formatDate(item.date)}</span>
+          <p>${escapeHtml(item.surface)} - ${labelStatus(item.status)} - ${escapeHtml(userById(item.userId).name)}</p>
+        </article>
+      `).join("") : "<p>Sin cambios registrados para esta pieza.</p>"}
+    </div>
+  `;
 }
 
 function renderOdontogramHistory(patientId) {
@@ -4445,10 +4566,10 @@ function selectTooth(tooth) {
 function toothTemplate(tooth, status, arch, rawStatus) {
   const selected = selectedTooth === String(tooth) ? " selected" : "";
   const surfaceMarkers = typeof rawStatus === "object" && rawStatus?.surfaces
-    ? Object.entries(rawStatus.surfaces).map(([surface, surfaceStatus]) => `<span class="surface-dot ${surface} ${surfaceStatus}" title="${surface}: ${surfaceStatus}"></span>`).join("")
+    ? Object.entries(rawStatus.surfaces).map(([surface, surfaceStatus]) => `<span class="surface-dot ${surface} ${className(surfaceStatus)}" title="${surface}: ${labelStatus(surfaceStatus)}"></span>`).join("")
     : "";
   return `
-    <button class="tooth ${status}${selected}" data-tooth="${tooth}" title="Pieza ${tooth}: ${labelStatus(status)}">
+    <button class="tooth ${className(status)}${selected}" data-tooth="${tooth}" data-status="${className(status)}" title="Pieza ${tooth}: ${labelStatus(status)}" aria-label="Pieza ${tooth}, estado ${labelStatus(status)}">
       <span class="tooth-shape ${arch}"></span>
       <span class="surface-map">${surfaceMarkers}</span>
       <span class="tooth-number">${tooth}</span>
@@ -4671,9 +4792,9 @@ function renderBilling() {
               ${(payment.reprintCount || 0) > 0 ? `<p>Reimpresiones: ${payment.reprintCount}</p>` : ""}
             </div>
             <div class="table-actions">
-              <button class="ghost-button" data-receipt="${payment.id}">Recibo</button>
-              <button class="ghost-button" data-reprint="${payment.id}">Reimprimir</button>
-              <button class="ghost-button" data-annul="${payment.id}" ${payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Anular</button>
+              <button class="ghost-button pos-action-button" data-receipt="${payment.id}">Imprimir</button>
+              <button class="ghost-button pos-action-button" data-reprint="${payment.id}">Reimprimir</button>
+              <button class="ghost-button pos-action-button danger" data-annul="${payment.id}" ${payment.invoiceStatus === "Anulada" ? "disabled" : ""}>Anular</button>
             </div>
           </article>
         `)
@@ -4705,6 +4826,14 @@ function renderBilling() {
         .join("")
     : emptyState("No hay balances pendientes.");
 
+  const previewPayment = billablePayments[0];
+  const posPreview = document.getElementById("posReceiptPreview");
+  if (posPreview) {
+    posPreview.innerHTML = previewPayment
+      ? posInvoiceTicketTemplate(previewPayment, "RECIBO DE PAGO")
+      : emptyState("No hay recibos para mostrar.");
+  }
+
   renderCashClose();
 }
 
@@ -4718,19 +4847,15 @@ function renderCashClose() {
   const expectedCash = openingAmount + (totals.Efectivo || 0);
   const changeTotal = cashChangeTotal(todayIso);
   document.getElementById("cashCloseSummary").innerHTML = [
-    ["Estado", opening ? "Caja abierta" : lastClosing ? "Caja cerrada" : "Sin apertura"],
-    ["Monto inicial", currency.format(openingAmount)],
-    ["Ventas de hoy", currency.format(total)],
-    ["Total esperado", currency.format(expectedTotal)],
-    ["Efectivo esperado", currency.format(lastClosing?.expectedCash ?? expectedCash)],
-    ["Efectivo contado", lastClosing?.countedAmount !== undefined ? currency.format(lastClosing.countedAmount) : "Pendiente"],
-    ["Diferencia", lastClosing?.difference !== undefined ? currency.format(lastClosing.difference) : "Pendiente"],
-    ["Devuelto", currency.format(changeTotal)],
-    ["Efectivo", currency.format(totals.Efectivo || 0)],
-    ["Tarjeta", currency.format(totals.Tarjeta || 0)],
-    ["Transferencia", currency.format(totals.Transferencia || 0)],
-    ["Seguro", currency.format(totals.Seguro || 0)]
-  ].map(panelCardTemplate).join("");
+    ["Caja", opening ? "Abierta" : lastClosing ? "Cerrada" : "Sin abrir", opening ? "Lista para facturar y cobrar" : lastClosing ? "Cierre registrado hoy" : "Abra caja para iniciar cobros", opening ? "open" : lastClosing ? "closed" : "warning"],
+    ["Total esperado", currency.format(expectedTotal), "Monto inicial + ventas del dia", "primary"],
+    ["Efectivo esperado", currency.format(lastClosing?.expectedCash ?? expectedCash), "Apertura + cobros en efectivo", "primary"],
+    ["Efectivo contado", lastClosing?.countedAmount !== undefined ? currency.format(lastClosing.countedAmount) : "Pendiente", lastClosing?.countedAmount !== undefined ? "Arqueo registrado" : "Digite el conteo antes de cerrar", lastClosing?.countedAmount !== undefined ? "open" : "warning"],
+    ["Diferencia", lastClosing?.difference !== undefined ? currency.format(lastClosing.difference) : "Pendiente", lastClosing?.difference !== undefined ? "Contado - esperado" : "Se calcula al cerrar caja", lastClosing?.difference === 0 ? "open" : lastClosing?.difference !== undefined ? "danger" : "warning"],
+    ["Devuelto", currency.format(changeTotal), "Cambio entregado en efectivo", "neutral"],
+    ["Tarjeta", currency.format(totals.Tarjeta || 0), "Cobros por POS/POST", "neutral"],
+    ["Transferencia", currency.format(totals.Transferencia || 0), "Cobros bancarios", "neutral"]
+  ].map(cashFlowCardTemplate).join("");
 
   const closeButton = document.getElementById("closeCashRegister");
   const reopenButton = document.getElementById("reopenCashRegister");
@@ -4798,6 +4923,16 @@ function renderReports() {
   if (filters.type === "caja") {
     appointmentsInRange = [];
   }
+  if (filters.doctor !== "all") {
+    billablePayments = billablePayments.filter((payment) => (payment.attendedDoctorId || payment.doctorId) === filters.doctor);
+    appointmentsInRange = appointmentsInRange.filter((appointment) => appointment.doctorId === filters.doctor);
+  }
+  if (filters.cashier !== "all") {
+    billablePayments = billablePayments.filter((payment) => (payment.cashierId || payment.createdBy) === filters.cashier);
+  }
+  if (filters.invoiceType !== "all") {
+    billablePayments = billablePayments.filter((payment) => normalizeText(payment.invoiceType || "Consumidor Final") === normalizeText(filters.invoiceType));
+  }
   const income = billablePayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
   const discounts = billablePayments.reduce((sum, payment) => sum + Number(payment.discount || 0), 0);
   const cancelled = appointmentsInRange.filter((appointment) => appointment.status === "Cancelada").length;
@@ -4823,6 +4958,8 @@ function renderReports() {
     ["Laboratorio", currency.format(labIncome), "Trabajos facturados a doctores", labIncome ? "confirmada" : "pendiente"],
     ["Diferencia caja", currency.format(cashDifference), `${cashClosingsInRange.length} cierres revisados`, Math.abs(cashDifference) > 0 ? "pendiente" : "confirmada"]
   ].map(reportMetricTemplate).join("");
+
+  renderReportCharts(billablePayments, appointmentsInRange);
 
   document.getElementById("doctorProductivity").innerHTML = doctors.map((doctor) => {
     const appointments = appointmentsInRange.filter((appointment) => appointment.doctorId === doctor.id).length;

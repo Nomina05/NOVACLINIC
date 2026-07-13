@@ -754,6 +754,7 @@
             </label>
             <button class="ghost-button" id="todayAgendaButton" type="button">Hoy</button>
           </div>
+          <div class="agenda-status-legend" id="agendaStatusLegend"></div>
           <div class="agenda-layout">
             <section class="panel">
               <div class="panel-header">
@@ -913,6 +914,8 @@
                   <p>Estado actual por condición.</p>
                 </div>
               </div>
+              <div class="odontogram-legend" id="odontogramLegend" aria-label="Leyenda de estados dentales"></div>
+              <div class="selected-tooth-panel" id="selectedToothPanel"></div>
               <div class="status-summary" id="toothSummary"></div>
               <div class="status-summary odontogram-compare" id="odontogramComparison"></div>
               <div class="clinical-list odontogram-history" id="odontogramHistory"></div>
@@ -981,11 +984,56 @@
                   <option value="laboratorio">Laboratorio</option>
                 </select>
               </label>
+              <label>
+                Doctor
+                <select id="reportDoctorFilter"></select>
+              </label>
+              <label>
+                Cajero
+                <select id="reportCashierFilter"></select>
+              </label>
+              <label>
+                Factura
+                <select id="reportInvoiceTypeFilter">
+                  <option value="all">Todas</option>
+                  <option>Consumidor Final</option>
+                  <option>Gubernamental</option>
+                  <option>Comprobante Fiscal</option>
+                  <option>Credito Fiscal</option>
+                  <option>Regimen Especial</option>
+                  <option>Cotizacion</option>
+                </select>
+              </label>
             </form>
-            <button class="ghost-button" id="printReports" type="button">Imprimir reportes</button>
+            <div class="report-actions">
+              <button class="ghost-button" id="exportReports" type="button">Exportar CSV</button>
+              <button class="ghost-button" id="printReports" type="button">Imprimir reportes</button>
+            </div>
           </div>
           <div class="report-command-grid" id="reportCards"></div>
           <div class="report-command-grid report-command-grid-secondary" id="reportSecondaryCards"></div>
+          <section class="panel report-panel report-chart-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Graficas gerenciales</h2>
+                <p>Ingresos por dia, metodos de pago y productividad por doctor.</p>
+              </div>
+            </div>
+            <div class="report-chart-grid">
+              <div class="report-chart-card">
+                <h3>Ingresos por dia</h3>
+                <div class="simple-chart" id="incomeByDayChart"></div>
+              </div>
+              <div class="report-chart-card">
+                <h3>Metodos de pago</h3>
+                <div class="simple-chart" id="paymentMethodChart"></div>
+              </div>
+              <div class="report-chart-card">
+                <h3>Productividad por doctor</h3>
+                <div class="simple-chart" id="doctorProductivityChart"></div>
+              </div>
+            </div>
+          </section>
           <div class="report-layout">
             <section class="panel report-panel wide">
               <div class="panel-header">
@@ -1173,7 +1221,7 @@
                 <option>Parcialmente pagada</option>
               </select>
               <input id="paymentReference" placeholder="Referencia opcional">
-              <button class="primary-button" type="submit">Registrar pago</button>
+              <button class="primary-button" type="submit">Facturar y cobrar</button>
             </form>
           </div>
           <div class="billing-summary" id="billingSummary"></div>
@@ -1195,6 +1243,15 @@
                 </div>
               </div>
               <div class="alert-list" id="balanceList"></div>
+              <div class="pos-preview-block">
+                <div class="panel-header compact-header">
+                  <div>
+                    <h2>Vista previa POS</h2>
+                    <p>Ultimo recibo generado.</p>
+                  </div>
+                </div>
+                <div id="posReceiptPreview"></div>
+              </div>
             </section>
           </div>
           <section class="panel payroll-section">
