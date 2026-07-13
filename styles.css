@@ -1,10 +1,10 @@
 ﻿:root {
-  --bg: #f4f8fb;
+  --bg: #f6fafc;
   --surface: #ffffff;
   --surface-soft: #eef9fb;
   --ink: #0b2545;
   --muted: #617386;
-  --line: #d8e4ec;
+  --line: #e2edf2;
   --green: #18b6b8;
   --green-dark: #0b2545;
   --blue: #0b4f8a;
@@ -22,7 +22,8 @@
   --info-bg: #e8f6fb;
   --info-border: #9edce4;
   --info-ink: #0b4f8a;
-  --shadow: 0 14px 34px rgba(11, 37, 69, .08);
+  --shadow: 0 8px 22px rgba(11, 37, 69, .045);
+  --shadow-soft: 0 4px 14px rgba(11, 37, 69, .035);
   --turquoise: #18b6b8;
   --navy: #0b2545;
 }
@@ -358,7 +359,7 @@ button {
 
 .main {
   min-width: 0;
-  padding: 28px;
+  padding: 32px;
 }
 
 .topbar,
@@ -372,7 +373,7 @@ button {
 
 .topbar {
   position: relative;
-  margin-bottom: 26px;
+  margin-bottom: 30px;
   align-items: flex-start;
 }
 
@@ -383,12 +384,12 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: -10px 0 22px;
+  margin: -8px 0 28px;
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, .94);
-  box-shadow: 0 14px 34px rgba(15, 42, 64, .08);
+  box-shadow: var(--shadow-soft);
   backdrop-filter: blur(8px);
 }
 
@@ -521,7 +522,7 @@ p {
   text-align: left;
   background: #fff;
   color: var(--ink);
-  box-shadow: 0 8px 24px rgba(15, 42, 64, .06);
+  box-shadow: none;
 }
 
 .top-notification strong {
@@ -650,7 +651,7 @@ p {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  box-shadow: 0 22px 60px rgba(15, 42, 64, .18);
+  box-shadow: 0 10px 28px rgba(15, 42, 64, .08);
 }
 
 .global-search-results.active {
@@ -737,6 +738,34 @@ p {
   background: #123b66;
 }
 
+.primary-action {
+  min-height: 46px;
+  padding: 0 18px;
+  border-color: rgba(24, 182, 184, .28);
+  background: linear-gradient(135deg, var(--navy), #0b4f8a);
+  box-shadow: 0 8px 18px rgba(11, 37, 69, .14);
+  font-weight: 900;
+}
+
+.primary-action:hover {
+  background: linear-gradient(135deg, #123b66, var(--turquoise));
+  transform: translateY(-1px);
+}
+
+.primary-action::before {
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  color: var(--navy);
+  background: #fff;
+  font-size: 13px;
+}
+
+.section-toolbar > .primary-action,
+.panel-header > .primary-action {
+  align-self: center;
+}
+
 .ghost-button {
   color: var(--navy);
   background: #eef9fb;
@@ -797,6 +826,22 @@ p {
   content: "$";
 }
 
+#addPatientToolbar::before {
+  content: "+";
+}
+
+#updateToothButton::before {
+  content: "O";
+}
+
+#paymentForm .primary-action::before {
+  content: "$";
+}
+
+.cash-action::before {
+  content: "$";
+}
+
 .icon-button {
   width: 40px;
   padding: 0;
@@ -811,7 +856,7 @@ p {
 
 .view.active {
   display: grid;
-  gap: 22px;
+  gap: 28px;
 }
 
 .metric-grid {
@@ -830,11 +875,11 @@ p {
 
 .panel-card,
 .staff-card {
-  padding: 18px;
+  padding: 20px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
 }
 
 .panel-card span {
@@ -855,7 +900,7 @@ p {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: linear-gradient(135deg, #ffffff, #eef9fb);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
 }
 
 .report-kicker {
@@ -1014,7 +1059,7 @@ p {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
 }
 
 .report-metric-card strong,
@@ -1632,7 +1677,7 @@ p {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
 }
 
 .hr-month-card strong {
@@ -1712,11 +1757,11 @@ p {
 
 .task-flow-strip {
   margin: 16px 0;
-  padding: 14px;
+  padding: 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
-  box-shadow: var(--shadow);
+  box-shadow: none;
   display: grid;
   grid-template-columns: minmax(180px, .35fr) minmax(0, 1fr);
   gap: 14px;
@@ -1751,7 +1796,7 @@ p {
   min-width: 0;
   min-height: 92px;
   padding: 12px;
-  border: 1px solid var(--line);
+  border: 1px solid #e7f0f4;
   border-radius: 8px;
   background: #fbfdff;
   display: grid;
@@ -1762,7 +1807,7 @@ p {
 
 .task-flow-step:hover {
   border-color: var(--turquoise);
-  box-shadow: 0 10px 24px rgba(24, 182, 184, .12);
+  box-shadow: var(--shadow-soft);
 }
 
 .task-flow-step strong,
@@ -1795,7 +1840,7 @@ p {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, .86);
-  box-shadow: 0 10px 26px rgba(22, 38, 31, .06);
+  box-shadow: none;
 }
 
 .dashboard-detail-tab {
@@ -1847,7 +1892,7 @@ p {
   border: 1px solid #cfe1d8;
   border-radius: 8px;
   background: #ffffff;
-  box-shadow: var(--shadow);
+  box-shadow: none;
   text-align: left;
   cursor: pointer;
   overflow: hidden;
@@ -1907,7 +1952,7 @@ p {
   border: 1px solid #cfe1d8;
   border-radius: 8px;
   background: linear-gradient(90deg, #ffffff, #f2fbfa);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1942,7 +1987,7 @@ p {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
 }
 
 .metric-card {
@@ -2048,7 +2093,7 @@ p {
 }
 
 .panel {
-  padding: 22px;
+  padding: 24px;
 }
 
 .wide {
@@ -2734,7 +2779,7 @@ p {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, .95);
-  box-shadow: 0 10px 26px rgba(22, 38, 31, .06);
+  box-shadow: none;
   backdrop-filter: blur(8px);
 }
 
@@ -2912,7 +2957,7 @@ tbody tr:hover {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
   display: grid;
   gap: 14px;
 }
@@ -3370,7 +3415,7 @@ tbody tr:hover {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
 }
 
 .billing-card span {
@@ -3393,7 +3438,7 @@ tbody tr:hover {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
 }
 
 .cash-flow-card span {
@@ -3688,7 +3733,7 @@ tbody tr:hover {
   height: 172px;
   border-radius: 8px;
   font-size: 42px;
-  box-shadow: 0 16px 34px rgba(11, 37, 69, .12);
+  box-shadow: var(--shadow-soft);
 }
 
 .patient-record-identity {
@@ -3866,7 +3911,7 @@ tbody tr:hover {
   padding: 12px 22px;
   border-top: 1px solid var(--line);
   background: rgba(255, 255, 255, .96);
-  box-shadow: 0 -12px 28px rgba(11, 37, 69, .08);
+  box-shadow: 0 -6px 16px rgba(11, 37, 69, .05);
   backdrop-filter: blur(8px);
 }
 
@@ -3953,7 +3998,7 @@ dialog {
   border: 0;
   border-radius: 8px;
   padding: 0;
-  box-shadow: 0 30px 90px rgba(0, 0, 0, .25);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .18);
 }
 
 dialog::backdrop {
