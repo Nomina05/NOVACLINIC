@@ -5534,34 +5534,101 @@ function inventoryExpiryStatus(item) {
   return { label: "Vigente", className: "confirmada" };
 }
 
+function inventoryName(productId) {
+  return state.inventory.find((item) => item.id === productId)?.name || "Producto no encontrado";
+}
+
+function inventoryAlertItems() {
+  return state.inventory.flatMap((item) => {
+    const alerts = [];
+    const expiry = inventoryExpiryStatus(item);
+    if (item.stock <= item.min) {
+      alerts.push({
+        label: "Stock bajo",
+        title: item.name,
+        detail: `Stock ${item.stock}. Minimo requerido ${item.min}.`,
+        status: "cancelada"
+      });
+    }
+    if (["Vencido", "Por vencer"].includes(expiry.label)) {
+      alerts.push({
+        label: expiry.label,
+        title: item.name,
+        detail: item.expiry ? `Fecha de vencimiento: ${formatDate(item.expiry)}.` : "Sin fecha registrada.",
+        status: expiry.className
+      });
+    }
+    return alerts;
+  }).slice(0, 8);
+}
+
 function renderInventory() {
   state.inventory ||= [];
   const lowStock = state.inventory.filter((item) => item.stock <= item.min).length;
-  const expiring = state.inventory.filter((item) => item.expiry && new Date(`${item.expiry}T12:00:00`) < new Date(Date.now() + 1000 * 60 * 60 * 24 * 60)).length;
+  const expiring = state.inventory.filter((item) => ["Vencido", "Por vencer"].includes(inventoryExpiryStatus(item).label)).length;
   const totalUnits = state.inventory.reduce((sum, item) => sum + item.stock, 0);
+  const supplierCount = new Set(state.inventory.map((item) => item.provider || "Sin proveedor")).size;
 
   document.getElementById("inventorySummary").innerHTML = [
     ["Materiales", state.inventory.length],
     ["Unidades", totalUnits],
     ["Stock bajo", lowStock],
-    ["Vencen pronto", expiring]
+    ["Vencen pronto", expiring],
+    ["Proveedores", supplierCount],
+    ["Movimientos", (state.inventoryMovements || []).length]
   ].map(panelCardTemplate).join("");
+
+  document.getElementById("inventoryAlerts").innerHTML = inventoryAlertItems().length
+    ? inventoryAlertItems().map((item) => `
+      <article class="alert-item">
+        <span class="status-pill ${item.status}">${escapeHtml(item.label)}</span>
+        <div><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.detail)}</p></div>
+      </article>
+    `).join("")
+    : emptyState("No hay alertas de stock o vencimiento.");
 
   document.getElementById("inventoryTable").innerHTML = state.inventory.map((item) => {
     const isLow = item.stock <= item.min;
-    const status = isLow ? "Stock bajo" : "Disponible";
+    const expiryStatus = inventoryExpiryStatus(item);
+    const status = isLow ? "Stock bajo" : expiryStatus.label === "Vencido" ? "Vencido" : "Disponible";
     return `
       <tr>
         <td><strong>${escapeHtml(item.name)}</strong></td>
         <td>${item.stock}</td>
         <td>${item.min}</td>
         <td>${currency.format(item.price || 0)}</td>
-        <td>${item.expiry ? formatDate(item.expiry) : "Sin fecha"}</td>
+        <td>${item.expiry ? formatDate(item.expiry) : "Sin fecha"} <span class="status-pill ${expiryStatus.className}">${expiryStatus.label}</span></td>
         <td>${escapeHtml(item.provider || "Sin proveedor")}</td>
-        <td><span class="status-pill ${isLow ? "cancelada" : "confirmada"}">${status}</span></td>
+        <td><span class="status-pill ${isLow || status === "Vencido" ? "cancelada" : "confirmada"}">${status}</span></td>
       </tr>
     `;
   }).join("");
+
+  document.getElementById("kardexList").innerHTML = (state.inventoryMovements || []).length
+    ? state.inventoryMovements.slice(0, 12).map((movement) => `
+      <article class="ledger-item">
+        <span class="amount-pill">${movement.type}</span>
+        <div>
+          <strong>${escapeHtml(movement.productName)} Â· ${movement.quantity} unidad(es)</strong>
+          <p>${escapeHtml(movement.reason)} Â· ${formatDate(movement.date)} Â· Stock ${movement.previousStock} -> ${movement.newStock}</p>
+          <p>${movement.reference ? `Ref. ${escapeHtml(movement.reference)} Â· ` : ""}${escapeHtml(movement.provider || "Sin proveedor")}${movement.expiry ? ` Â· Vence ${formatDate(movement.expiry)}` : ""}</p>
+        </div>
+      </article>
+    `).join("")
+    : emptyState("No hay movimientos kardex registrados.");
+
+  document.getElementById("purchaseList").innerHTML = (state.inventoryPurchases || []).length
+    ? state.inventoryPurchases.slice(0, 8).map((purchase) => `
+      <article class="ledger-item">
+        <span class="amount-pill">${purchase.quantity}</span>
+        <div>
+          <strong>${escapeHtml(inventoryName(purchase.productId))}</strong>
+          <p>${escapeHtml(purchase.supplier)} Â· ${currency.format(purchase.unitCost || 0)} unidad Â· ${formatDate(purchase.date)}</p>
+          ${purchase.expiry ? `<p>Vencimiento: ${formatDate(purchase.expiry)}</p>` : ""}
+        </div>
+      </article>
+    `).join("")
+    : emptyState("No hay compras registradas.");
 }
 
 function renderReports() {
@@ -6305,13 +6372,14 @@ function convertQuoteToInvoice(paymentId) {
   payment.convertedAt = new Date().toISOString();
   payment.convertedBy = currentUser?.id || "sin-usuario";
   if (payment.type === "Producto" && payment.productId) {
-    applyInventoryMovement({
+    const moved = applyInventoryMovement({
       productId: payment.productId,
       type: "Salida",
       quantity: Number(payment.quantity || 1),
       reason: "Cotizacion convertida en factura",
       reference: payment.invoiceNumber || payment.id
     });
+    if (!moved) return;
   }
   saveState();
   renderBilling();
