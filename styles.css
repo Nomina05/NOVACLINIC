@@ -894,6 +894,444 @@ p {
   font-size: 26px;
 }
 
+.doctor-command-center {
+  display: grid;
+  gap: 14px;
+}
+
+.doctor-command-center:empty {
+  display: none;
+}
+
+.doctor-command-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.doctor-command-header h2 {
+  margin: 4px 0 3px;
+  font-size: 22px;
+  line-height: 1.12;
+}
+
+.doctor-command-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.doctor-command-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.doctor-notification-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.doctor-mini-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.doctor-mini-notice strong {
+  color: var(--ink);
+}
+
+.doctor-mini-notice.danger {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: #8a2d25;
+}
+
+.doctor-mini-notice.warning {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: #775600;
+}
+
+.doctor-mini-notice.ok {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+  color: #0e604d;
+}
+
+.doctor-command-tools {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 170px;
+  gap: 10px;
+}
+
+.doctor-command-tools input,
+.doctor-command-tools select {
+  height: 40px;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.doctor-command-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, .34fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.doctor-command-main {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.doctor-primary-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.doctor-primary-actions .ghost-button,
+.doctor-primary-actions .primary-button {
+  min-height: 38px;
+}
+
+.doctor-primary-actions .priority-warning {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.doctor-command-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.doctor-focus-card {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.doctor-focus-card h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.15;
+}
+
+.doctor-focus-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.doctor-patient-line {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.doctor-patient-line .patient-photo {
+  width: 58px;
+  height: 58px;
+  border-radius: 8px;
+  font-size: 18px;
+}
+
+.doctor-mini-facts {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.doctor-mini-facts span,
+.doctor-mini-facts strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doctor-mini-facts strong {
+  color: var(--ink);
+}
+
+.doctor-workflow-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.doctor-workflow-steps button {
+  min-height: 31px;
+  border: 1px solid #d7e9ef;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: #f7fcfd;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.doctor-workflow-steps button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.doctor-alert-list {
+  display: grid;
+  gap: 7px;
+}
+
+.doctor-alert-list button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  border: 1px solid #f1c3ba;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff7f5;
+  color: var(--ink);
+  text-align: left;
+}
+
+.doctor-alert-list small {
+  color: #8a2d25;
+  font-weight: 750;
+}
+
+.doctor-productivity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.doctor-productivity-grid span {
+  display: grid;
+  gap: 2px;
+  min-height: 54px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #f7fbfd;
+}
+
+.doctor-productivity-grid strong {
+  color: var(--navy);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.doctor-productivity-grid small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.doctor-agenda-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.doctor-appointment-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--green);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.doctor-appointment-card.pendiente {
+  border-left-color: var(--amber);
+}
+
+.doctor-appointment-card.cancelada,
+.doctor-appointment-card.no-asistio {
+  border-left-color: var(--red);
+}
+
+.doctor-appointment-card strong,
+.doctor-appointment-card p {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doctor-appointment-card p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.doctor-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+}
+
+.doctor-card-actions .ghost-button {
+  min-height: 32px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.doctor-context-panel {
+  position: sticky;
+  top: 92px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.doctor-context-panel h3,
+.doctor-context-panel h4 {
+  margin: 0;
+  line-height: 1.15;
+}
+
+.doctor-context-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.doctor-context-head {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.doctor-context-head .patient-photo {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  font-size: 18px;
+}
+
+.doctor-progress {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.doctor-progress span {
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 6px 7px;
+  background: #eef3f5;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.doctor-progress span.done {
+  background: #e1f7f8;
+  color: var(--green-dark);
+}
+
+.doctor-context-facts {
+  display: grid;
+  gap: 6px;
+}
+
+.doctor-context-facts span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #edf3f5;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.doctor-context-facts strong {
+  min-width: 0;
+  color: var(--ink);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doctor-history-summary {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f8fcfd;
+}
+
+.doctor-treatment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.doctor-treatment-chips span {
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #eef7fa;
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.doctor-context-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .report-hero {
   align-items: end;
   padding: 22px;
@@ -4169,6 +4607,7 @@ dialog::backdrop {
 
   .metric-grid,
   .dashboard-alert-strip,
+  .doctor-command-grid,
   .dashboard-quick-actions .module-grid,
   .task-flow-list,
   .panel-card-grid,
@@ -4183,6 +4622,18 @@ dialog::backdrop {
 
   .report-filter-bar {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .doctor-agenda-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .doctor-command-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-context-panel {
+    position: static;
   }
 
   .content-grid,
@@ -4341,6 +4792,23 @@ dialog::backdrop {
   }
 
   .compact-list-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-command-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .doctor-command-actions {
+    justify-content: flex-start;
+  }
+
+  .doctor-command-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-agenda-strip {
     grid-template-columns: 1fr;
   }
 

@@ -781,10 +781,46 @@ function bindNavigation() {
     const button = event.target.closest("[data-view-jump]");
     if (!button) return;
     const viewName = button.dataset.viewJump;
+    applyPatientContext(viewName, button.dataset.patientContext);
     if (canView(viewName)) {
       setView(viewName);
     }
     hideGlobalSearchResults();
+  });
+
+  document.addEventListener("click", (event) => {
+    const recordButton = event.target.closest("[data-open-patient-record]");
+    if (recordButton) {
+      openPatientRecord(recordButton.dataset.openPatientRecord);
+      return;
+    }
+
+    const attendButton = event.target.closest("[data-doctor-attend]");
+    if (attendButton) {
+      const appointment = state.appointments.find((item) => item.id === attendButton.dataset.doctorAttend);
+      if (!appointment) return;
+      if (can("appointments:confirm") && ["Pendiente", "Confirmada"].includes(appointment.status)) {
+        appointment.status = "Llegó";
+        appointment.updatedAt = new Date().toISOString();
+        appointment.updatedBy = currentUser?.id || "sin-usuario";
+        logAudit("appointments:status", `Marcó llegada de ${patientById(appointment.patientId).name}`, appointment.patientId);
+        saveState();
+      }
+      openPatientRecord(appointment.patientId);
+      render();
+      return;
+    }
+
+    const appointmentStatusButton = event.target.closest("[data-quick-appointment-status]");
+    if (appointmentStatusButton && can("appointments:confirm")) {
+      const appointment = state.appointments.find((item) => item.id === appointmentStatusButton.dataset.quickAppointmentStatus);
+      if (!appointment) return;
+      appointment.status = appointmentStatusButton.dataset.statusValue || appointment.status;
+      appointment.updatedAt = new Date().toISOString();
+      appointment.updatedBy = currentUser?.id || "sin-usuario";
+      logAudit("appointments:status", `Cambió cita de ${patientById(appointment.patientId).name} a ${appointment.status}`, appointment.patientId);
+      persistAndRender();
+    }
   });
 
   const globalSearch = document.getElementById("globalSearch");
@@ -811,6 +847,18 @@ function bindNavigation() {
   document.getElementById("userRoleFilter").addEventListener("change", renderUsersPanel);
   document.getElementById("patientLocalSearch")?.addEventListener("input", renderPatients);
   document.getElementById("patientStatusFilter")?.addEventListener("change", renderPatients);
+  document.addEventListener("input", (event) => {
+    if (event.target.matches("#doctorClinicalSearch")) {
+      const cursorPosition = event.target.selectionStart;
+      renderDashboard();
+      const search = document.getElementById("doctorClinicalSearch");
+      search?.focus();
+      search?.setSelectionRange(cursorPosition, cursorPosition);
+    }
+  });
+  document.addEventListener("change", (event) => {
+    if (event.target.matches("#doctorQueueFilter")) renderDashboard();
+  });
   document.getElementById("billingSearch")?.addEventListener("input", renderBilling);
   document.getElementById("billingStatusFilter")?.addEventListener("change", renderBilling);
   document.getElementById("agendaDateFilter").addEventListener("change", renderAgenda);
@@ -1658,9 +1706,9 @@ function bindForms() {
       createdBy: currentUser?.id || "sin-usuario",
       name: value("treatmentName"),
       cost,
-      phase: value("treatmentPhase") || "Diagnostico",
-      progress: treatmentProgressForPhase(value("treatmentPhase") || "Diagnostico"),
-      status: treatmentStatusForPhase(value("treatmentPhase") || "Diagnostico"),
+      phase: value("treatmentPhase") || "Diagnóstico",
+      progress: treatmentProgressForPhase(value("treatmentPhase") || "Diagnóstico"),
+      status: treatmentStatusForPhase(value("treatmentPhase") || "Diagnóstico"),
       consentSigned,
       consentSignedAt: consentSigned ? new Date().toISOString() : "",
       consentSignedBy: consentSigned ? currentUser?.id || "sin-usuario" : "",
@@ -2417,6 +2465,22 @@ function sanitizeSelfServiceActions(actions, role) {
   return actions.filter((action) => !action.startsWith("selfservice:") || allowed.has(action));
 }
 
+function applyPatientContext(viewName, patientId) {
+  if (!patientId || !state.patients.some((patient) => patient.id === patientId)) return;
+  const contextTargets = {
+    patients: [],
+    odontogram: ["odontogramPatient"],
+    treatments: ["treatmentPatient"],
+    billing: ["paymentPatient"],
+    selfService: ["selfRequestPatient"],
+    agenda: ["appointmentPatient"]
+  };
+  (contextTargets[viewName] || []).forEach((fieldId) => {
+    const field = document.getElementById(fieldId);
+    if (field) field.value = patientId;
+  });
+}
+
 function render() {
   applyCompactMode();
   populateSelects();
@@ -2909,9 +2973,16 @@ function renderDashboard() {
     .map(dashboardMetricTemplate)
     .join("");
 
+  renderDoctorCommandCenter({
+    todayAppointments,
+    doctorAppointments,
+    doctorTreatments
+  });
+
   renderTaskFlow("doctorTaskFlow", "doctor", {
     appointmentCount: todayAppointments.length,
-    pendingOdontograms: doctorTreatments.filter((treatment) => treatment.progress < 100).length
+    pendingOdontograms: doctorTreatments.filter((treatment) => treatment.progress < 100).length,
+    billableRequests: doctorLabRequestsForCurrentUser().filter((request) => ["Terminado", "Entregado", "Completada"].includes(request.status)).length
   });
 
   document.getElementById("dashboardAlertStrip").innerHTML = [
@@ -2968,6 +3039,335 @@ function renderDashboard() {
       </article>
     `)
     .join("");
+}
+
+function renderDoctorCommandCenter({ todayAppointments, doctorAppointments, doctorTreatments }) {
+  const container = document.getElementById("doctorCommandCenter");
+  if (!container) return;
+
+  const queueFilter = document.getElementById("doctorQueueFilter")?.value || "today";
+  const clinicalSearch = normalizeText(document.getElementById("doctorClinicalSearch")?.value || "");
+  const sortedTodayAppointments = todayAppointments.slice().sort(sortByDateTime);
+  const visibleAppointments = doctorQueueAppointments(doctorAppointments, queueFilter, clinicalSearch);
+  const currentAppointment = visibleAppointments.find((appointment) => appointment.status === "Llegó")
+    || visibleAppointments.find((appointment) => !["Atendida", "Cancelada", "No asistió"].includes(appointment.status))
+    || sortedTodayAppointments.find((appointment) => appointment.status === "Llegó")
+    || sortedTodayAppointments.find((appointment) => !["Atendida", "Cancelada", "No asistió"].includes(appointment.status))
+    || visibleAppointments[0]
+    || sortedTodayAppointments[0];
+  const currentPatient = currentAppointment ? patientById(currentAppointment.patientId) : null;
+  const activeTreatments = doctorTreatments.filter((treatment) => Number(treatment.progress || 0) < 100);
+  const pendingOdontograms = activeTreatments.filter((treatment) => !["Terminado", "Facturado"].includes(treatment.phase || treatment.status));
+  const labRequests = doctorLabRequestsForCurrentUser();
+  const pendingLab = labRequests.filter((request) => !["Completada", "Facturada", "Facturado"].includes(request.status));
+  const readyLab = labRequests.filter((request) => ["Terminado", "Entregado", "Completada"].includes(request.status));
+  const patientsInRoom = sortedTodayAppointments.filter((appointment) => appointment.status === "Llegó").length;
+  const pendingEvolutions = sortedTodayAppointments.filter((appointment) => {
+    const hasEvolutionToday = (state.evolutions || []).some((evolution) =>
+      evolution.patientId === appointment.patientId &&
+      evolution.doctorId === appointment.doctorId &&
+      evolution.date === todayIso
+    );
+    return ["Llegó", "Atendida"].includes(appointment.status) && !hasEvolutionToday;
+  }).length;
+  const billingPending = activeBillingPayments().filter((payment) =>
+    invoiceBalance(payment) > 0 &&
+    sortedTodayAppointments.some((appointment) => appointment.patientId === payment.patientId)
+  ).length;
+
+  container.innerHTML = `
+    <div class="doctor-command-header">
+      <div>
+        <span class="eyebrow">Mi día clínico</span>
+        <h2>${escapeHtml(currentPatient ? `Atención de ${currentPatient.name}` : "Panel clínico del doctor")}</h2>
+        <p>${escapeHtml(currentAppointment ? `${currentAppointment.time} · ${currentAppointment.type} · ${currentAppointment.status}` : "Sin citas activas para hoy.")}</p>
+      </div>
+      <div class="doctor-command-actions">
+        ${currentPatient ? `<button class="primary-button primary-action" data-open-patient-record="${currentPatient.id}" type="button">Abrir ficha</button>` : ""}
+        <button class="ghost-button" data-view-jump="agenda" type="button">Agenda clínica</button>
+      </div>
+    </div>
+    <div class="doctor-notification-bar">
+      ${doctorMiniNotice("Sala", `${patientsInRoom} paciente(s)`, patientsInRoom ? "warning" : "ok")}
+      ${doctorMiniNotice("Laboratorio", `${readyLab.length} listo(s)`, readyLab.length ? "warning" : "ok")}
+      ${doctorMiniNotice("Evolución", `${pendingEvolutions} pendiente(s)`, pendingEvolutions ? "danger" : "ok")}
+      ${doctorMiniNotice("Facturación", `${billingPending} balance(s)`, billingPending ? "warning" : "ok")}
+    </div>
+    <div class="doctor-command-tools">
+      <input id="doctorClinicalSearch" type="search" placeholder="Buscar paciente, documento, teléfono o procedimiento" value="${escapeHtml(document.getElementById("doctorClinicalSearch")?.value || "")}">
+      <select id="doctorQueueFilter" aria-label="Filtro de cola clínica">
+        ${[
+          ["today", "Hoy"],
+          ["mine", "Mis pacientes"],
+          ["pending", "Pendientes"]
+        ].map(([value, label]) => `<option value="${value}" ${queueFilter === value ? "selected" : ""}>${label}</option>`).join("")}
+      </select>
+    </div>
+    <div class="doctor-command-layout">
+      <div class="doctor-command-main">
+        ${doctorPrimaryActionsTemplate(currentPatient, {
+          activeTreatments: activeTreatments.filter((treatment) => treatment.patientId === currentPatient?.id),
+          pendingOdontograms: pendingOdontograms.filter((treatment) => treatment.patientId === currentPatient?.id),
+          pendingLab
+        })}
+        <div class="doctor-agenda-strip">
+          ${visibleAppointments.length
+            ? visibleAppointments.slice(0, 6).map(doctorAppointmentCardTemplate).join("")
+            : emptyState("No hay pacientes en la cola clínica con este filtro.")}
+        </div>
+      </div>
+      ${doctorContextPanelTemplate(currentPatient, currentAppointment, activeTreatments)}
+    </div>
+  `;
+}
+
+function doctorQueueAppointments(appointments, filter, searchTerm) {
+  const filtered = appointments
+    .filter((appointment) => appointment.status !== "Cancelada")
+    .filter((appointment) => {
+      if (filter === "today") return appointment.date === todayIso;
+      if (filter === "pending") return ["Pendiente", "Confirmada", "Llegó", "Lista de espera"].includes(appointment.status);
+      return appointment.date >= todayIso;
+    })
+    .filter((appointment) => {
+      if (!searchTerm) return true;
+      const patient = patientById(appointment.patientId);
+      const treatments = state.treatments
+        .filter((treatment) => treatment.patientId === appointment.patientId)
+        .map((treatment) => treatment.name)
+        .join(" ");
+      return normalizeText([
+        patient.name,
+        patient.code,
+        patient.document,
+        patient.phone,
+        appointment.type,
+        treatments
+      ].join(" ")).includes(searchTerm);
+    });
+  return filtered.sort(sortByDateTime);
+}
+
+function doctorMiniNotice(label, valueText, tone) {
+  return `<span class="doctor-mini-notice ${tone}"><strong>${escapeHtml(label)}</strong>${escapeHtml(valueText)}</span>`;
+}
+
+function doctorCurrentPatientTemplate(patient, appointment, activeTreatments) {
+  if (!patient) {
+    return `
+      <article class="doctor-focus-card">
+        <span class="status-pill pendiente">Sin paciente activo</span>
+        <h3>Próxima atención</h3>
+        <p>Cuando exista una cita activa, aquí aparecerá la ficha rápida del paciente.</p>
+      </article>
+    `;
+  }
+  const patientTreatments = activeTreatments.filter((treatment) => treatment.patientId === patient.id);
+  const lastTreatment = patientTreatments[0] || state.treatments.find((treatment) => treatment.patientId === patient.id);
+  return `
+    <article class="doctor-focus-card patient-focus-card">
+      <div class="doctor-patient-line">
+        ${patientPhotoTemplate(patient)}
+        <div>
+          <span class="status-pill ${className(appointment?.status || "Pendiente")}">${escapeHtml(appointment?.status || "Pendiente")}</span>
+          <h3>${escapeHtml(patient.name)}</h3>
+          <p>${escapeHtml(patientAge(patient.birthdate))} · ${escapeHtml(patient.insurance || "Sin seguro")}</p>
+        </div>
+      </div>
+      <div class="doctor-mini-facts">
+        <span>Alergias: <strong>${escapeHtml(patient.allergies || "Ninguna")}</strong></span>
+        <span>Condiciones: <strong>${escapeHtml(patient.conditions || "Sin registro")}</strong></span>
+        <span>Balance: <strong>${currency.format(patient.balance || 0)}</strong></span>
+        <span>Último tratamiento: <strong>${escapeHtml(lastTreatment?.name || "Sin tratamiento")}</strong></span>
+      </div>
+    </article>
+  `;
+}
+
+function doctorPrimaryActionsTemplate(patient, context) {
+  const patientId = patient?.id || "";
+  const disabled = patientId ? "" : "disabled";
+  const hasTreatment = context.activeTreatments.length > 0;
+  const needsOdontogram = context.pendingOdontograms.length > 0;
+  const hasLab = context.pendingLab.some((request) => request.patientId === patientId || !request.patientId);
+  return `
+    <section class="doctor-primary-actions" aria-label="Acciones principales del doctor">
+      <button class="primary-button primary-action" data-open-patient-record="${patientId}" type="button" ${disabled}>Atender paciente</button>
+      <button class="ghost-button ${needsOdontogram ? "priority-warning" : ""}" data-view-jump="odontogram" data-patient-context="${patientId}" type="button" ${disabled}>Actualizar odontograma</button>
+      <button class="ghost-button ${hasTreatment ? "priority-warning" : ""}" data-view-jump="odontogram" data-patient-context="${patientId}" type="button" ${disabled}>Registrar evolución</button>
+      <button class="ghost-button ${hasLab ? "priority-warning" : ""}" data-view-jump="selfService" data-patient-context="${patientId}" type="button" ${disabled}>Solicitar laboratorio</button>
+      <button class="ghost-button" data-view-jump="billing" data-patient-context="${patientId}" type="button" ${disabled}>Finalizar atención</button>
+    </section>
+  `;
+}
+
+function doctorContextPanelTemplate(patient, appointment, activeTreatments) {
+  if (!patient) {
+    return `
+      <aside class="doctor-context-panel">
+        <span class="status-pill pendiente">Panel contextual</span>
+        <h3>Seleccione un paciente</h3>
+        <p>Al elegir una cita, verá alergias, última visita, tratamiento activo, balance e historial resumido.</p>
+      </aside>
+    `;
+  }
+  const patientTreatments = activeTreatments.filter((treatment) => treatment.patientId === patient.id);
+  const allTreatments = state.treatments.filter((treatment) => treatment.patientId === patient.id);
+  const activeTreatment = patientTreatments[0] || allTreatments[0];
+  const lastEvolution = (state.evolutions || []).find((evolution) => evolution.patientId === patient.id);
+  const lastDentalHistory = (state.odontogramHistory || []).find((item) => item.patientId === patient.id);
+  const nextAppointment = state.appointments
+    .filter((item) => item.patientId === patient.id && item.date >= todayIso && item.status !== "Cancelada")
+    .sort(sortByDateTime)[0];
+  return `
+    <aside class="doctor-context-panel">
+      <div class="doctor-context-head">
+        ${patientPhotoTemplate(patient)}
+        <div>
+          <span class="status-pill ${priorityClassForPatient(patient)}">${priorityLabelForPatient(patient)}</span>
+          <h3>${escapeHtml(patient.name)}</h3>
+          <p>${escapeHtml(patient.code || "Sin código")} · ${escapeHtml(patientAge(patient.birthdate))}</p>
+        </div>
+      </div>
+      ${doctorClinicalProgressTemplate(appointment, activeTreatment, lastEvolution)}
+      <div class="doctor-context-facts">
+        <span>Alergias <strong>${escapeHtml(patient.allergies || "Ninguna")}</strong></span>
+        <span>Última visita <strong>${formatDate(patient.lastVisit)}</strong></span>
+        <span>Tratamiento activo <strong>${escapeHtml(activeTreatment?.name || "Sin tratamiento")}</strong></span>
+        <span>Balance <strong>${currency.format(patient.balance || 0)}</strong></span>
+      </div>
+      <div class="doctor-history-summary">
+        <h4>Historial resumido</h4>
+        <p><strong>Última evolución:</strong> ${escapeHtml(lastEvolution?.note || "Sin evolución registrada")}</p>
+        <p><strong>Último odontograma:</strong> ${lastDentalHistory ? `${escapeHtml(lastDentalHistory.tooth)} · ${labelStatus(lastDentalHistory.status)}` : "Sin cambios registrados"}</p>
+        <p><strong>Próxima cita:</strong> ${nextAppointment ? `${formatDate(nextAppointment.date)} ${nextAppointment.time}` : "Sin cita próxima"}</p>
+        <div class="doctor-treatment-chips">
+          ${allTreatments.slice(0, 3).map((treatment) => `<span>${escapeHtml(treatment.name)} · ${escapeHtml(treatment.phase || treatment.status)}</span>`).join("") || "<span>Sin tratamientos recientes</span>"}
+        </div>
+      </div>
+      <div class="doctor-context-actions">
+        <button class="ghost-button" data-open-patient-record="${patient.id}" type="button">Ver histórico completo</button>
+        <button class="ghost-button" data-view-jump="odontogram" data-patient-context="${patient.id}" type="button">Odontograma</button>
+      </div>
+    </aside>
+  `;
+}
+
+function doctorClinicalProgressTemplate(appointment, treatment, evolution) {
+  const steps = [
+    { label: "Cita", done: Boolean(appointment) },
+    { label: "Evaluación", done: Boolean(appointment && ["Llegó", "Atendida"].includes(appointment.status)) },
+    { label: "Tratamiento", done: Boolean(treatment) },
+    { label: "Evolución", done: Boolean(evolution) },
+    { label: "Facturación", done: Boolean(treatment && ["Facturado", "Terminado"].includes(treatment.phase || treatment.status)) }
+  ];
+  return `
+    <div class="doctor-progress">
+      ${steps.map((step) => `<span class="${step.done ? "done" : ""}">${escapeHtml(step.label)}</span>`).join("")}
+    </div>
+  `;
+}
+
+function priorityClassForPatient(patient) {
+  if (hasMedicalAlert(patient)) return "cancelada";
+  if ((patient.balance || 0) > 0 || patientIsMinor(patient)) return "pendiente";
+  return "confirmada";
+}
+
+function priorityLabelForPatient(patient) {
+  if (hasMedicalAlert(patient)) return "Riesgo clínico";
+  if (patientIsMinor(patient)) return "Menor de edad";
+  if ((patient.balance || 0) > 0) return "Pendiente";
+  return "Normal";
+}
+
+function doctorWorkflowTemplate(patient) {
+  const patientId = patient?.id || "";
+  const disabledClass = patientId ? "" : "is-disabled";
+  return `
+    <article class="doctor-focus-card">
+      <span class="status-pill confirmada">Flujo de atención</span>
+      <div class="doctor-workflow-steps">
+        ${[
+          { label: "Llegó", view: "agenda" },
+          { label: "Ficha", record: true },
+          { label: "Diagnóstico", view: "odontogram" },
+          { label: "Odontograma", view: "odontogram" },
+          { label: "Tratamiento", view: "treatments" },
+          { label: "Evolución", view: "odontogram" },
+          { label: "Facturación", view: "billing" }
+        ].map((step) => `
+          <button class="${disabledClass}" ${step.record ? `data-open-patient-record="${patientId}"` : `data-view-jump="${step.view}" data-patient-context="${patientId}"`} type="button" ${patientId ? "" : "disabled"}>${step.label}</button>
+        `).join("")}
+      </div>
+    </article>
+  `;
+}
+
+function doctorAlertsTemplate(patients) {
+  return `
+    <article class="doctor-focus-card">
+      <span class="status-pill ${patients.length ? "cancelada" : "confirmada"}">Alertas clínicas</span>
+      <div class="doctor-alert-list">
+        ${patients.length
+          ? patients.slice(0, 4).map((patient) => `
+            <button data-open-patient-record="${patient.id}" type="button">
+              <strong>${escapeHtml(patient.name)}</strong>
+              <small>${escapeHtml([
+                ...clinicalAlertBadges(patient),
+                patientIsMinor(patient) ? "Menor de edad" : ""
+              ].filter(Boolean).join(" · ") || "Revisar expediente")}</small>
+            </button>
+          `).join("")
+          : "<p>Sin alertas críticas en la agenda de hoy.</p>"}
+      </div>
+    </article>
+  `;
+}
+
+function doctorProductivityTemplate(stats) {
+  return `
+    <article class="doctor-focus-card">
+      <span class="status-pill confirmada">Productividad</span>
+      <div class="doctor-productivity-grid">
+        <span><strong>${stats.attendedToday}</strong><small>Atendidos hoy</small></span>
+        <span><strong>${stats.activeTreatments}</strong><small>Activos</small></span>
+        <span><strong>${stats.pendingOdontograms}</strong><small>Odontogramas</small></span>
+        <span><strong>${stats.pendingLab}</strong><small>Laboratorio</small></span>
+        <span><strong>${stats.commission.points}</strong><small>Puntos</small></span>
+        <span><strong>${currency.format(stats.commission.money)}</strong><small>Comisión</small></span>
+      </div>
+    </article>
+  `;
+}
+
+function doctorAppointmentCardTemplate(appointment) {
+  const patient = patientById(appointment.patientId);
+  const actionLabel = ["Pendiente", "Confirmada"].includes(appointment.status)
+    ? "Atender"
+    : appointment.status === "Llegó"
+      ? "Abrir ficha"
+      : "Ver ficha";
+  return `
+    <article class="doctor-appointment-card ${className(appointment.status)}">
+      <div>
+        <span class="time-chip">${escapeHtml(appointment.time)}</span>
+        <strong>${escapeHtml(patient.name)}</strong>
+        <p>${escapeHtml(appointment.type)}</p>
+      </div>
+      <span class="status-pill ${className(appointment.status)}">${escapeHtml(appointment.status)}</span>
+      <div class="doctor-card-actions">
+        <button class="ghost-button" data-doctor-attend="${appointment.id}" type="button">${escapeHtml(actionLabel)}</button>
+      </div>
+    </article>
+  `;
+}
+
+function doctorLabRequestsForCurrentUser() {
+  return (state.selfServiceRequests || []).filter((request) =>
+    normalizeText(request.type).includes("laboratorio") &&
+    (permissions().scope === "all" || request.createdBy === currentUser?.id)
+  );
 }
 
 function dashboardMetricTemplate(metric) {
@@ -5992,28 +6392,35 @@ function diagnosisPriorityClass(priority) {
 }
 
 function treatmentPhases() {
-  return ["Diagnostico", "Aprobado", "En proceso", "Terminado"];
+  return ["Diagnóstico", "Pendiente de aprobación", "Aprobado", "En proceso", "Terminado", "Facturado"];
 }
 
 function treatmentProgressForPhase(phase) {
   return {
     "Diagnostico": 10,
-    Aprobado: 30,
-    "En proceso": 65,
-    Terminado: 100
+    "Diagnóstico": 10,
+    "Pendiente de aprobación": 20,
+    Aprobado: 35,
+    "En proceso": 70,
+    Terminado: 100,
+    Facturado: 100
   }[phase] ?? 0;
 }
 
 function treatmentStatusForPhase(phase) {
+  if (phase === "Facturado") return "Facturado";
   return phase === "Terminado" ? "Completado" : phase;
 }
 
 function treatmentPhaseClass(phase) {
   return {
     "Diagnostico": "pendiente",
+    "Diagnóstico": "pendiente",
+    "Pendiente de aprobación": "pendiente",
     Aprobado: "confirmada",
     "En proceso": "restaurado",
-    Terminado: "pagado"
+    Terminado: "pagado",
+    Facturado: "confirmada"
   }[phase] || "pendiente";
 }
 
@@ -6059,7 +6466,7 @@ function renderTreatments() {
       if (!can("treatments:progress")) return;
       const treatment = state.treatments.find((item) => item.id === button.dataset.progressTreatment);
       const phases = treatmentPhases();
-      const currentIndex = Math.max(0, phases.indexOf(treatment.phase || "Diagnostico"));
+      const currentIndex = Math.max(0, phases.indexOf(treatment.phase || "Diagnóstico"));
       const nextPhase = phases[Math.min(phases.length - 1, currentIndex + 1)];
       treatment.phase = nextPhase;
       treatment.progress = treatmentProgressForPhase(nextPhase);

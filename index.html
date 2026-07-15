@@ -88,6 +88,7 @@
           <div class="dashboard-alert-strip" id="dashboardAlertStrip"></div>
           <section class="role-dashboard-panel" id="roleDashboardPanel"></section>
           <div class="metric-grid" id="metricGrid"></div>
+          <section class="doctor-command-center" id="doctorCommandCenter"></section>
           <section class="task-flow-strip" id="doctorTaskFlow"></section>
           <section class="dashboard-quick-actions" aria-label="Accesos rápidos">
             <div class="module-grid compact" id="doctorPanelModules"></div>
@@ -1424,10 +1425,12 @@
               </select>
               <input id="treatmentCost" type="number" min="0" step="100" placeholder="Costo" required>
               <select id="treatmentPhase">
-                <option>Diagnostico</option>
+                <option>Diagnóstico</option>
+                <option>Pendiente de aprobación</option>
                 <option>Aprobado</option>
                 <option>En proceso</option>
                 <option>Terminado</option>
+                <option>Facturado</option>
               </select>
               <label class="checkbox-field treatment-consent-check">
                 <input id="treatmentConsentSigned" type="checkbox">
