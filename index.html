@@ -375,6 +375,325 @@
     .empty { padding: 18px; color: var(--muted); text-align: center; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
+    /* Capa visual corporativa */
+    body {
+      background:
+        linear-gradient(180deg, rgba(244, 248, 252, .92), rgba(238, 244, 249, .98)),
+        #f4f8fc;
+      color: #10233b;
+      font-size: 12px;
+    }
+    .auth-screen {
+      background:
+        radial-gradient(circle at 20% 10%, rgba(47, 102, 144, .12), transparent 30%),
+        linear-gradient(135deg, #eef4f8, #f8fbfd);
+    }
+    .auth-card,
+    .panel,
+    .card,
+    .metric,
+    .rh-card,
+    .rh-report-card,
+    .ess-profile-box,
+    .ess-form,
+    .employee-register-panel,
+    .employee-list-panel,
+    .snip-summary-block,
+    .snip-investment-summary,
+    .modal,
+    .permission-group,
+    .user-form-section,
+    .user-summary,
+    .detail-item,
+    .warehouse-request {
+      border-color: #dbe5ee;
+      border-radius: 10px;
+      box-shadow: 0 10px 26px rgba(16, 35, 59, .045);
+    }
+    aside {
+      background: #10233b;
+      border-right: 1px solid rgba(255,255,255,.1);
+      box-shadow: 8px 0 26px rgba(16, 35, 59, .12);
+    }
+    .brand {
+      min-height: 54px;
+      padding: 7px 8px 12px;
+      margin-bottom: 8px;
+      border-bottom-color: rgba(255,255,255,.1);
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+    .brand span {
+      color: #a9c5d9;
+      font-size: 9px;
+      letter-spacing: .08em;
+    }
+    nav {
+      gap: 3px;
+      padding-right: 2px;
+    }
+    .nav-btn {
+      min-height: 31px;
+      padding: 6px 9px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #d6e2ed;
+      font-size: 11px;
+      font-weight: 760;
+    }
+    .nav-btn::before {
+      width: 4px;
+      height: 16px;
+      border-radius: 999px;
+      background: transparent;
+    }
+    .nav-btn:hover {
+      background: rgba(255,255,255,.075);
+      border-color: rgba(255,255,255,.08);
+    }
+    .nav-btn.active {
+      background: #244d72;
+      color: #fff;
+      border-color: rgba(255,255,255,.12);
+      box-shadow: none;
+    }
+    .nav-btn.active::before {
+      background: #8fd3c4;
+      box-shadow: none;
+    }
+    .sidebar-session {
+      border-radius: 10px;
+      background: rgba(255,255,255,.07);
+    }
+    .sidebar-session button {
+      background: #d66b00;
+      border-radius: 8px;
+    }
+    main {
+      max-width: 1920px;
+    }
+    .topbar {
+      border-bottom-color: #dde7ef;
+    }
+    .page-heading {
+      align-items: flex-start;
+      padding: 2px 0 4px;
+    }
+    .page-heading h1,
+    .employee-list-title {
+      color: #10233b;
+      font-weight: 850;
+    }
+    .page-heading h1::after,
+    .employee-register-panel .panel-head h2::after {
+      width: 54px;
+      height: 4px;
+      background: #2f6690;
+    }
+    h2,
+    .rh-report-card h3,
+    .rh-card h3,
+    .employee-section legend,
+    .user-form-section h3 {
+      color: #10233b;
+      font-weight: 850;
+    }
+    .sub,
+    label,
+    .file-name,
+    .area-card span,
+    .detail-item small {
+      color: #64748b;
+    }
+    .btn,
+    .mini-btn,
+    .tab,
+    .subtab,
+    .module-messages-btn,
+    .area-card button,
+    .permission-toolbar button {
+      border-radius: 8px;
+      box-shadow: none;
+      transition: background .16s ease, border-color .16s ease, transform .12s ease;
+    }
+    .btn {
+      background: #2f6690;
+      border: 1px solid #2a5b82;
+      color: #fff;
+      min-height: 32px;
+    }
+    .btn:hover {
+      background: #24557b;
+      transform: translateY(-1px);
+    }
+    .btn.secondary,
+    .mini-btn,
+    .tab,
+    .subtab,
+    .module-messages-btn,
+    .area-card button,
+    .permission-toolbar button {
+      background: #eef3f7;
+      border: 1px solid #dbe5ee;
+      color: #10233b;
+    }
+    .btn.secondary:hover,
+    .mini-btn:hover,
+    .tab:hover,
+    .subtab:hover {
+      background: #e2ebf2;
+      transform: translateY(-1px);
+    }
+    .btn.danger {
+      background: #b94a48;
+      border-color: #a53d3b;
+    }
+    .tab.active,
+    .subtab.active {
+      background: #2f6690;
+      border-color: #2f6690;
+      color: #fff;
+    }
+    input,
+    select,
+    textarea {
+      border-color: #cfdbe6;
+      border-radius: 8px;
+      background: #fff;
+      color: #10233b;
+    }
+    input::placeholder,
+    textarea::placeholder {
+      color: #7b8794;
+    }
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #2f6690;
+      box-shadow: 0 0 0 3px rgba(47, 102, 144, .13);
+    }
+    .panel-head {
+      margin-bottom: 12px;
+      border-bottom-color: #e2eaf1;
+    }
+    .metric,
+    .executive-card,
+    .rh-kpi,
+    .rh-admin-kpi,
+    .ess-kpi,
+    .workload-card {
+      border-radius: 10px;
+    }
+    .metric {
+      border-left: 0;
+      border-top: 4px solid #2f6690;
+      background: #fff;
+    }
+    .metric.ok,
+    .executive-card.ok,
+    .rh-kpi.ok {
+      border-top-color: #2e8b68;
+      border-left-color: #2e8b68;
+    }
+    .metric.warn,
+    .executive-card.warn,
+    .rh-kpi.warn {
+      border-top-color: #b7791f;
+      border-left-color: #b7791f;
+    }
+    .metric.bad,
+    .executive-card.bad,
+    .rh-kpi.bad {
+      border-top-color: #b94a48;
+      border-left-color: #b94a48;
+    }
+    .rh-admin-kpi,
+    .ess-kpi {
+      background: #315d91;
+    }
+    .rh-admin-kpi.green,
+    .ess-kpi.green {
+      background: #2e8b68;
+    }
+    .rh-admin-kpi.red,
+    .ess-kpi.red {
+      background: #b94a48;
+    }
+    .rh-admin-kpi.orange {
+      background: #c86f16;
+    }
+    .rh-admin-kpi small,
+    .ess-kpi small {
+      opacity: .9;
+    }
+    .table-wrap {
+      border-radius: 10px;
+      box-shadow: 0 8px 18px rgba(16, 35, 59, .035);
+    }
+    table {
+      background: #fff;
+    }
+    th {
+      background: #f0f5f9;
+      color: #334b63;
+      font-weight: 850;
+      border-bottom: 1px solid #d8e3ed;
+    }
+    td {
+      color: #172b43;
+    }
+    tbody tr:nth-child(even) td {
+      background: #fbfdff;
+    }
+    tbody tr:hover td {
+      background: #eef6fb;
+    }
+    .badge,
+    .permission-summary,
+    .rh-module-list span {
+      border-radius: 999px;
+      background: #eef3f7;
+      border: 1px solid #dbe5ee;
+      color: #1f344a;
+    }
+    .badge.ok {
+      background: #e2f3ea;
+      border-color: #b8dfca;
+      color: #12633d;
+    }
+    .badge.warn {
+      background: #fff4dc;
+      border-color: #f0d49a;
+      color: #7b4f05;
+    }
+    .badge.bad {
+      background: #fde8e6;
+      border-color: #f0bab6;
+      color: #933432;
+    }
+    .employee-section,
+    .user-form-section,
+    .ess-form {
+      background: #f8fbfd;
+    }
+    .employee-list-panel {
+      background: transparent;
+      box-shadow: none;
+      border: 0;
+    }
+    .employee-register-panel {
+      background: #fff;
+    }
+    .snip-summary-head,
+    .territory-summary-head,
+    .district-summary-head {
+      background: #edf4fa;
+    }
+    .snip-investment-summary h3 {
+      background: #d8e6f3;
+      color: #10233b;
+    }
+
     @media (max-width: 1180px) {
       aside { width: 210px; }
       main { margin-left: 210px; padding: 14px; }
